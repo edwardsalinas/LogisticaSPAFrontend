@@ -53,11 +53,10 @@ function TrackingPage() {
               <button
                 key={pkg.id}
                 onClick={() => setSelectedPackageId(pkg.id)}
-                className={`text-left p-3 rounded-lg transition-colors text-sm ${
-                  selectedPackageId === pkg.id
+                className={`text-left p-3 rounded-lg transition-colors text-sm ${selectedPackageId === pkg.id
                     ? 'bg-primary-50 text-primary-700 border border-primary-200'
                     : 'hover:bg-surface-50 text-surface-700'
-                }`}
+                  }`}
               >
                 <span className="font-medium">{pkg.tracking_code}</span>
                 <span className="block text-xs text-surface-400 mt-0.5">

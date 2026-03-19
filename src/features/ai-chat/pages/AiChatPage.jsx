@@ -67,11 +67,10 @@ function AiChatPage() {
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[70%] p-3 rounded-xl text-sm ${
-                msg.role === 'user'
+              className={`max-w-[70%] p-3 rounded-xl text-sm ${msg.role === 'user'
                   ? 'bg-primary-500 text-white rounded-br-sm'
                   : 'bg-surface-100 text-surface-800 rounded-bl-sm'
-              }`}
+                }`}
             >
               {msg.content}
             </div>

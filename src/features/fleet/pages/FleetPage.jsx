@@ -75,21 +75,19 @@ function FleetPage() {
       <div className="bg-white rounded-lg shadow-sm">
         <div className="flex border-b border-surface-200">
           <button
-            className={`px-6 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'vehicles'
+            className={`px-6 py-3 text-sm font-medium transition-colors ${activeTab === 'vehicles'
                 ? 'text-primary-600 border-b-2 border-primary-500'
                 : 'text-surface-500 hover:text-surface-700'
-            }`}
+              }`}
             onClick={() => setActiveTab('vehicles')}
           >
             Vehículos ({vehicles.length})
           </button>
           <button
-            className={`px-6 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'drivers'
+            className={`px-6 py-3 text-sm font-medium transition-colors ${activeTab === 'drivers'
                 ? 'text-primary-600 border-b-2 border-primary-500'
                 : 'text-surface-500 hover:text-surface-700'
-            }`}
+              }`}
             onClick={() => setActiveTab('drivers')}
           >
             Conductores ({drivers.length})
