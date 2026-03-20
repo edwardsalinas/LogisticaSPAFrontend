@@ -1,27 +1,33 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import Button from '../../../components/atoms/Button';
+﻿import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import {
+  Clock3,
+  FileDown,
+  MapPinned,
+  MoveLeft,
+  Package,
+  Radar,
+  Route,
+  ShieldCheck,
+  UserRound,
+} from 'lucide-react';
 import Badge from '../../../components/atoms/Badge';
-import Spinner from '../../../components/atoms/Spinner';
+import Button from '../../../components/atoms/Button';
 import ProgressBar from '../../../components/atoms/ProgressBar';
 import InfoCard from '../../../components/molecules/InfoCard';
+import MapCanvasFallback from '../../../components/molecules/MapCanvasFallback';
 import StatusTimeline from '../../../components/molecules/StatusTimeline';
-import BaseMap from '../../../components/molecules/BaseMap';
-import VehicleMarker from '../../../components/molecules/VehicleMarker';
+import PageSkeleton from '../../../components/organisms/PageSkeleton';
+import { heroImages } from '../../../constants/heroImages';
 import apiService from '../../../services/apiService';
+const PackageLocationMap = lazy(() => import('../components/PackageLocationMap'));
 
-/**
- * PackageDetailPage - Página completa de detalle de envío
- * Muestra información completa del paquete, mapa en vivo y cronograma
- */
 function PackageDetailPage() {
   const { packageId } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [pkg, setPkg] = useState(null);
-  const [trackingLogs, setTrackingLogs] = useState([]);
 
-  // Datos mock para demostración (mientras no haya API real)
   const MOCK_PACKAGE = {
     id: packageId,
     tracking_code: 'SPA-7749202394',
@@ -29,85 +35,25 @@ function PackageDetailPage() {
     destino: 'Oruro',
     status: 'in_transit',
     peso: 45.5,
-    description: 'Equipos electrónicos',
+    description: 'Equipos electronicos',
     priority: 'Express',
-    sender: {
-      name: 'ElectroBolivia S.R.L.',
-      address: 'Av. 16 de Julio 1234, La Paz',
-      contact: '+591 2 2201234',
-    },
-    receiver: {
-      name: 'Comercializadora El Alto',
-      address: 'C. Comercio 567, El Alto',
-      contact: '+591 2 2805678',
-    },
-    dimensions: {
-      length: 60,
-      width: 40,
-      height: 40,
-    },
-    content_type: 'Equipos electrónicos',
-    current_location: {
-      lat: -16.5800,
-      lng: -68.2500,
-    },
+    sender: { name: 'ElectroBolivia S.R.L.', address: 'Av. 16 de Julio 1234, La Paz', contact: '+591 2 2201234' },
+    receiver: { name: 'Comercializadora El Alto', address: 'C. Comercio 567, El Alto', contact: '+591 2 2805678' },
+    dimensions: { length: 60, width: 40, height: 40 },
+    content_type: 'Equipos electronicos',
+    current_location: { lat: -16.58, lng: -68.25 },
     estimated_delivery: '2026-03-20 16:00',
     progress: 65,
   };
-
-  const MOCK_TIMELINE = [
-    {
-      label: 'Recolectado',
-      date: '19 Mar, 08:30',
-      location: 'La Paz - Almacén Central',
-      completed: true,
-      active: false,
-    },
-    {
-      label: 'Procesado',
-      date: '19 Mar, 10:15',
-      location: 'Centro de Distribución',
-      completed: true,
-      active: false,
-    },
-    {
-      label: 'En Tránsito',
-      date: '19 Mar, 11:00',
-      location: 'Ruta La Paz-Oruro',
-      completed: false,
-      active: true,
-    },
-    {
-      label: 'Llegada a Destino',
-      date: '—',
-      location: 'Oruro - Terminal',
-      completed: false,
-      active: false,
-    },
-    {
-      label: 'Entregado',
-      date: '—',
-      location: '—',
-      completed: false,
-      active: false,
-    },
-  ];
 
   useEffect(() => {
     const fetchPackageData = async () => {
       setLoading(true);
       try {
-        // Intentar obtener datos reales (fallback a mock)
-        const [pkgRes, logsRes] = await Promise.all([
-          apiService.getPackages(),
-          apiService.getTrackingLogs(packageId),
-        ]);
-
+        const pkgRes = await apiService.getPackages();
         const packages = pkgRes.data || [];
         const foundPkg = packages.find((p) => p.id === packageId);
-
         setPkg(foundPkg || MOCK_PACKAGE);
-        setTrackingLogs(logsRes.data || []);
       } catch (err) {
         console.error('Error cargando paquete:', err);
         setPkg(MOCK_PACKAGE);
@@ -119,192 +65,88 @@ function PackageDetailPage() {
     fetchPackageData();
   }, [packageId]);
 
-  if (loading) {
-    return (
-      <div className="h-full w-full flex items-center justify-center">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
+  const timeline = useMemo(() => ([
+    { label: 'Recolectado', date: '19 Mar, 08:30', location: 'La Paz - Almacen central', completed: true, active: false },
+    { label: 'Procesado', date: '19 Mar, 10:15', location: 'Centro de distribucion', completed: true, active: false },
+    { label: 'En transito', date: '19 Mar, 11:00', location: 'Ruta La Paz - Oruro', completed: false, active: true },
+    { label: 'Llegada a destino', date: '-', location: 'Oruro - terminal', completed: false, active: false },
+    { label: 'Entregado', date: '-', location: '-', completed: false, active: false },
+  ]), []);
+
+  if (loading) return <PageSkeleton stats={4} layout="map" />;
 
   if (!pkg) {
     return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <h2 className="text-xl font-semibold text-surface-800 mb-2">
-          No se encontró el paquete
-        </h2>
-        <Button onClick={() => navigate('/logistics/packages')}>
-          Volver a Paquetes
-        </Button>
+      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-4 text-center">
+        <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-surface-950">No encontramos el paquete</h2>
+        <p className="max-w-md text-sm text-surface-500">La ficha del envio no esta disponible. Podemos volver al listado de paquetes.</p>
+        <Button onClick={() => navigate('/logistics/packages')}>Volver a paquetes</Button>
       </div>
     );
   }
 
   const statusConfig = {
     pending: { label: 'Pendiente', variant: 'warning' },
-    in_transit: { label: 'En Tránsito', variant: 'info' },
+    in_transit: { label: 'En transito', variant: 'info' },
     delivered: { label: 'Entregado', variant: 'success' },
     delayed: { label: 'Retrasado', variant: 'danger' },
   };
 
   const status = statusConfig[pkg.status] || { label: pkg.status, variant: 'neutral' };
+  const priorityVariant = pkg.priority === 'Express' ? 'danger' : 'info';
 
   return (
-    <div className="h-[calc(100vh-140px)] flex flex-col overflow-hidden">
-      {/* ========================================
-          HEADER
-      ======================================== */}
-      <div className="flex-shrink-0 mb-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <Button variant="secondary" size="sm" onClick={() => navigate('/logistics/packages')}>
-              ← Volver
-            </Button>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-xl font-bold text-surface-900">
-                  #{pkg.tracking_code}
-                </h1>
-                <Badge variant={status.variant}>{status.label}</Badge>
-              </div>
-              <p className="text-sm text-surface-500 mt-1">
-                {pkg.origen} → {pkg.destino}
-              </p>
+    <div className="space-y-6 sm:space-y-8">
+      <section className="relative overflow-hidden rounded-[1.7rem] border border-white/70 bg-[linear-gradient(135deg,#06111f_0%,#0b1d34_35%,#f8fbff_100%)] p-6 shadow-[0_28px_80px_-48px_rgba(2,36,72,0.7)] sm:rounded-[2rem] sm:p-8">
+        <div className="absolute inset-0">
+          <img src={heroImages.packageDetail.url} alt={heroImages.packageDetail.alt} className="h-full w-full object-cover object-center" />
+          <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(6,17,31,0.94)_0%,rgba(11,29,52,0.84)_38%,rgba(11,29,52,0.34)_100%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.18),transparent_34%)]" />
+        </div>
+        <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.95fr)] lg:items-end">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-sky-100/85 backdrop-blur"><Package size={14} strokeWidth={2.2} />Detalle de envio</div>
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <h1 className="font-display text-[clamp(2rem,4.5vw,3.8rem)] font-semibold tracking-[-0.06em] text-white break-all sm:break-normal">{pkg.tracking_code}</h1>
+              <Badge variant={status.variant} dot>{status.label}</Badge>
             </div>
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Ficha completa del paquete con progreso, actores, ubicacion y cronograma de entrega.</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="secondary" size="sm">
-              📤 Compartir
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => window.print()}>
-              📄 Descargar PDF
-            </Button>
+          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+            <Button variant="secondary" className="border-white/14 bg-white/8 text-white hover:bg-white/14" onClick={() => navigate('/logistics/packages')}><MoveLeft size={16} strokeWidth={2.2} />Volver</Button>
+            <Button size="lg" onClick={() => window.print()}><FileDown size={16} strokeWidth={2.2} />Descargar PDF</Button>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* ========================================
-          GRID DE INFORMACIÓN (2+2 layout)
-      ======================================== */}
-      <div className="flex-shrink-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-        {/* Remitente */}
-        <InfoCard title="Remitente" icon="📤">
-          <div className="space-y-2 text-sm">
-            <p className="font-semibold text-surface-900">{pkg.sender?.name || pkg.origen}</p>
-            <p className="text-surface-600">{pkg.sender?.address || 'Dirección no registrada'}</p>
-            <p className="text-surface-500">{pkg.sender?.contact || '—'}</p>
-          </div>
-        </InfoCard>
+      <section className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-4">
+        <InfoCard title="Remitente" icon={UserRound} eyebrow="Actor origen"><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.sender?.name || pkg.origen}</p><p className="text-surface-600">{pkg.sender?.address || 'Direccion no registrada'}</p><p className="text-surface-500">{pkg.sender?.contact || '-'}</p></div></InfoCard>
+        <InfoCard title="Destinatario" icon={ShieldCheck} eyebrow="Actor destino"><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.receiver?.name || pkg.destino}</p><p className="text-surface-600">{pkg.receiver?.address || 'Direccion no registrada'}</p><p className="text-surface-500">{pkg.receiver?.contact || '-'}</p></div></InfoCard>
+        <InfoCard title="Especificaciones" icon={Package} eyebrow="Ficha tecnica"><div className="grid grid-cols-2 gap-3 text-sm"><div><p className="text-[0.62rem] uppercase tracking-[0.16em] text-surface-500">Peso</p><p className="mt-1 font-semibold text-surface-900">{pkg.peso || 0} kg</p></div><div><p className="text-[0.62rem] uppercase tracking-[0.16em] text-surface-500">Dimensiones</p><p className="mt-1 font-semibold text-surface-900">{pkg.dimensions?.length || 60}x{pkg.dimensions?.width || 40}x{pkg.dimensions?.height || 40} cm</p></div><div><p className="text-[0.62rem] uppercase tracking-[0.16em] text-surface-500">Contenido</p><p className="mt-1 font-semibold text-surface-900">{pkg.content_type || pkg.description || 'General'}</p></div><div><p className="text-[0.62rem] uppercase tracking-[0.16em] text-surface-500">Prioridad</p><div className="mt-1"><Badge variant={priorityVariant}>{pkg.priority || 'Estandar'}</Badge></div></div></div></InfoCard>
+        <InfoCard title="Entrega" icon={Clock3} eyebrow="Resumen"><div className="space-y-3"><div><p className="text-[0.62rem] uppercase tracking-[0.16em] text-surface-500">Fecha estimada</p><p className="mt-1 text-sm font-semibold text-surface-900">{pkg.estimated_delivery || 'No disponible'}</p></div><div><div className="mb-1 flex items-center justify-between"><p className="text-[0.62rem] uppercase tracking-[0.16em] text-surface-500">Progreso</p><p className="text-xs font-semibold text-surface-900">{pkg.progress || 65}%</p></div><ProgressBar value={pkg.progress || 65} size="md" variant="primary" /></div><div><Badge variant={status.variant} dot>{status.label}</Badge></div></div></InfoCard>
+      </section>
 
-        {/* Destinatario */}
-        <InfoCard title="Destinatario" icon="📥">
-          <div className="space-y-2 text-sm">
-            <p className="font-semibold text-surface-900">{pkg.receiver?.name || pkg.destino}</p>
-            <p className="text-surface-600">{pkg.receiver?.address || 'Dirección no registrada'}</p>
-            <p className="text-surface-500">{pkg.receiver?.contact || '—'}</p>
-          </div>
-        </InfoCard>
-
-        {/* Especificaciones Técnicas (4 mini-cards) */}
-        <InfoCard title="Especificaciones" icon="📦">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <p className="text-xs text-surface-500 uppercase">Peso Total</p>
-              <p className="text-lg font-bold text-surface-900">{pkg.peso || 0} kg</p>
-            </div>
-            <div>
-              <p className="text-xs text-surface-500 uppercase">Dimensiones</p>
-              <p className="text-sm font-semibold text-surface-900">
-                {pkg.dimensions?.length || 60}x{pkg.dimensions?.width || 40}x{pkg.dimensions?.height || 40} cm
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-surface-500 uppercase">Contenido</p>
-              <p className="text-sm font-semibold text-surface-900 truncate">
-                {pkg.content_type || pkg.description || 'General'}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-surface-500 uppercase">Prioridad</p>
-              <Badge variant={pkg.priority === 'Express' ? 'danger' : 'info'}>
-                {pkg.priority || 'Estándar'}
-              </Badge>
-            </div>
-          </div>
-        </InfoCard>
-
-        {/* Resumen de Entrega */}
-        <InfoCard title="Resumen de Entrega" icon="📊">
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs text-surface-500 uppercase">Fecha Estimada</p>
-              <p className="text-sm font-bold text-surface-900">
-                {pkg.estimated_delivery || '20 Mar, 16:00'}
-              </p>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-xs text-surface-500 uppercase">Progreso</p>
-                <p className="text-xs font-bold text-surface-900">{pkg.progress || 65}%</p>
-              </div>
-              <ProgressBar value={pkg.progress || 65} size="md" variant="primary" />
-            </div>
-            <div>
-              <p className="text-xs text-surface-500 uppercase">Estado Actual</p>
-              <Badge variant={status.variant}>{status.label}</Badge>
-            </div>
-          </div>
-        </InfoCard>
-      </div>
-
-      {/* ========================================
-          SECCIÓN CENTRAL: Mapa + Info
-      ======================================== */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0 mb-4">
-        {/* Mapa de ubicación en tiempo real */}
-        <div className="lg:col-span-2 bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between p-4 border-b border-surface-200">
-            <div>
-              <h2 className="font-semibold text-surface-900">Ubicación en Tiempo Real</h2>
-              <p className="text-sm text-surface-400 mt-0.5">
-                Última actualización: hace 2 minutos
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
-              <span className="text-xs font-medium text-success">En Vivo</span>
-            </div>
-          </div>
-          <div className="h-full min-h-[300px]">
-            <BaseMap
-              center={[pkg.current_location?.lat || -16.5, pkg.current_location?.lng || -68.15]}
-              zoom={10}
-              className="h-full w-full"
-            >
-              {pkg.current_location && (
-                <VehicleMarker
-                  position={[pkg.current_location.lat, pkg.current_location.lng]}
-                  title={pkg.tracking_code}
-                  subtitle="Ubicación actual"
-                />
-              )}
-            </BaseMap>
+      <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
+        <div className="rounded-[1.6rem] border border-white/70 bg-white/88 p-4 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:rounded-[1.8rem] sm:p-5">
+          <div className="mb-4 flex flex-col gap-3 border-b border-surface-100 pb-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-[0.64rem] uppercase tracking-[0.24em] text-surface-500">Localizacion</p><h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.04em] text-surface-950 sm:text-2xl">Ubicacion actual del envio</h2></div><div className="flex flex-wrap gap-2"><Badge variant="info" dot>{pkg.origen} {' -> '} {pkg.destino}</Badge><Badge variant={status.variant} dot>{status.label}</Badge></div></div>
+          <div className="h-[24rem] overflow-hidden rounded-[1.4rem] border border-surface-100 sm:h-[28rem] sm:rounded-[1.5rem]">
+            <Suspense fallback={<MapCanvasFallback />}>
+              <PackageLocationMap position={pkg.current_location ? [pkg.current_location.lat, pkg.current_location.lng] : null} title={pkg.tracking_code} subtitle="Ubicacion actual" />
+            </Suspense>
           </div>
         </div>
 
-        {/* Timeline / Cronograma */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-surface-200">
-            <h2 className="font-semibold text-surface-900">Cronograma</h2>
-            <p className="text-sm text-surface-400 mt-0.5">
-              Seguimiento paso a paso
-            </p>
-          </div>
-          <div className="p-4 overflow-y-auto max-h-[400px]">
-            <StatusTimeline steps={MOCK_TIMELINE} />
-          </div>
+        <div className="rounded-[1.6rem] border border-white/70 bg-white/88 p-4 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:rounded-[1.8rem] sm:p-5">
+          <div className="mb-4 flex items-center gap-3 border-b border-surface-100 pb-4"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700"><Route size={18} strokeWidth={2.2} /></div><div><p className="text-[0.64rem] uppercase tracking-[0.18em] text-surface-500">Cronograma</p><h3 className="font-display text-xl font-semibold tracking-[-0.04em] text-surface-950 sm:text-2xl">Secuencia de entrega</h3></div></div>
+          <StatusTimeline steps={timeline} />
         </div>
-      </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-3">
+        <InfoCard title="Ruta" icon={MapPinned} eyebrow="Trayecto"><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.origen} {' -> '} {pkg.destino}</p><p className="text-surface-500">Movimiento principal configurado para esta entrega.</p></div></InfoCard>
+        <InfoCard title="Estado actual" icon={Radar} eyebrow="Monitoreo"><div className="space-y-2 text-sm"><div><Badge variant={status.variant} dot>{status.label}</Badge></div><p className="text-surface-500">La lectura refleja el ultimo estado operativo disponible.</p></div></InfoCard>
+        <InfoCard title="Observacion" icon={Package} eyebrow="Descripcion"><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.description || 'Sin descripcion adicional'}</p><p className="text-surface-500">Contenido declarado por el equipo de despacho.</p></div></InfoCard>
+      </section>
     </div>
   );
 }

@@ -1,92 +1,64 @@
-import ProgressBar from '../../../components/atoms/ProgressBar';
-import Badge from '../../../components/atoms/Badge';
+﻿import { ArrowRight, Clock3, LocateFixed, Truck } from 'lucide-react';
 import Avatar from '../../../components/atoms/Avatar';
+import Badge from '../../../components/atoms/Badge';
+import ProgressBar from '../../../components/atoms/ProgressBar';
 
-/**
- * RouteCard - Tarjeta de ruta para lista de monitoreo
- * @param {Object} route - Datos de la ruta
- * @param {boolean} isSelected - Si está seleccionada
- * @param {function} onClick - Callback al hacer click
- */
 function RouteCard({ route, isSelected = false, onClick }) {
   const statusConfig = {
-    active: { label: 'EN PROGRESO', variant: 'info' },
-    pending: { label: 'POR INICIAR', variant: 'warning' },
-    completed: { label: 'COMPLETADA', variant: 'success' },
-    delayed: { label: 'DEMORADO', variant: 'danger' },
+    active: { label: 'En progreso', variant: 'info' },
+    pending: { label: 'Pendiente', variant: 'warning' },
+    completed: { label: 'Completada', variant: 'success' },
+    delayed: { label: 'Retrasada', variant: 'danger' },
   };
 
   const status = statusConfig[route.status] || { label: route.status, variant: 'neutral' };
-
-  // Calcular progreso basado en checkpoints visitados
-  const progress = route.progress || Math.floor(Math.random() * 100);
-
-  // Mensaje descriptivo según estado
-  const getStatusMessage = () => {
-    if (route.status === 'active') {
-      return `📍 En ruta hacia ${route.destination}`;
-    }
-    if (route.status === 'delayed') {
-      return '⚠️ Retraso reportado por tráfico';
-    }
-    if (route.status === 'completed') {
-      return '✅ Ruta completada exitosamente';
-    }
-    return '⏳ Esperando asignación';
-  };
+  const progress = route.progress || 0;
 
   return (
     <div
-      className={`route-card p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+      className={`motion-card cursor-pointer rounded-[1.25rem] sm:rounded-[1.35rem] border p-4 transition-all duration-250 ${
         isSelected
-          ? 'route-card--selected border-primary-500 bg-primary-50'
-          : 'route-card--default border-transparent bg-white hover:border-surface-200 hover:shadow-md'
+          ? 'border-primary-200 bg-primary-50 shadow-[0_18px_40px_-34px_rgba(11,78,162,0.4)]'
+          : 'border-surface-100 bg-white hover:border-surface-200 hover:bg-surface-50 hover:shadow-[0_18px_42px_-34px_rgba(15,23,42,0.25)]'
       }`}
       onClick={onClick}
     >
-      {/* Header: ID + Badge */}
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-bold text-surface-900">{route.route_code || `RT-${route.id?.substring(0, 6).toUpperCase()}`}</span>
-        <Badge variant={status.variant}>{status.label}</Badge>
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <span className="text-sm font-bold tracking-[0.02em] text-surface-900">{route.route_code || `RT-${route.id?.substring(0, 6).toUpperCase()}`}</span>
+        <Badge variant={status.variant} dot>{status.label}</Badge>
       </div>
 
-      {/* Conductor + Vehículo */}
-      <div className="flex items-center gap-3 mb-3">
+      <div className="mb-3 flex items-center gap-3">
         <Avatar name={route.driver_name || 'Conductor'} size="sm" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-surface-900 truncate">
-            {route.driver_name || 'Sin asignar'}
-          </p>
-          <p className="text-xs text-surface-500">
-            {route.vehicle_brand || '—'} • {route.plate_number || '—'}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-surface-900">{route.driver_name || 'Sin asignar'}</p>
+          <p className="flex flex-wrap items-center gap-1.5 text-xs text-surface-500">
+            <Truck size={13} strokeWidth={2.1} />
+            {route.vehicle_brand || '--'} - {route.plate_number || '--'}
           </p>
         </div>
       </div>
 
-      {/* Ruta */}
-      <div className="flex items-center gap-2 mb-3 text-sm">
-        <span className="text-surface-600">{route.origin || 'Origen'}</span>
-        <span className="text-surface-400">→</span>
-        <span className="text-surface-600">{route.destination || 'Destino'}</span>
+      <div className="mb-3 flex items-center gap-2 text-sm text-surface-700">
+        <span className="truncate">{route.origin || 'Origen'}</span>
+        <ArrowRight size={14} strokeWidth={2.2} className="shrink-0 text-surface-300" />
+        <span className="truncate">{route.destination || 'Destino'}</span>
       </div>
 
-      {/* Barra de progreso */}
-      <div className="mb-2">
-        <ProgressBar 
-          value={progress} 
-          size="sm" 
-          variant={
-            progress === 100 ? 'success' :
-            progress >= 50 ? 'primary' : 'warning'
-          }
-          showLabel
-        />
+      <div className="mb-3">
+        <ProgressBar value={progress} size="sm" variant={progress === 100 ? 'success' : progress >= 50 ? 'primary' : 'warning'} showLabel />
       </div>
 
-      {/* Mensaje de estado */}
-      <p className="text-xs text-surface-500">
-        {getStatusMessage()}
-      </p>
+      <div className="grid grid-cols-1 gap-2 text-xs text-surface-500 sm:grid-cols-2 sm:gap-3">
+        <div className="flex items-center gap-2 rounded-xl bg-surface-50 px-3 py-2 min-w-0">
+          <LocateFixed size={13} strokeWidth={2.2} className="shrink-0" />
+          <span className="truncate">{route.next_checkpoint || 'Sin checkpoint'}</span>
+        </div>
+        <div className="flex items-center gap-2 rounded-xl bg-surface-50 px-3 py-2 min-w-0">
+          <Clock3 size={13} strokeWidth={2.2} className="shrink-0" />
+          <span className="truncate">ETA {route.eta || '--'}</span>
+        </div>
+      </div>
     </div>
   );
 }

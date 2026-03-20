@@ -1,42 +1,15 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
-import BaseMap from '../../../components/molecules/BaseMap';
-import RoutePath from '../../../components/molecules/RoutePath';
-import CheckpointMarker from '../../../components/molecules/CheckpointMarker';
-import LiveTracker from '../components/LiveTracker';
-import Spinner from '../../../components/atoms/Spinner';
+﻿import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Activity, MapPinned, MoveLeft, PackageCheck, Printer, Route } from 'lucide-react';
+import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
+import StatCard from '../../../components/molecules/StatCard';
+import MapCanvasFallback from '../../../components/molecules/MapCanvasFallback';
+import PageSkeleton from '../../../components/organisms/PageSkeleton';
+import { heroImages } from '../../../constants/heroImages';
 import { mockApi } from '../../../services/api.mock';
+const PackageTrackingMap = lazy(() => import('../components/PackageTrackingMap'));
 
-const vehicleIcon = L.divIcon({
-  className: 'custom-vehicle-marker',
-  html: `
-    <div style="
-      background-color: #137fec;
-      border: 3px solid white;
-      border-radius: 50%;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      box-shadow: 0 2px 12px rgba(19, 127, 236, 0.4);
-    ">
-      🚛
-    </div>
-  `,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
-  popupAnchor: [0, -16],
-});
-
-/**
- * Página de tracking en vivo con mapa
- * Muestra la posición del vehículo en tiempo real sobre el mapa de la ruta
- */
 function PackageMapPage() {
   const { packageId } = useParams();
   const navigate = useNavigate();
@@ -56,118 +29,82 @@ function PackageMapPage() {
       }
     };
 
-    if (packageId) {
-      fetchMapData();
-    }
+    if (packageId) fetchMapData();
   }, [packageId]);
 
-  if (loading) {
-    return (
-      <div className="h-full w-full flex items-center justify-center bg-surface-100">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton stats={4} layout="map" />;
 
   if (!mapData) {
     return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <h2 className="text-xl font-semibold text-surface-800 mb-2">
-          No se encontró el paquete
-        </h2>
-        <Button onClick={() => navigate('/tracking')}>Volver a Tracking</Button>
+      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-4 text-center">
+        <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-surface-950">No encontramos el paquete</h2>
+        <p className="max-w-md text-sm text-surface-500">No fue posible cargar la vista de mapa para este envio. Podemos volver al modulo de tracking.</p>
+        <Button onClick={() => navigate('/tracking')}>Volver a tracking</Button>
       </div>
     );
   }
 
   const { package: pkg, route, checkpoints, tracking_logs } = mapData;
   const latestPosition = tracking_logs.length > 0 ? tracking_logs[0] : null;
-  const latestStatus = latestPosition?.status || 'Desconocido';
+  const centerLat = checkpoints.length > 0 ? checkpoints.reduce((sum, cp) => sum + cp.lat, 0) / checkpoints.length : -16.5;
+  const centerLng = checkpoints.length > 0 ? checkpoints.reduce((sum, cp) => sum + cp.lng, 0) / checkpoints.length : -68.15;
 
-  // Calcular centro del mapa
-  const centerLat = checkpoints.length > 0
-    ? checkpoints.reduce((sum, cp) => sum + cp.lat, 0) / checkpoints.length
-    : -16.5;
-  const centerLng = checkpoints.length > 0
-    ? checkpoints.reduce((sum, cp) => sum + cp.lng, 0) / checkpoints.length
-    : -68.15;
+  const routeStatus = useMemo(() => {
+    if (!route) return { label: 'Sin ruta', variant: 'neutral' };
+    return route.status === 'active' ? { label: 'En ruta', variant: 'success' } : { label: route.status, variant: 'info' };
+  }, [route]);
 
   return (
-    <div className="h-[calc(100vh-140px)] flex flex-col">
-      {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
-        <div className="flex items-center justify-between">
+    <div className="space-y-6 sm:space-y-8">
+      <section className="relative overflow-hidden rounded-[1.7rem] border border-white/70 bg-[linear-gradient(135deg,#06111f_0%,#0b1d34_35%,#f8fbff_100%)] p-6 shadow-[0_28px_80px_-48px_rgba(2,36,72,0.7)] sm:rounded-[2rem] sm:p-8">
+        <div className="absolute inset-0">
+          <img src={heroImages.packageMap.url} alt={heroImages.packageMap.alt} className="h-full w-full object-cover object-center" />
+          <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(6,17,31,0.94)_0%,rgba(11,29,52,0.84)_38%,rgba(11,29,52,0.34)_100%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.18),transparent_34%)]" />
+        </div>
+        <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.95fr)] lg:items-end">
           <div>
-            <h1 className="text-lg font-semibold text-surface-800">
-              Tracking en Vivo: {pkg.tracking_code}
-            </h1>
-            <div className="flex items-center gap-4 mt-1 text-sm text-surface-500">
-              <span>📦 {pkg.origen} → {pkg.destino}</span>
-              {route && (
-                <>
-                  <span>🗺️ {route.origin} → {route.destination}</span>
-                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success">
-                    🟢 En Ruta
-                  </span>
-                </>
-              )}
-            </div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-sky-100/85 backdrop-blur"><Activity size={14} strokeWidth={2.2} />Tracking en mapa</div>
+            <h1 className="mt-5 max-w-3xl font-display text-[clamp(2rem,4.5vw,3.8rem)] font-semibold tracking-[-0.06em] text-white break-all sm:break-normal">{pkg.tracking_code}</h1>
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Seguimiento espacial del envio con checkpoint, ultima posicion conocida y lectura activa sobre el mapa.</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => navigate('/tracking')}>
-              ← Volver
-            </Button>
-            <Button variant="primary" onClick={() => window.print()}>
-              🖨️ Imprimir
-            </Button>
+          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+            <Button variant="secondary" className="border-white/14 bg-white/8 text-white hover:bg-white/14" onClick={() => navigate('/tracking')}><MoveLeft size={16} strokeWidth={2.2} />Volver</Button>
+            <Button size="lg" onClick={() => window.print()}><Printer size={16} strokeWidth={2.2} />Imprimir</Button>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Mapa con tracking en vivo */}
-      <div className="flex-1 bg-white rounded-lg shadow-lg overflow-hidden relative">
-        <BaseMap
-          center={[centerLat, centerLng]}
-          zoom={9}
-          className="h-full w-full"
-        >
-          {/* Componente de tracking en vivo */}
-          <LiveTracker
-            packageId={packageId}
-            routeId={route?.id}
-          />
+      <section className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-4">
+        <StatCard label="Origen" value={pkg.origen} icon={MapPinned} caption="Ciudad de salida del paquete." tone="blue" />
+        <StatCard label="Destino" value={pkg.destino} icon={PackageCheck} caption="Destino configurado para la entrega." tone="emerald" />
+        <StatCard label="Checkpoints" value={checkpoints.length} icon={Route} caption="Puntos visibles a lo largo de la ruta." tone="amber" />
+        <StatCard label="Estado de ruta" value={routeStatus.label} icon={Activity} caption="Condicion operativa actual del movimiento." tone="violet" />
+      </section>
 
-          {/* Ruta y checkpoints */}
-          {checkpoints.length > 0 && (
-            <>
-              <RoutePath checkpoints={checkpoints} />
-              {checkpoints.map((cp) => (
-                <CheckpointMarker key={cp.id} checkpoint={cp} />
-              ))}
-            </>
-          )}
-
-          {/* Marcador de última posición conocida (si no hay live tracker aún) */}
-          {latestPosition && (
-            <Marker
-              position={[latestPosition.lat, latestPosition.lng]}
-              icon={vehicleIcon}
-            >
-              <Popup>
-                <div className="p-2">
-                  <h3 className="font-semibold">Última Posición Conocida</h3>
-                  <p className="text-sm text-surface-500">
-                    {new Date(latestPosition.timestamp).toLocaleString()}
-                  </p>
-                  <p className="text-xs text-surface-400">
-                    Estado: {latestStatus}
-                  </p>
-                </div>
-              </Popup>
-            </Marker>
-          )}
-        </BaseMap>
-      </div>
+      <section className="rounded-[1.6rem] border border-white/70 bg-white/88 p-4 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:rounded-[1.8rem] sm:p-5">
+        <div className="mb-4 flex flex-col gap-3 border-b border-surface-100 px-1 pb-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-[0.64rem] uppercase tracking-[0.24em] text-surface-500">Mapa en vivo</p>
+            <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.04em] text-surface-950 sm:text-2xl">Ruta completa del paquete</h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant={routeStatus.variant} dot>{routeStatus.label}</Badge>
+            {latestPosition && <Badge variant="info" dot>Ultima posicion disponible</Badge>}
+          </div>
+        </div>
+        <div className="h-[55vh] min-h-[26rem] overflow-hidden rounded-[1.4rem] border border-surface-100 sm:h-[calc(100vh-24rem)] sm:min-h-[34rem] sm:rounded-[1.6rem]">
+          <Suspense fallback={<MapCanvasFallback />}>
+            <PackageTrackingMap
+              center={[centerLat, centerLng]}
+              packageId={packageId}
+              routeId={route?.id}
+              checkpoints={checkpoints}
+              latestPosition={latestPosition}
+            />
+          </Suspense>
+        </div>
+      </section>
     </div>
   );
 }

@@ -1,75 +1,61 @@
+import { Award, MoveRight } from 'lucide-react';
 import Avatar from '../../../components/atoms/Avatar';
 import ProgressBar from '../../../components/atoms/ProgressBar';
 
-// Datos mock para ranking de conductores
 const MOCK_DRIVERS = [
-  { id: 'd-001', name: 'Juan Pérez', efficiency: 98.5, deliveries: 145, onTime: 143 },
-  { id: 'd-002', name: 'María López', efficiency: 97.2, deliveries: 138, onTime: 134 },
+  { id: 'd-001', name: 'Juan Perez', efficiency: 98.5, deliveries: 145, onTime: 143 },
+  { id: 'd-002', name: 'Maria Lopez', efficiency: 97.2, deliveries: 138, onTime: 134 },
   { id: 'd-003', name: 'Carlos Ruiz', efficiency: 95.8, deliveries: 142, onTime: 136 },
   { id: 'd-004', name: 'Ana Flores', efficiency: 94.5, deliveries: 130, onTime: 123 },
-  { id: 'd-005', name: 'Luis García', efficiency: 93.1, deliveries: 125, onTime: 116 },
+  { id: 'd-005', name: 'Luis Garcia', efficiency: 93.1, deliveries: 125, onTime: 116 },
 ];
 
-/**
- * DriversRankingTable - Tabla de ranking de conductores con barras de eficiencia
- * @param {string} title - Título de la tabla
- * @param {Array} data - Datos de conductores
- */
-function DriversRankingTable({ title = 'Rendimiento de Conductores (Top 5)', data = MOCK_DRIVERS }) {
+function DriversRankingTable({ title = 'Ranking de conductores', data = MOCK_DRIVERS }) {
   return (
-    <div className="drivers-ranking-table bg-white rounded-lg shadow-sm p-6 h-full">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-surface-900">{title}</h3>
-        <p className="text-sm text-surface-400 mt-1">
-          Basado en entregas a tiempo y eficiencia operacional
-        </p>
+    <div className="rounded-[1.8rem] border border-white/70 bg-white/88 p-6 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-surface-500">Equipo</p>
+          <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">{title}</h3>
+          <p className="mt-2 text-sm text-surface-500">Basado en entregas a tiempo y consistencia operacional.</p>
+        </div>
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+          <Award size={20} strokeWidth={2.2} />
+        </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {data.map((driver, index) => {
           const rank = index + 1;
-          const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+          const progressTone = driver.efficiency >= 95 ? 'success' : driver.efficiency >= 90 ? 'primary' : 'warning';
 
           return (
-            <div
-              key={driver.id}
-              className="drivers-ranking-table__row flex items-center gap-4 p-3 rounded-lg hover:bg-surface-50 transition-colors"
-            >
-              {/* Rank */}
-              <div className="w-8 text-center text-xl">
-                {medal}
+            <div key={driver.id} className="flex items-center gap-4 rounded-[1.2rem] border border-surface-100 bg-surface-50/85 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-sm font-bold text-primary-700 shadow-sm">
+                {rank}
               </div>
-
-              {/* Conductor */}
-              <div className="flex items-center gap-3 flex-1">
-                <Avatar name={driver.name} size="md" />
-                <div>
-                  <p className="font-semibold text-surface-900">{driver.name}</p>
-                  <p className="text-xs text-surface-500">
-                    {driver.deliveries} entregas • {driver.onTime} a tiempo
-                  </p>
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <Avatar name={driver.name} size="md" className="ring-2 ring-white" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="truncate text-sm font-semibold text-surface-900">{driver.name}</p>
+                    <span className="text-sm font-semibold text-surface-500">{driver.efficiency}%</span>
+                  </div>
+                  <p className="mt-1 text-xs text-surface-500">{driver.deliveries} entregas · {driver.onTime} a tiempo</p>
+                  <div className="mt-3">
+                    <ProgressBar value={driver.efficiency} size="md" variant={progressTone} />
+                  </div>
                 </div>
-              </div>
-
-              {/* Eficiencia */}
-              <div className="w-32">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-semibold text-surface-500">Eficiencia</span>
-                  <span className="text-sm font-bold text-surface-900">{driver.efficiency}%</span>
-                </div>
-                <ProgressBar
-                  value={driver.efficiency}
-                  size="md"
-                  variant={
-                    driver.efficiency >= 95 ? 'success' :
-                    driver.efficiency >= 90 ? 'primary' : 'warning'
-                  }
-                />
               </div>
             </div>
           );
         })}
       </div>
+
+      <button className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary-700 transition-colors hover:text-primary-800">
+        Ver ranking completo
+        <MoveRight size={16} strokeWidth={2.2} />
+      </button>
     </div>
   );
 }

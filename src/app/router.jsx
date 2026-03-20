@@ -1,10 +1,9 @@
-import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from './AuthContext';
+﻿import { lazy, Suspense } from 'react';
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import SectionLoader from '../components/molecules/SectionLoader';
 import DashboardLayout from '../components/templates/DashboardLayout';
-import Spinner from '../components/atoms/Spinner';
+import { useAuth } from './AuthContext';
 
-// Lazy loading para páginas (code-splitting)
 const DashboardPage = lazy(() => import('../features/dashboard/pages/DashboardPage'));
 const PackagesPage = lazy(() => import('../features/logistics/pages/PackagesPage'));
 const PackageDetailPage = lazy(() => import('../features/logistics/pages/PackageDetailPage'));
@@ -17,16 +16,19 @@ const AiChatPage = lazy(() => import('../features/ai-chat/pages/AiChatPage'));
 const AnalyticsPage = lazy(() => import('../features/analytics/pages/AnalyticsPage'));
 const LoginPage = lazy(() => import('../features/auth/pages/LoginPage'));
 
-// Loading fallback component
 function PageLoader() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface-50">
-      <Spinner size="lg" />
+    <div className="min-h-screen bg-surface-50 px-4 py-8 sm:px-6">
+      <SectionLoader
+        eyebrow="Cargando modulo"
+        title="Preparando la vista"
+        description="Estamos montando el modulo solicitado y sus datos operativos."
+        className="min-h-[calc(100vh-4rem)]"
+      />
     </div>
   );
 }
 
-// Componente para proteger rutas privadas
 function ProtectedRoute() {
   const { user, loading } = useAuth();
 

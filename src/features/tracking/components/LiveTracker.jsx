@@ -1,12 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { Activity, Clock3, MapPinned, TriangleAlert } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useMap } from 'react-leaflet';
-import { mockApi } from '../../../services/api.mock';
 import CheckpointAlert from '../../../components/molecules/CheckpointAlert';
+import VehicleMarker from '../../../components/molecules/VehicleMarker';
+import { mockApi } from '../../../services/api.mock';
 
-/**
- * Componente para tracking en vivo de un paquete
- * Polling de posición cada 5 segundos y detección automática de checkpoints
- */
 function LiveTracker({ packageId, routeId }) {
   const map = useMap();
   const [position, setPosition] = useState(null);
@@ -14,23 +12,22 @@ function LiveTracker({ packageId, routeId }) {
   const [checkpointAlert, setCheckpointAlert] = useState(null);
   const [lastCheckpointId, setLastCheckpointId] = useState(null);
   const [error, setError] = useState(null);
-  const markerRef = useRef(null);
-  const intervalRef = useRef(null);
 
-  // Función para obtener la última posición
-  const fetchPosition = async () => {
-    try {
-      const res = await mockApi.getTrackingLogs(packageId);
-      const logs = res.data || [];
-      
-      if (logs.length > 0) {
+  useEffect(() => {
+    let intervalId;
+    let isMounted = true;
+
+    const fetchPosition = async () => {
+      try {
+        const res = await mockApi.getTrackingLogs(packageId);
+        const logs = res.data || [];
+        if (!isMounted || logs.length === 0) return;
+
         const latestLog = logs[0];
         const newPosition = { lat: latestLog.lat, lng: latestLog.lng };
-        
         setPosition(newPosition);
         setHistory(logs);
 
-        // Verificar si pasó por algún checkpoint
         if (routeId) {
           const geofenceRes = await mockApi.checkGeofence({
             lat: latestLog.lat,
@@ -39,6 +36,7 @@ function LiveTracker({ packageId, routeId }) {
           });
 
           if (
+            isMounted &&
             geofenceRes.data.within_checkpoint &&
             geofenceRes.data.checkpoint.id !== lastCheckpointId
           ) {
@@ -50,132 +48,69 @@ function LiveTracker({ packageId, routeId }) {
           }
         }
 
-        // Mover el mapa suavemente a la nueva posición
-        map.flyTo([newPosition.lat, newPosition.lng], 13, {
-          duration: 1.5,
-        });
-
+        map.flyTo([newPosition.lat, newPosition.lng], 13, { duration: 1.4 });
         setError(null);
-      }
-    } catch (err) {
-      console.error('Error obteniendo posición:', err);
-      setError('No se pudo obtener la posición del vehículo');
-    }
-  };
-
-  useEffect(() => {
-    // Obtener posición inicial inmediatamente
-    fetchPosition();
-
-    // Polling cada 5 segundos
-    intervalRef.current = setInterval(fetchPosition, 5000);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      } catch (err) {
+        console.error('Error obteniendo posicion:', err);
+        if (isMounted) setError('No se pudo obtener la posicion actual');
       }
     };
-  }, [packageId, routeId, lastCheckpointId]);
+
+    fetchPosition();
+    intervalId = setInterval(fetchPosition, 5000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [map, packageId, routeId, lastCheckpointId]);
 
   return (
     <>
-      {/* Alerta de checkpoint */}
-      {checkpointAlert && (
-        <CheckpointAlert
-          checkpoint={checkpointAlert}
-          onDismiss={() => setCheckpointAlert(null)}
-        />
-      )}
+      {checkpointAlert && <CheckpointAlert checkpoint={checkpointAlert} onDismiss={() => setCheckpointAlert(null)} />}
 
-      {/* Información de tracking */}
-      <div className="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg p-4 min-w-[200px]">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-3 h-3 bg-success rounded-full animate-pulse" />
-          <span className="text-sm font-semibold text-surface-800">En Vivo</span>
-        </div>
-        {position ? (
-          <div className="space-y-1 text-sm">
-            <p className="text-surface-600">
-              📍 {position.lat.toFixed(6)}, {position.lng.toFixed(6)}
-            </p>
-            <p className="text-xs text-surface-400">
-              🕐 Actualizado: {new Date().toLocaleTimeString()}
-            </p>
-            <p className="text-xs text-surface-400">
-              📊 {history.length} registros
-            </p>
+      <div className="pointer-events-none absolute left-4 top-4 z-[1000] w-[min(92vw,320px)]">
+        <div className="pointer-events-auto rounded-[1.5rem] border border-white/70 bg-white/92 p-4 shadow-[0_24px_60px_-38px_rgba(15,23,42,0.3)] backdrop-blur-xl">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+              <Activity size={18} strokeWidth={2.2} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-[0.62rem] uppercase tracking-[0.18em] text-surface-500">Tracking en vivo</p>
+                  <h3 className="mt-1 text-sm font-semibold text-surface-950">Senal operativa activa</h3>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Live
+                </span>
+              </div>
+
+              {position ? (
+                <div className="mt-3 space-y-2 text-xs text-surface-500">
+                  <p className="flex items-center gap-1.5"><MapPinned size={13} strokeWidth={2.2} /> {position.lat.toFixed(6)}, {position.lng.toFixed(6)}</p>
+                  <p className="flex items-center gap-1.5"><Clock3 size={13} strokeWidth={2.2} /> Actualizado {new Date().toLocaleTimeString('es-BO')}</p>
+                  <p>{history.length} registros disponibles</p>
+                </div>
+              ) : (
+                <p className="mt-3 text-xs text-surface-400">Esperando senal de posicion...</p>
+              )}
+
+              {error && <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600"><TriangleAlert size={13} strokeWidth={2.2} /> {error}</p>}
+            </div>
           </div>
-        ) : (
-          <p className="text-sm text-surface-400">Esperando señal...</p>
-        )}
-        {error && (
-          <p className="text-xs text-danger mt-2">{error}</p>
-        )}
+        </div>
       </div>
 
-      {/* Marcador del vehículo (se renderiza en el padre) */}
       {position && (
         <VehicleMarker
-          ref={markerRef}
           position={[position.lat, position.lng]}
-          title="Vehículo en Tránsito"
-          subtitle={`Última actualización: ${new Date().toLocaleTimeString()}`}
+          title="Vehiculo en transito"
+          subtitle={`Actualizado ${new Date().toLocaleTimeString('es-BO')}`}
         />
       )}
     </>
   );
 }
-
-// Importar VehicleMarker aquí para evitar circular dependency
-import { Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
-
-const vehicleIcon = L.divIcon({
-  className: 'custom-vehicle-marker',
-  html: `
-    <div style="
-      background-color: #137fec;
-      border: 3px solid white;
-      border-radius: 50%;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      box-shadow: 0 2px 12px rgba(19, 127, 236, 0.4);
-      animation: pulse 2s infinite;
-    ">
-      🚛
-    </div>
-    <style>
-      @keyframes pulse {
-        0% {
-          box-shadow: 0 0 0 0 rgba(19, 127, 236, 0.7);
-        }
-        70% {
-          box-shadow: 0 0 0 10px rgba(19, 127, 236, 0);
-        }
-        100% {
-          box-shadow: 0 0 0 0 rgba(19, 127, 236, 0);
-        }
-      }
-    </style>
-  `,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
-  popupAnchor: [0, -16],
-});
-
-const VehicleMarker = ({ position, title, subtitle }) => (
-  <Marker position={position} icon={vehicleIcon}>
-    <Popup>
-      <div className="p-2">
-        <h3 className="font-semibold text-surface-800">{title}</h3>
-        {subtitle && <p className="text-sm text-surface-500 mt-1">{subtitle}</p>}
-      </div>
-    </Popup>
-  </Marker>
-);
 
 export default LiveTracker;

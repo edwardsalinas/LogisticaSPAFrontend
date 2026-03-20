@@ -1,10 +1,6 @@
+import { ArrowRight, CalendarRange } from 'lucide-react';
 import { useState } from 'react';
 
-/**
- * DateRangePicker - Selector de rango de fechas
- * @param {Object} value - { from: Date, to: Date }
- * @param {function} onChange - Callback con nuevo rango
- */
 function DateRangePicker({ value = { from: null, to: null }, onChange }) {
   const [fromDate, setFromDate] = useState(value.from ? formatDate(value.from) : '');
   const [toDate, setToDate] = useState(value.to ? formatDate(value.to) : '');
@@ -27,25 +23,41 @@ function DateRangePicker({ value = { from: null, to: null }, onChange }) {
   };
 
   return (
-    <div className="date-range-picker flex items-center gap-2">
-      <div className="flex items-center gap-2">
-        <label className="text-sm text-surface-600">Desde:</label>
-        <input
-          type="date"
-          value={fromDate}
-          onChange={handleFromChange}
-          className="date-range-picker__input px-3 py-2 border border-surface-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-        />
+    <div className="rounded-[1.4rem] border border-white/70 bg-white/85 p-4 shadow-[0_18px_48px_-38px_rgba(15,23,42,0.24)] backdrop-blur-xl">
+      <div className="mb-4 flex items-center gap-2 text-surface-700">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+          <CalendarRange size={18} strokeWidth={2.2} />
+        </div>
+        <div>
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-surface-500">Rango de analisis</p>
+          <p className="text-sm font-semibold text-surface-900">Filtra el periodo de lectura</p>
+        </div>
       </div>
-      <span className="text-surface-400">→</span>
-      <div className="flex items-center gap-2">
-        <label className="text-sm text-surface-600">Hasta:</label>
-        <input
-          type="date"
-          value={toDate}
-          onChange={handleToChange}
-          className="date-range-picker__input px-3 py-2 border border-surface-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-        />
+
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+        <div className="flex-1">
+          <label className="mb-2 block text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-surface-500">Desde</label>
+          <input
+            type="date"
+            value={fromDate}
+            onChange={handleFromChange}
+            className="date-range-picker__input w-full rounded-2xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm outline-none"
+          />
+        </div>
+
+        <div className="flex h-11 w-11 items-center justify-center self-center rounded-2xl bg-surface-100 text-surface-500 lg:mb-0.5">
+          <ArrowRight size={16} strokeWidth={2.2} />
+        </div>
+
+        <div className="flex-1">
+          <label className="mb-2 block text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-surface-500">Hasta</label>
+          <input
+            type="date"
+            value={toDate}
+            onChange={handleToChange}
+            className="date-range-picker__input w-full rounded-2xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm outline-none"
+          />
+        </div>
       </div>
     </div>
   );

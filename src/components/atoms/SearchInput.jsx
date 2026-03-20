@@ -1,41 +1,33 @@
-/**
- * SearchInput - Componente atómico para búsqueda con icono
- * @param {string} value - Valor del input
- * @param {function} onChange - Callback cuando cambia el valor
- * @param {string} placeholder - Texto placeholder
- * @param {boolean} disabled - Estado deshabilitado
- */
-function SearchInput({ 
-  value = '', 
-  onChange = () => {}, 
-  placeholder = 'Buscar...', 
-  disabled = false 
+﻿import { Search } from 'lucide-react';
+import { useId } from 'react';
+
+function SearchInput({
+  value = '',
+  onChange = () => {},
+  placeholder = 'Buscar...',
+  disabled = false,
+  className = '',
+  ariaLabel = 'Buscar',
+  name,
 }) {
+  const generatedId = useId();
+  const inputId = name || generatedId;
+
   return (
-    <div className="search-input relative">
-      <div className="search-input__icon absolute left-3 top-1/2 -translate-y-1/2 text-surface-400">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.3-4.3" />
-        </svg>
+    <div className={`relative ${className}`}>
+      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-surface-400" aria-hidden="true">
+        <Search size={17} strokeWidth={2.2} />
       </div>
       <input
-        type="text"
-        className="search-input__field w-full pl-10 pr-4 py-2 border border-surface-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+        id={inputId}
+        name={name}
+        type="search"
+        className="search-input__field w-full border border-surface-200 bg-white/88 pl-11 pr-4 text-sm text-surface-900 outline-none backdrop-blur-sm disabled:cursor-not-allowed disabled:opacity-50"
         placeholder={placeholder}
         value={value}
         onChange={onChange}
         disabled={disabled}
+        aria-label={ariaLabel}
       />
     </div>
   );

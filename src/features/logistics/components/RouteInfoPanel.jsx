@@ -1,118 +1,69 @@
+import { Clock3, MapPinned, Phone, Route, X } from 'lucide-react';
 import Button from '../../../components/atoms/Button';
 
-/**
- * RouteInfoPanel - Panel overlay con información de ruta seleccionada
- * @param {Object} route - Datos de la ruta
- * @param {function} onClose - Callback para cerrar panel
- */
 function RouteInfoPanel({ route, onClose }) {
   if (!route) return null;
 
   return (
-    <div className="route-info-panel absolute top-4 right-4 z-[1000] w-80 bg-white rounded-lg shadow-xl overflow-hidden">
-      {/* Header */}
-      <div className="bg-primary-500 text-white p-4">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-bold">{route.route_code || `RT-${route.id?.substring(0, 6).toUpperCase()}`}</h3>
-          <button
-            onClick={onClose}
-            className="text-white/80 hover:text-white transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
+    <div className="route-info-panel absolute right-4 top-4 z-[1000] w-[21rem] overflow-hidden rounded-[1.5rem] shadow-xl">
+      <div className="bg-[linear-gradient(135deg,#0b4ea2_0%,#137fec_100%)] p-5 text-white">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <p className="text-[0.62rem] uppercase tracking-[0.2em] text-sky-100/70">Ruta activa</p>
+            <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em]">{route.route_code || `RT-${route.id?.substring(0, 6).toUpperCase()}`}</h3>
+          </div>
+          <button onClick={onClose} className="rounded-xl bg-white/10 p-2 text-white/80 transition-colors hover:bg-white/16 hover:text-white">
+            <X size={18} strokeWidth={2.2} />
           </button>
         </div>
-        <p className="text-sm text-primary-100">
-          {route.origin} → {route.destination}
-        </p>
+        <p className="text-sm text-primary-50">{route.origin}{' -> '}{route.destination}</p>
       </div>
 
-      {/* Body */}
-      <div className="p-4 space-y-4">
-        {/* Próxima parada */}
-        <div>
-          <p className="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-1">
-            Próxima Parada
-          </p>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">📍</span>
+      <div className="space-y-5 p-5">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4">
+            <p className="text-[0.62rem] uppercase tracking-[0.18em] text-surface-500">Progreso</p>
+            <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">{route.progress || 65}%</p>
+          </div>
+          <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4">
+            <p className="text-[0.62rem] uppercase tracking-[0.18em] text-surface-500">Restante</p>
+            <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">{route.remaining_distance || '45.2'} km</p>
+          </div>
+        </div>
+
+        <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4">
+          <p className="mb-3 text-[0.62rem] uppercase tracking-[0.18em] text-surface-500">Siguiente parada</p>
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+              <MapPinned size={18} strokeWidth={2.1} />
+            </div>
             <div>
-              <p className="text-sm font-semibold text-surface-900">
-                {route.next_checkpoint || 'Centro Logístico Norte'}
-              </p>
-              <p className="text-xs text-surface-500">
-                ETA: {route.eta || '14:30'} ({route.eta_minutes || '25'} min)
-              </p>
+              <p className="text-sm font-semibold text-surface-900">{route.next_checkpoint || 'Centro logistico norte'}</p>
+              <p className="mt-1 flex items-center gap-1.5 text-xs text-surface-500"><Clock3 size={13} strokeWidth={2.2} /> ETA {route.eta || '14:30'} ({route.eta_minutes || '25'} min)</p>
             </div>
           </div>
         </div>
 
-        {/* Distancia restante */}
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <p className="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-1">
-              Distancia Restante
-            </p>
-            <p className="text-lg font-bold text-surface-900">
-              {route.remaining_distance || '45.2'} km
-            </p>
-          </div>
-          <div className="flex-1">
-            <p className="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-1">
-              Progreso
-            </p>
-            <p className="text-lg font-bold text-surface-900">
-              {route.progress || 65}%
-            </p>
-          </div>
-        </div>
-
-        {/* Conductor */}
-        <div className="border-t border-surface-200 pt-4">
-          <p className="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-2">
-            Conductor Asignado
-          </p>
+        <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4">
+          <p className="mb-3 text-[0.62rem] uppercase tracking-[0.18em] text-surface-500">Conductor asignado</p>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-bold text-sm">
-              {(route.driver_name || 'C').charAt(0)}
-            </div>
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-700">{(route.driver_name || 'C').charAt(0)}</div>
             <div>
-              <p className="text-sm font-medium text-surface-900">
-                {route.driver_name || 'Juan Pérez'}
-              </p>
-              <p className="text-xs text-surface-500">
-                {route.driver_phone || '+591 70012345'}
-              </p>
+              <p className="text-sm font-semibold text-surface-900">{route.driver_name || 'Juan Perez'}</p>
+              <p className="mt-1 flex items-center gap-1.5 text-xs text-surface-500"><Phone size={13} strokeWidth={2.2} /> {route.driver_phone || '+591 70012345'}</p>
             </div>
           </div>
         </div>
 
-        {/* Botones de acción */}
-        <div className="flex gap-2 pt-2">
-          <Button 
-            variant="primary" 
-            size="sm" 
-            className="flex-1"
-            onClick={() => window.open(`/tracking/${route.package_id}/map`, '_blank')}
-          >
-            📍 Ver en Mapa
+        <div className="flex gap-2 pt-1">
+          <Button variant="primary" size="sm" className="flex-1" onClick={() => window.open(`/logistics/routes/${route.id}/map`, '_blank')}>
+            <Route size={15} strokeWidth={2.2} />
+            Ver mapa
           </Button>
-          <Button 
-            variant="secondary" 
-            size="sm" 
-            className="flex-1"
-          >
-            📞 Contactar
+          <Button variant="secondary" size="sm" className="flex-1" onClick={() => window.open(`tel:${route.driver_phone || ''}`, '_self')}>
+            <Phone size={15} strokeWidth={2.2} />
+            Contactar
           </Button>
-        </div>
-
-        {/* Link a historial */}
-        <div className="text-center">
-          <button className="text-xs text-primary-500 hover:text-primary-600 font-medium">
-            Ver historial completo de ruta →
-          </button>
         </div>
       </div>
     </div>

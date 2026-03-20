@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import Input from '../../../components/atoms/Input';
 import Select from '../../../components/atoms/Select';
 import Button from '../../../components/atoms/Button';
-import Spinner from '../../../components/atoms/Spinner';
+import Skeleton from '../../../components/atoms/Skeleton';
 import api from '../../../services/api';
 
 function RouteForm({ onSuccess, onCancel }) {
@@ -55,26 +55,27 @@ function RouteForm({ onSuccess, onCancel }) {
     }
   };
 
-  if (loadingData) return <Spinner />;
+  if (loadingData) {
+    return (
+      <div className="space-y-4">
+        {Array.from({ length: 4 }).map((_, idx) => (
+          <div key={idx}>
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="mt-2 h-12 w-full rounded-xl" />
+          </div>
+        ))}
+        <div className="flex justify-end gap-3 pt-2">
+          <Skeleton className="h-11 w-28 rounded-xl" />
+          <Skeleton className="h-11 w-32 rounded-xl" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <Input
-        label="Origen"
-        name="origin"
-        value={form.origin}
-        onChange={handleChange}
-        placeholder="Ciudad de origen"
-        required
-      />
-      <Input
-        label="Destino"
-        name="destination"
-        value={form.destination}
-        onChange={handleChange}
-        placeholder="Ciudad de destino"
-        required
-      />
+      <Input label="Origen" name="origin" value={form.origin} onChange={handleChange} placeholder="Ciudad de origen" required />
+      <Input label="Destino" name="destination" value={form.destination} onChange={handleChange} placeholder="Ciudad de destino" required />
       <Select
         label="Conductor Responsable"
         name="driver_id"
@@ -82,31 +83,23 @@ function RouteForm({ onSuccess, onCancel }) {
         onChange={handleChange}
         placeholder="Seleccionar conductor..."
         required
-        options={drivers.map((d) => ({
-          value: d.id,
-          label: d.full_name || d.email,
-        }))}
+        options={drivers.map((d) => ({ value: d.id, label: d.full_name || d.email }))}
       />
       <Select
-        label="Vehículo Asignado"
+        label="Vehiculo Asignado"
         name="vehicle_id"
         value={form.vehicle_id}
         onChange={handleChange}
-        placeholder="Seleccionar vehículo..."
+        placeholder="Seleccionar vehiculo..."
         required
-        options={vehicles.map((v) => ({
-          value: v.id,
-          label: `${v.plate_number} — ${v.brand} ${v.model}`,
-        }))}
+        options={vehicles.map((v) => ({ value: v.id, label: `${v.plate_number} - ${v.brand} ${v.model}` }))}
       />
 
       {error && <p className="text-danger text-sm">{error}</p>}
 
-      <div className="flex justify-end gap-3 mt-2">
+      <div className="mt-2 flex justify-end gap-3">
         <Button variant="secondary" onClick={onCancel} type="button">Cancelar</Button>
-        <Button type="submit" disabled={submitting}>
-          {submitting ? 'Creando...' : 'Crear Ruta'}
-        </Button>
+        <Button type="submit" disabled={submitting}>{submitting ? 'Creando...' : 'Crear Ruta'}</Button>
       </div>
     </form>
   );

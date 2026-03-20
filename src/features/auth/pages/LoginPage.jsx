@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../app/AuthContext';
-import Input from '../../../components/atoms/Input';
-import Button from '../../../components/atoms/Button';
 import Spinner from '../../../components/atoms/Spinner';
+
+const heroImage =
+  'https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1400&q=80';
 
 function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -28,327 +29,193 @@ function LoginPage() {
       await login(form.email, form.password);
       navigate('/');
     } catch (err) {
-      setError('Credenciales inválidas. Intente nuevamente.');
+      setError('Credenciales invalidas. Verifica tus datos e intenta nuevamente.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
-      {/* ========================================
-          COLUMNA IZQUIERDA - Formulario
-      ======================================== */}
-      <div className="login-page__form-container flex items-center justify-center p-8 lg:p-16 bg-white">
-        <div className="w-full max-w-md">
-          {/* Logo */}
-          <div className="login-page__logo flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-primary-500 rounded-xl flex items-center justify-center text-white text-2xl">
-              🚛
+    <div className="min-h-screen overflow-hidden bg-[#f4f7fb] text-surface-900">
+      <main className="grid min-h-screen grid-cols-1 md:grid-cols-2">
+        <section className="relative hidden overflow-hidden md:block">
+          <img
+            src={heroImage}
+            alt="Centro logistico moderno"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(2,36,72,0.92)_0%,rgba(30,58,95,0.72)_100%)]" />
+          <div className="relative z-10 flex h-full flex-col justify-between p-10 lg:p-16">
+            <div className="inline-flex w-fit items-center gap-3 rounded-full border border-white/15 bg-white/8 px-4 py-2 backdrop-blur-md">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-400 text-sm font-bold tracking-[0.2em] text-[#022448]">
+                LS
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">LogisticaSPA</p>
+                <p className="text-[0.62rem] uppercase tracking-[0.24em] text-sky-100/60">
+                  Precision Global Logistics
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-surface-900">LogisticaSPA</h1>
-              <p className="text-xs text-surface-500">Plataforma de Gestión Logística</p>
+
+            <div className="max-w-xl">
+              <p className="mb-4 text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-sky-100/75">
+                Plataforma empresarial
+              </p>
+              <h1 className="max-w-lg text-5xl font-extrabold leading-[0.95] tracking-tight text-white lg:text-6xl">
+                Controla el flujo completo de tu operacion.
+              </h1>
+              <p className="mt-6 max-w-md text-base leading-relaxed text-white/72">
+                Flota, rutas, entregas y trazabilidad en una sola capa de control
+                visual, clara y confiable.
+              </p>
+              <div className="mt-8 h-1 w-24 rounded-full bg-sky-300" />
+            </div>
+
+            <div className="grid max-w-lg grid-cols-3 gap-4">
+              <div className="rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur-sm">
+                <p className="text-2xl font-bold text-white">98.2%</p>
+                <p className="mt-1 text-[0.65rem] uppercase tracking-[0.16em] text-sky-100/70">
+                  Entregas a tiempo
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur-sm">
+                <p className="text-2xl font-bold text-white">1,284</p>
+                <p className="mt-1 text-[0.65rem] uppercase tracking-[0.16em] text-sky-100/70">
+                  Movimientos hoy
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur-sm">
+                <p className="text-2xl font-bold text-white">24/7</p>
+                <p className="mt-1 text-[0.65rem] uppercase tracking-[0.16em] text-sky-100/70">
+                  Visibilidad
+                </p>
+              </div>
             </div>
           </div>
+        </section>
 
-          {/* Títulos */}
-          <div className="mb-8">
-            <h2 className="text-3xl font-extrabold text-surface-900 mb-2">
-              Bienvenido
-            </h2>
-            <p className="text-surface-500">
-              Gestiona tu cadena de suministro con eficiencia
-            </p>
-          </div>
+        <section className="flex items-center justify-center bg-[#eef3f9] px-6 py-10 sm:px-8 lg:px-16">
+          <div className="w-full max-w-[30rem] rounded-[2rem] border border-white/70 bg-white p-8 shadow-[0_28px_80px_-40px_rgba(15,23,42,0.28)] sm:p-10">
+            <div className="mb-10 flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#0b4ea2_0%,#137fec_100%)] text-sm font-bold tracking-[0.18em] text-white shadow-[0_16px_34px_-20px_rgba(19,127,236,0.8)]">
+                LS
+              </div>
+              <div>
+                <p className="text-xl font-bold tracking-tight text-[#022448]">LogisticaSPA</p>
+                <p className="text-[0.62rem] uppercase tracking-[0.22em] text-surface-500">
+                  Acceso corporativo
+                </p>
+              </div>
+            </div>
 
-          {/* Formulario */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Campo Email */}
-            <div className="form-field">
-              <label className="form-field__label uppercase text-xs font-semibold tracking-wide">
-                Correo Corporativo
-              </label>
-              <div className="relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect width="20" height="16" x="2" y="4" rx="2" />
-                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                  </svg>
-                </div>
-                <Input
-                  type="email"
+            <header className="mb-8">
+              <h2 className="text-3xl font-extrabold tracking-tight text-[#111827]">
+                Welcome back
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-surface-500">
+                Ingresa con tus credenciales para acceder al centro de control
+                logistico.
+              </p>
+            </header>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <label
+                  htmlFor="email"
+                  className="block text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500"
+                >
+                  Email address
+                </label>
+                <input
+                  id="email"
                   name="email"
+                  type="email"
                   value={form.email}
                   onChange={handleChange}
-                  placeholder="nombre@empresa.com"
+                  placeholder="nombre@logisticaspa.com"
                   required
-                  className="pl-10"
+                  className="h-12 w-full rounded-xl border border-surface-200 bg-white px-4 text-sm text-surface-900 outline-none transition-all focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
                 />
               </div>
-            </div>
 
-            {/* Campo Contraseña */}
-            <div className="form-field">
-              <label className="form-field__label uppercase text-xs font-semibold tracking-wide">
-                Contraseña
-              </label>
-              <div className="relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="password"
+                    className="block text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500"
                   >
-                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    className="text-[0.72rem] font-semibold text-primary-500 transition-colors hover:text-primary-700"
+                  >
+                    Forgot password?
+                  </button>
                 </div>
-                <Input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  required
-                  className="pl-10 pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 transition-colors"
-                >
-                  {showPassword ? (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-                      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-                      <line x1="2" x2="22" y1="2" y2="22" />
-                    </svg>
-                  ) : (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
 
-            {/* Recordarme + Olvidaste contraseña */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
+                <div className="relative">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={form.password}
+                    onChange={handleChange}
+                    placeholder="••••••••"
+                    required
+                    className="h-12 w-full rounded-xl border border-surface-200 bg-white px-4 pr-12 text-sm text-surface-900 outline-none transition-all focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-surface-500 hover:text-surface-800"
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
                 <input
+                  id="remember"
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-surface-300 text-primary-500 focus:ring-primary-500"
+                  className="h-4 w-4 rounded border-surface-300 text-primary-500 focus:ring-primary-500"
                 />
-                <span className="text-sm text-surface-600">Recordarme</span>
-              </label>
-              <a href="#" className="text-sm text-primary-500 hover:text-primary-600 font-medium">
-                ¿Olvidaste tu contraseña?
-              </a>
-            </div>
-
-            {/* Error */}
-            {error && (
-              <div className="bg-danger/10 border border-danger text-danger px-4 py-3 rounded-lg text-sm">
-                {error}
+                <label htmlFor="remember" className="text-sm font-medium text-surface-700">
+                  Recordarme en este dispositivo
+                </label>
               </div>
-            )}
 
-            {/* Botón Login */}
-            <Button type="submit" disabled={loading} className="w-full py-3 text-base font-semibold">
-              {loading ? (
-                <Spinner size="sm" className="mx-auto" />
-              ) : (
-                <span className="flex items-center justify-center gap-2">
-                  Iniciar Sesión
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M5 12h14" />
-                    <path d="m12 5 7 7-7 7" />
-                  </svg>
-                </span>
+              {error && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {error}
+                </div>
               )}
-            </Button>
 
-            {/* Solicitar acceso */}
-            <div className="text-center">
-              <a
-                href="#"
-                className="text-sm text-surface-600 hover:text-primary-500 font-medium transition-colors"
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex h-12 w-full items-center justify-center rounded-xl bg-[linear-gradient(135deg,#163d70_0%,#0b4ea2_100%)] text-sm font-bold uppercase tracking-[0.12em] text-white shadow-[0_20px_40px_-24px_rgba(11,78,162,0.75)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_48px_-24px_rgba(11,78,162,0.85)] disabled:translate-y-0"
               >
-                ¿No tienes acceso? → Solicitar acceso corporativo
-              </a>
-            </div>
-          </form>
+                {loading ? <Spinner size="sm" className="mx-auto" /> : 'Sign in to dashboard'}
+              </button>
+            </form>
 
-          {/* Footer */}
-          <div className="login-page__footer mt-10 pt-6 border-t border-surface-200 text-center">
-            <p className="text-xs text-surface-400">
-              © 2026 LogisticaSPA Inc. ·{' '}
-              <a href="#" className="hover:text-primary-500 transition-colors">Privacidad</a>
-              {' · '}
-              <a href="#" className="hover:text-primary-500 transition-colors">Soporte</a>
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* ========================================
-          COLUMNA DERECHA - Panel Decorativo
-      ======================================== */}
-      <div className="login-page__decorative-panel hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-primary-50 via-primary-100 to-primary-200 relative overflow-hidden">
-        {/* Patrón de fondo */}
-        <div className="absolute inset-0 opacity-10">
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23137fec' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            }}
-          />
-        </div>
-
-        {/* Contenido superior */}
-        <div className="relative z-10">
-          {/* Barra de navegador simulada */}
-          <div className="login-page__browser-bar bg-white/80 backdrop-blur-sm rounded-xl p-3 mb-8 shadow-sm">
-            <div className="flex items-center gap-2">
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-danger" />
-                <div className="w-3 h-3 rounded-full bg-warning" />
-                <div className="w-3 h-3 rounded-full bg-success" />
-              </div>
-              <div className="flex-1 bg-surface-100 rounded-lg px-3 py-1.5 text-xs text-surface-400">
-                logistica-spa.com/dashboard
-              </div>
+            <div className="mt-8 border-t border-surface-100 pt-6 text-center">
+              <p className="text-sm text-surface-500">No tienes acceso todavia?</p>
+              <button
+                type="button"
+                className="mt-3 text-sm font-bold uppercase tracking-[0.12em] text-primary-600 transition-colors hover:text-primary-800"
+              >
+                Solicitar acceso
+              </button>
             </div>
           </div>
-
-          {/* Ilustración principal */}
-          <div className="login-page__illustration bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg mb-8">
-            <div className="text-center mb-6">
-              <div className="text-6xl mb-4">🌍</div>
-              <h3 className="text-xl font-bold text-surface-900">Logística Global</h3>
-              <p className="text-surface-500 text-sm mt-1">
-                Conectando tu cadena de suministro en tiempo real
-              </p>
-            </div>
-
-            {/* Stats en vivo */}
-            <div className="login-page__live-stats space-y-3">
-              <div className="bg-primary-500 text-white rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">📊</span>
-                  <span className="text-sm font-semibold">Tiempo Real</span>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-2xl font-bold">1,284</p>
-                    <p className="text-xs text-primary-100">Entregas Hoy</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">98.2%</p>
-                    <p className="text-xs text-primary-100">Eficiencia</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Contenido inferior - Features */}
-        <div className="relative z-10 space-y-4">
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center text-success flex-shrink-0">
-                ✓
-              </div>
-              <div>
-                <h4 className="font-semibold text-surface-900 text-sm">Seguridad Enterprise</h4>
-                <p className="text-xs text-surface-500 mt-0.5">
-                  Autenticación JWT con encriptación de extremo a extremo
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-primary-500/10 rounded-lg flex items-center justify-center text-primary-500 flex-shrink-0">
-                ⚡
-              </div>
-              <div>
-                <h4 className="font-semibold text-surface-900 text-sm">Actualización en Vivo</h4>
-                <p className="text-xs text-surface-500 mt-0.5">
-                  Monitoreo de flota y paquetes en tiempo real
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center text-warning flex-shrink-0">
-                🤖
-              </div>
-              <div>
-                <h4 className="font-semibold text-surface-900 text-sm">Asistente IA</h4>
-                <p className="text-xs text-surface-500 mt-0.5">
-                  Consultas inteligentes sobre tu operación logística
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }

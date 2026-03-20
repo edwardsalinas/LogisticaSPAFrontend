@@ -1,25 +1,17 @@
-/**
- * InfoCard - Tarjeta de información con título e icono
- * @param {string} title - Título de la card
- * @param {React.ReactNode} icon - Icono o emoji
- * @param {React.ReactNode} children - Contenido de la card
- * @param {string} className - Clases adicionales
- */
-function InfoCard({ title, icon, children, className = '' }) {
+﻿function InfoCard({ title, icon: Icon, eyebrow = 'Detalle', children, className = '' }) {
   return (
-    <div className={`info-card bg-white rounded-lg shadow-sm p-5 ${className}`}>
-      <div className="flex items-center gap-3 mb-4">
-        <div className="info-card__icon w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center text-xl">
-          {icon}
+    <section className={`motion-card rounded-[1.35rem] sm:rounded-[1.5rem] border border-white/70 bg-white/88 p-4 sm:p-5 shadow-[0_22px_50px_-40px_rgba(15,23,42,0.28)] backdrop-blur-xl ${className}`}>
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+          {Icon ? <Icon size={18} strokeWidth={2.2} /> : null}
         </div>
-        <h3 className="info-card__title text-sm font-bold text-surface-900 uppercase tracking-wide">
-          {title}
-        </h3>
+        <div className="min-w-0">
+          <p className="text-[0.62rem] uppercase tracking-[0.2em] text-surface-500">{eyebrow}</p>
+          <h3 className="mt-1 font-display text-base sm:text-lg font-semibold tracking-[-0.03em] text-surface-950">{title}</h3>
+        </div>
       </div>
-      <div className="info-card__content">
-        {children}
-      </div>
-    </div>
+      <div>{children}</div>
+    </section>
   );
 }
 
