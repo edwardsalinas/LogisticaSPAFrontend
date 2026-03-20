@@ -7,6 +7,7 @@ const navItems = [
   { path: '/tracking', label: 'Tracking', icon: '📍' },
   { path: '/fleet', label: 'Flota', icon: '🚛' },
   { path: '/ai-chat', label: 'Asistente IA', icon: '🤖' },
+  { path: '/analytics', label: '📈 Reportes', icon: '📈' },
 ];
 
 function Sidebar() {

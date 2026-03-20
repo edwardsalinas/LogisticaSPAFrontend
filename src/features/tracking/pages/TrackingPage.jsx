@@ -1,21 +1,23 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '../../../components/atoms/Button';
 import Spinner from '../../../components/atoms/Spinner';
 import Modal from '../../../components/molecules/Modal';
 import TrackingForm from '../components/TrackingForm';
 import TrackingHistory from '../components/TrackingHistory';
-import api from '../../../services/api';
+import apiService from '../../../services/apiService';
 
 function TrackingPage() {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedPackageId, setSelectedPackageId] = useState(null);
+  const navigate = useNavigate();
 
   const fetchPackages = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/logistics/packages');
+      const res = await apiService.getPackages();
       setPackages(res.data || []);
     } catch (err) {
       console.error('Error cargando paquetes:', err);
@@ -42,7 +44,17 @@ function TrackingPage() {
           <h2 className="text-lg font-semibold text-surface-800">Registro de Trazabilidad</h2>
           <p className="text-sm text-surface-400 mt-1">Registra y consulta eventos de seguimiento de paquetes</p>
         </div>
-        <Button onClick={() => setShowForm(true)}>+ Registrar Evento</Button>
+        <div className="flex gap-2">
+          {selectedPackageId && (
+            <Button
+              variant="primary"
+              onClick={() => navigate(`/tracking/${selectedPackageId}/map`)}
+            >
+              🗺️ Ver en Mapa
+            </Button>
+          )}
+          <Button onClick={() => setShowForm(true)}>+ Registrar Evento</Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

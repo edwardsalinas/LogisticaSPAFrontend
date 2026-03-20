@@ -1,3 +1,6 @@
+/* Google Fonts - Inter */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 @import "tailwindcss";
 
 @theme {
@@ -38,10 +41,43 @@
 
 @layer base {
   body {
-    font-family: var(--font-sans);
+    font-family: 'Inter', var(--font-sans);
     background-color: var(--color-surface-50);
     color: var(--color-surface-900);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+}
+
+/* ==============================
+   Animaciones para notificaciones
+   ============================== */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* ==============================
@@ -315,3 +351,503 @@
   justify-content: flex-end;
   gap: 0.75rem;
 }
+
+/* ===================================
+   Componentes Nuevos - FASE 1
+   =================================== */
+
+/* Avatar */
+.avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.avatar--sm {
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.75rem;
+}
+
+.avatar--lg {
+  width: 3rem;
+  height: 3rem;
+  font-size: 1rem;
+}
+
+/* ProgressBar */
+.progress-bar {
+  width: 100%;
+  height: 0.5rem;
+  background-color: var(--color-surface-100);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.progress-bar__fill {
+  height: 100%;
+  background-color: var(--color-primary-500);
+  border-radius: var(--radius-sm);
+  transition: width 0.5s ease;
+}
+
+.progress-bar__fill--success {
+  background-color: var(--color-success);
+}
+
+.progress-bar__fill--warning {
+  background-color: var(--color-warning);
+}
+
+.progress-bar__fill--danger {
+  background-color: var(--color-danger);
+}
+
+/* SearchInput */
+.search-input__field {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-input__field:focus {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+.search-input__icon {
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* StatCard mejorado */
+.stat-card {
+  background-color: white;
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card--interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card__icon {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.stat-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-card__label {
+  font-size: 0.875rem;
+  color: var(--color-surface-500);
+  font-weight: 500;
+}
+
+.stat-card__value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--color-surface-900);
+  line-height: 1.2;
+}
+
+.stat-card__footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.stat-card__trend {
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.stat-card__trend--up {
+  color: var(--color-success);
+}
+
+.stat-card__trend--down {
+  color: var(--color-danger);
+}
+
+.stat-card__trend-label {
+  font-size: 0.75rem;
+  color: var(--color-surface-400);
+}
+
+/* ===================================
+   LoginPage - FASE 2
+   =================================== */
+
+.login-page__form-container {
+  transition: all 0.3s ease;
+}
+
+.login-page__logo {
+  transition: transform 0.2s ease;
+}
+
+.login-page__logo:hover {
+  transform: scale(1.02);
+}
+
+.login-page__decorative-panel {
+  position: relative;
+}
+
+.login-page__browser-bar {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-page__browser-bar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.login-page__illustration {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-page__illustration:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.login-page__live-stats {
+  animation: fade-in 0.5s ease-out;
+}
+
+.login-page__footer a {
+  text-decoration: none;
+}
+
+.login-page__footer a:hover {
+  text-decoration: underline;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===================================
+   RouteCard - FASE 4
+   =================================== */
+
+.route-card {
+  transition: all 0.2s ease;
+}
+
+.route-card--default {
+  border: 2px solid transparent;
+}
+
+.route-card--default:hover {
+  border-color: var(--color-surface-200);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.route-card--selected {
+  border-color: var(--color-primary-500);
+  background-color: var(--color-primary-50);
+}
+
+/* ===================================
+   RouteInfoPanel - FASE 4
+   =================================== */
+
+.route-info-panel {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+/* ===================================
+   MapLegend - FASE 4
+   =================================== */
+
+.map-legend {
+  backdrop-filter: blur(8px);
+}
+
+/* ===================================
+   InfoCard - FASE 5
+   =================================== */
+
+.info-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.info-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.info-card__icon {
+  flex-shrink: 0;
+}
+
+.info-card__title {
+  letter-spacing: 0.05em;
+}
+
+/* ===================================
+   StatusTimeline - FASE 5
+   =================================== */
+
+.status-timeline__container {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+}
+
+.status-timeline__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+}
+
+.status-timeline__line {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  width: 100%;
+  height: 3px;
+  background-color: var(--color-surface-200);
+  z-index: 0;
+}
+
+.status-timeline__line--completed {
+  background-color: var(--color-success);
+}
+
+.status-timeline__dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid var(--color-surface-200);
+  background-color: white;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.status-timeline__dot--completed {
+  background-color: var(--color-success);
+  border-color: var(--color-success);
+  color: white;
+}
+
+.status-timeline__dot--active {
+  border-color: var(--color-primary-500);
+}
+
+.status-timeline__dot--pending {
+  background-color: var(--color-surface-100);
+}
+
+.status-timeline__dot--pulse {
+  width: 8px;
+  height: 8px;
+  background-color: var(--color-primary-500);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.status-timeline__info {
+  margin-top: 0.75rem;
+  text-align: center;
+}
+
+.status-timeline__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-surface-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-timeline__label--active {
+  color: var(--color-primary-600);
+  font-weight: 700;
+}
+
+.status-timeline__date {
+  font-size: 0.7rem;
+  color: var(--color-surface-400);
+  margin-top: 0.25rem;
+}
+
+.status-timeline__location {
+  font-size: 0.65rem;
+  color: var(--color-surface-400);
+  margin-top: 0.125rem;
+}
+
+/* Responsive para timeline */
+@media (max-width: 768px) {
+  .status-timeline__container {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-left: 1rem;
+  }
+
+  .status-timeline__step {
+    flex-direction: row;
+    align-items: flex-start;
+    width: 100%;
+    margin-bottom: 1.5rem;
+  }
+
+  .status-timeline__line {
+    top: 12px;
+    left: 12px;
+    width: 3px;
+    height: 100%;
+  }
+
+  .status-timeline__info {
+    margin-left: 1rem;
+    margin-top: 0;
+    text-align: left;
+  }
+}
+
+/* ===================================
+   Pagination - FASE 6
+   =================================== */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pagination__btn {
+  transition: all 0.2s ease;
+}
+
+.pagination__btn:hover:not(:disabled) {
+  background-color: var(--color-surface-100);
+}
+
+.pagination__btn--page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===================================
+   ActionMenu - FASE 6
+   =================================== */
+
+.action-menu {
+  position: relative;
+}
+
+.action-menu__trigger {
+  transition: all 0.2s ease;
+}
+
+.action-menu__trigger:hover {
+  background-color: var(--color-surface-100);
+}
+
+.action-menu__dropdown {
+  animation: fade-in 0.2s ease-out;
+}
+
+.action-menu__option {
+  transition: all 0.2s ease;
+}
+
+.action-menu__option:hover {
+  background-color: var(--color-surface-50);
+}
+
+.action-menu__option-icon {
+  flex-shrink: 0;
+}
+
+.action-menu__option-label {
+  flex: 1;
+  text-align: left;
+}
+
+/* ===================================
+   DateRangePicker - FASE 8
+   =================================== */
+
+.date-range-picker__input {
+  transition: all 0.2s ease;
+}
+
+.date-range-picker__input:focus {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+/* ===================================
+   TrendChart - FASE 8
+   =================================== */
+
+.trend-chart .recharts-cartesian-grid-horizontal line,
+.trend-chart .recharts-cartesian-grid-vertical line {
+  stroke: #e2e8f0;
+}
+
+.trend-chart .recharts-text {
+  font-family: 'Inter', sans-serif;
+}
+
+/* ===================================
+   DelayReasonsChart - FASE 8
+   =================================== */
+
+.delay-reasons-chart .recharts-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+}
+
+/* ===================================
+   DriversRankingTable - FASE 8
+   =================================== */
+
+.drivers-ranking-table__row {
+  transition: all 0.2s ease;
+}
+
+.drivers-ranking-table__row:hover {
+  background-color: var(--color-surface-50);
+}
+
