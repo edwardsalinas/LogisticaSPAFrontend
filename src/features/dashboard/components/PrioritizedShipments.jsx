@@ -1,0 +1,90 @@
+import { Boxes, MoveRight } from 'lucide-react';
+import Avatar from '../../../components/atoms/Avatar';
+import Badge from '../../../components/atoms/Badge';
+import ProgressBar from '../../../components/atoms/ProgressBar';
+
+const MOCK_SHIPMENTS = [
+  { id: '#LOG-7842', destination: 'La Paz -> Oruro', operator: { name: 'Juan Perez', initials: 'JP' }, status: 'in_transit', progress: 65, eta: '14:30' },
+  { id: '#LOG-7843', destination: 'Santa Cruz -> Cochabamba', operator: { name: 'Maria Lopez', initials: 'ML' }, status: 'delivered', progress: 100, eta: 'Entregado' },
+  { id: '#LOG-7844', destination: 'Sucre -> Potosi', operator: { name: 'Carlos Ruiz', initials: 'CR' }, status: 'pending', progress: 15, eta: '17:10' },
+  { id: '#LOG-7845', destination: 'Tarija -> Santa Cruz', operator: { name: 'Ana Flores', initials: 'AF' }, status: 'in_transit', progress: 45, eta: '15:05' },
+  { id: '#LOG-7846', destination: 'Oruro -> La Paz', operator: { name: 'Luis Garcia', initials: 'LG' }, status: 'delayed', progress: 30, eta: '16:40' },
+];
+
+const STATUS_MAP = {
+  pending: { label: 'Pendiente', variant: 'warning' },
+  in_transit: { label: 'En ruta', variant: 'info' },
+  delivered: { label: 'Entregado', variant: 'success' },
+  delayed: { label: 'Retraso', variant: 'danger' },
+};
+
+export default function PrioritizedShipments() {
+  return (
+    <article className="overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/85 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.32)] backdrop-blur-xl">
+      <div className="flex flex-col gap-4 border-b border-surface-100 px-6 py-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-surface-500">Despachos prioritarios</p>
+          <h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Lectura rapida de lo que requiere seguimiento hoy.</h2>
+        </div>
+        <button className="inline-flex items-center gap-2 text-sm font-semibold text-primary-700 transition-colors hover:text-primary-800">
+          Ver operacion completa<MoveRight size={16} strokeWidth={2.2} />
+        </button>
+      </div>
+      <div className="overflow-x-auto px-2 pb-2 sm:px-4 sm:pb-4">
+        <table className="w-full border-separate border-spacing-y-3">
+          <thead>
+            <tr>
+              <th className="px-4 py-3 text-left text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500">Despacho</th>
+              <th className="px-4 py-3 text-left text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500">Destino</th>
+              <th className="px-4 py-3 text-left text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500">Operador</th>
+              <th className="px-4 py-3 text-left text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500">Estado</th>
+              <th className="px-4 py-3 text-left text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500">ETA</th>
+              <th className="px-4 py-3 text-left text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500">Progreso</th>
+            </tr>
+          </thead>
+          <tbody>
+            {MOCK_SHIPMENTS.map((shipment) => {
+              const statusConfig = STATUS_MAP[shipment.status] || { label: shipment.status, variant: 'neutral' };
+              const progressTone = shipment.progress === 100 ? 'success' : shipment.progress >= 50 ? 'primary' : 'warning';
+              
+              return (
+                <tr key={shipment.id} className="rounded-[1.35rem] bg-surface-50/75 shadow-[0_10px_35px_-30px_rgba(15,23,42,0.4)]">
+                  <td className="rounded-l-[1.2rem] px-4 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+                        <Boxes size={18} strokeWidth={2.1} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-surface-900">{shipment.id}</p>
+                        <p className="text-xs text-surface-500">Despacho priorizado</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 text-sm text-surface-700">{shipment.destination}</td>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar name={shipment.operator.name} size="sm" className="ring-2 ring-white" />
+                      <div>
+                        <p className="text-sm font-semibold text-surface-800">{shipment.operator.name}</p>
+                        <p className="text-xs text-surface-500">Operador asignado</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
+                  </td>
+                  <td className="px-4 py-4 text-sm font-medium text-surface-700">{shipment.eta}</td>
+                  <td className="rounded-r-[1.2rem] px-4 py-4">
+                    <div className="w-36">
+                      <ProgressBar value={shipment.progress} size="sm" variant={progressTone} showLabel />
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  );
+}

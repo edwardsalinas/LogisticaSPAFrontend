@@ -1,6 +1,5 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  ArrowUpRight,
   Eye,
   Pencil,
   Power,
@@ -17,11 +16,12 @@ import SearchInput from '../../../components/atoms/SearchInput';
 import ActionMenu from '../../../components/molecules/ActionMenu';
 import Modal from '../../../components/molecules/Modal';
 import Pagination from '../../../components/molecules/Pagination';
-import StatCard from '../../../components/molecules/StatCard';
+
 import DataTable from '../../../components/organisms/DataTable';
 import PageSkeleton from '../../../components/organisms/PageSkeleton';
 import { heroImages } from '../../../constants/heroImages';
 import apiService from '../../../services/apiService';
+import FleetHero from '../components/FleetHero';
 import DriverForm from '../components/DriverForm';
 import VehicleForm from '../components/VehicleForm';
 const MOCK_VEHICLES = [
@@ -152,31 +152,7 @@ function FleetPage() {
 
   return (
     <div className="space-y-8">
-      <section className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-[linear-gradient(135deg,#06111f_0%,#0b1d34_35%,#f8fbff_100%)] p-7 shadow-[0_28px_80px_-48px_rgba(2,36,72,0.7)] sm:p-8">
-        <div className="absolute inset-0">
-          <img src={heroImages.fleet.url} alt={heroImages.fleet.alt} className="h-full w-full object-cover object-center" />
-          <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(6,17,31,0.94)_0%,rgba(11,29,52,0.84)_38%,rgba(11,29,52,0.34)_100%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.18),transparent_34%)]" />
-        </div>
-        <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.95fr)] lg:items-end">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-sky-100/85 backdrop-blur"><Truck size={14} strokeWidth={2.2} />Fleet control</div>
-            <h1 className="mt-5 max-w-3xl font-display text-[clamp(2.1rem,5vw,4rem)] font-semibold tracking-[-0.06em] text-white">Gestion de flota con lectura clara de disponibilidad, mantenimiento y equipo.</h1>
-            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Priorizamos estado operativo, capacidad y asignacion de conductores en una sola vista para que el equipo responda mas rapido.</p>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-            {activeTab === 'vehicles' ? <Button size="lg" onClick={() => setShowVehicleForm(true)}>+ Agregar vehiculo</Button> : <Button size="lg" onClick={() => setShowDriverForm(true)}>+ Registrar conductor</Button>}
-            <div className="rounded-[1.4rem] border border-white/10 bg-white/7 p-4 text-white backdrop-blur-sm"><p className="text-[0.64rem] uppercase tracking-[0.18em] text-slate-300">Disponibilidad total</p><div className="mt-2 flex items-center gap-2"><span className="font-display text-3xl font-semibold tracking-[-0.05em]">{availability}%</span><ArrowUpRight size={18} className="text-sky-300" strokeWidth={2.2} /></div></div>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid grid-cols-1 gap-5 xl:grid-cols-4">
-        <StatCard label="Vehiculos registrados" value={vehicles.length} icon={Truck} change={6.4} changeLabel="vs mes pasado" caption="Base total disponible en la red actual." tone="blue" />
-        <StatCard label="Disponibilidad real" value={`${availability}%`} icon={ShieldCheck} change={4.1} changeLabel="vs corte previo" caption="Unidades listas para reasignacion inmediata." tone="emerald" />
-        <StatCard label="En mantenimiento" value={maintenanceVehicles} icon={Wrench} change={-3.5} changeLabel="vs corte previo" caption="Unidades con revision preventiva o correctiva." tone="amber" />
-        <StatCard label="Conductores" value={drivers.length} icon={UserRound} change={2.8} changeLabel="vs mes pasado" caption="Equipo habilitado para operacion en campo." tone="violet" />
-      </section>
+      <FleetHero vehiclesCount={vehicles.length} driversCount={drivers.length} availability={availability} maintenanceCount={maintenanceVehicles} />
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.82fr)]">
         <div className="rounded-[1.8rem] border border-white/70 bg-white/88 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
@@ -185,6 +161,7 @@ function FleetPage() {
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
               <div className="rounded-2xl bg-surface-100 p-1"><button onClick={() => { setActiveTab('vehicles'); setCurrentPage(1); }} className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all ${activeTab === 'vehicles' ? 'bg-white text-primary-700 shadow-sm' : 'text-surface-500'}`}>Vehiculos</button><button onClick={() => { setActiveTab('drivers'); setCurrentPage(1); }} className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all ${activeTab === 'drivers' ? 'bg-white text-primary-700 shadow-sm' : 'text-surface-500'}`}>Conductores</button></div>
               <div className="w-full lg:w-80"><SearchInput value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder={`Buscar ${activeTab === 'vehicles' ? 'vehiculo, placa o marca' : 'conductor, email o licencia'}`} /></div>
+              {activeTab === 'vehicles' ? <Button size="md" onClick={() => setShowVehicleForm(true)}>+ Agregar vehiculo</Button> : <Button size="md" onClick={() => setShowDriverForm(true)}>+ Registrar conductor</Button>}
             </div>
           </div>
           <div className="px-6 pt-5"><p className="text-sm text-surface-500">Mostrando {activeTab === 'vehicles' ? filteredVehicles.length : filteredDrivers.length} registros en la vista actual.</p></div>

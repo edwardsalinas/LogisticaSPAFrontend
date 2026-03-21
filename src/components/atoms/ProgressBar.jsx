@@ -24,9 +24,9 @@ function ProgressBar({ value = 0, size = 'md', variant = 'primary', showLabel = 
 
   return (
     <div className="w-full">
-      <div className={`progress-bar ${sizeClasses[size]}`}>
+      <div className={`w-full bg-surface-100 rounded-sm overflow-hidden ${sizeClasses[size]}`}>
         <div
-          className={`progress-bar__fill ${variantClasses[variant]}`}
+          className={`h-full rounded-sm transition-all duration-500 ease-out ${variantClasses[variant]}`}
           style={{ width: `${normalizedValue}%` }}
         />
       </div>

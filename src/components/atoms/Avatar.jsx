@@ -48,7 +48,7 @@ function Avatar({ name = '', src = null, size = 'md', className = '' }) {
       <img
         src={src}
         alt={name}
-        className={`avatar rounded-full object-cover ${sizeClasses[size]} ${className}`}
+        className={`shrink-0 rounded-full object-cover ${sizeClasses[size]} ${className}`}
       />
     );
   }
@@ -56,7 +56,7 @@ function Avatar({ name = '', src = null, size = 'md', className = '' }) {
   // Si no, usar iniciales con color
   return (
     <div
-      className={`avatar ${sizeClasses[size]} ${getColor(name)} text-white font-semibold rounded-full inline-flex items-center justify-center ${className}`}
+      className={`shrink-0 ${sizeClasses[size]} ${getColor(name)} text-white font-semibold rounded-full inline-flex items-center justify-center ${className}`}
     >
       {getInitials(name)}
     </div>

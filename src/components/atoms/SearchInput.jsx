@@ -1,4 +1,4 @@
-﻿import { Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useId } from 'react';
 
 function SearchInput({
@@ -22,7 +22,7 @@ function SearchInput({
         id={inputId}
         name={name}
         type="search"
-        className="search-input__field w-full border border-surface-200 bg-white/88 pl-11 pr-4 text-sm text-surface-900 outline-none backdrop-blur-sm disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full min-h-12 rounded-2xl border border-surface-200 bg-white/90 pl-11 pr-4 text-sm text-surface-900 outline-none backdrop-blur-sm transition-all duration-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 disabled:cursor-not-allowed disabled:opacity-50"
         placeholder={placeholder}
         value={value}
         onChange={onChange}

@@ -1,4 +1,4 @@
-﻿import { ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { useId } from 'react';
 
 function Select({
@@ -19,9 +19,9 @@ function Select({
   const describedBy = [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ') || undefined;
 
   return (
-    <div className="form-field">
+    <div className="flex flex-col gap-1.5">
       {label && (
-        <label htmlFor={selectId} className="form-field__label">
+        <label htmlFor={selectId} className="text-sm font-medium text-surface-700">
           {label} {required && <span className="text-danger" aria-hidden="true">*</span>}
         </label>
       )}
@@ -35,7 +35,7 @@ function Select({
           aria-required={required}
           aria-invalid={!!error}
           aria-describedby={describedBy}
-          className="form-field__input appearance-none pr-11"
+          className="w-full min-h-12 appearance-none rounded-[14px] border border-surface-200 bg-white px-3.5 py-3 pr-11 text-sm text-surface-900 outline-none transition-all duration-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10"
         >
           {placeholder && <option value="">{placeholder}</option>}
           {options.map((opt) => (
@@ -49,7 +49,7 @@ function Select({
         </div>
       </div>
       {hint && <span id={hintId} className="text-xs text-surface-500">{hint}</span>}
-      {error && <span id={errorId} className="form-field__error" role="alert">{error}</span>}
+      {error && <span id={errorId} className="text-xs text-danger" role="alert">{error}</span>}
     </div>
   );
 }

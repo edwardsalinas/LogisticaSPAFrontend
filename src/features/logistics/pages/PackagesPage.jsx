@@ -5,7 +5,6 @@ import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
 import SearchInput from '../../../components/atoms/SearchInput';
 import Modal from '../../../components/molecules/Modal';
-import StatCard from '../../../components/molecules/StatCard';
 import DataTable from '../../../components/organisms/DataTable';
 import PageSkeleton from '../../../components/organisms/PageSkeleton';
 import { heroImages } from '../../../constants/heroImages';
@@ -106,20 +105,33 @@ function PackagesPage() {
             <h1 className="mt-5 max-w-3xl font-display text-[clamp(2.1rem,5vw,4rem)] font-semibold tracking-[-0.06em] text-white">Inventario de paquetes con lectura clara de flujo, estado y trazabilidad.</h1>
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Concentramos registro, consulta y detalle operativo en una sola vista para que el equipo encuentre rapido lo que necesita.</p>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-            {hasRole(['admin', 'logistics_operator']) && (
-              <Button size="lg" onClick={() => setShowForm(true)}>+ Nuevo paquete</Button>
-            )}
-            <div className="rounded-[1.4rem] border border-white/10 bg-white/7 p-4 text-white backdrop-blur-sm"><p className="text-[0.64rem] uppercase tracking-[0.18em] text-slate-300">Volumen visible</p><div className="mt-2 flex items-center gap-2"><span className="font-display text-3xl font-semibold tracking-[-0.05em]">{filteredPackages.length}</span><Search size={18} className="text-sky-300" strokeWidth={2.2} /></div></div>
+          <div className="flex flex-col gap-3 lg:gap-4">
+            <div className="rounded-[1.7rem] border border-white/10 bg-white/6 p-3 backdrop-blur-xl">
+              <div className="grid grid-cols-4 gap-2.5">
+                <div className="rounded-[1.35rem] border border-white/10 bg-white/8 p-4 text-white">
+                  <Boxes size={18} className="text-sky-300" strokeWidth={2.2} />
+                  <p className="mt-2 text-[0.6rem] uppercase tracking-[0.18em] text-slate-300">Total paquetes</p>
+                  <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.05em]">{totalPackages}</p>
+                </div>
+                <div className="rounded-[1.35rem] border border-white/10 bg-white/8 p-4 text-white">
+                  <PackageCheck size={18} className="text-emerald-300" strokeWidth={2.2} />
+                  <p className="mt-2 text-[0.6rem] uppercase tracking-[0.18em] text-slate-300">Entregados</p>
+                  <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.05em]">{delivered}</p>
+                </div>
+                <div className="rounded-[1.35rem] border border-white/10 bg-white/8 p-4 text-white">
+                  <Truck size={18} className="text-amber-300" strokeWidth={2.2} />
+                  <p className="mt-2 text-[0.6rem] uppercase tracking-[0.18em] text-slate-300">En transito</p>
+                  <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.05em]">{inTransit}</p>
+                </div>
+                <div className="rounded-[1.35rem] border border-white/10 bg-white/8 p-4 text-white">
+                  <MapPinned size={18} className="text-violet-300" strokeWidth={2.2} />
+                  <p className="mt-2 text-[0.6rem] uppercase tracking-[0.18em] text-slate-300">Pendientes</p>
+                  <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.05em]">{pending}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </section>
-
-      <section className="grid grid-cols-1 gap-5 xl:grid-cols-4">
-        <StatCard label="Total paquetes" value={totalPackages} icon={Boxes} change={9.1} changeLabel="vs ayer" caption="Base total registrada en operacion." tone="blue" />
-        <StatCard label="Entregados" value={delivered} icon={PackageCheck} change={6.7} changeLabel="vs ayer" caption="Despachos cerrados correctamente." tone="emerald" />
-        <StatCard label="En transito" value={inTransit} icon={Truck} change={3.2} changeLabel="vs ayer" caption="Paquetes actualmente en movimiento." tone="amber" />
-        <StatCard label="Pendientes" value={pending} icon={MapPinned} change={-4.5} changeLabel="vs ayer" caption="Items listos para asignacion o salida." tone="violet" />
       </section>
 
       <section className="rounded-[1.8rem] border border-white/70 bg-white/88 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
