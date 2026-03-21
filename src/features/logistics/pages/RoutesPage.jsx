@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MapPinned, Route, Search, Truck } from 'lucide-react';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
@@ -11,12 +11,15 @@ import Modal from '../../../components/molecules/Modal';
 import RoutePath from '../../../components/molecules/RoutePath';
 import StatCard from '../../../components/molecules/StatCard';
 import VehicleMarker from '../../../components/molecules/VehicleMarker';
+import OriginDestMarker from '../../../components/molecules/OriginDestMarker';
 import PageSkeleton from '../../../components/organisms/PageSkeleton';
 import { heroImages } from '../../../constants/heroImages';
 import apiService from '../../../services/apiService';
 import RouteCard from '../components/RouteCard';
 import RouteForm from '../components/RouteForm';
 import RouteInfoPanel from '../components/RouteInfoPanel';
+import PackageAssignmentForm from '../components/PackageAssignmentForm';
+import useRole from '../../../app/useRole';
 
 const MOCK_ROUTES = [
   { id: 'route-001', route_code: 'RT-001', origin: 'La Paz', destination: 'Oruro', driver_name: 'Juan Perez', vehicle_brand: 'Volvo', plate_number: 'INT-1234', status: 'active', progress: 65, next_checkpoint: 'Centro Logistico El Alto', eta: '14:30', eta_minutes: 25, remaining_distance: 45.2, driver_phone: '+591 70012345', checkpoints: [{ id: 'cp-001', name: 'Terminal La Paz', lat: -16.5, lng: -68.1193, sequence_order: 1 }, { id: 'cp-002', name: 'Checkpoint El Alto', lat: -16.51, lng: -68.15, sequence_order: 2 }, { id: 'cp-003', name: 'Puesto Viacha', lat: -16.65, lng: -68.31, sequence_order: 3 }, { id: 'cp-004', name: 'Terminal Oruro', lat: -17.9833, lng: -67.15, sequence_order: 4 }], vehicle_position: { lat: -16.58, lng: -68.25 } },
@@ -25,10 +28,15 @@ const MOCK_ROUTES = [
 ];
 
 function RoutesPage() {
+  const { hasRole } = useRole();
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingRoute, setEditingRoute] = useState(null);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assigningRoute, setAssigningRoute] = useState(null);
   const [selectedRoute, setSelectedRoute] = useState(null);
+  const [extendedSelectedRoute, setExtendedSelectedRoute] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const fetchRoutes = async () => {
@@ -51,6 +59,57 @@ function RoutesPage() {
     fetchRoutes();
   }, []);
 
+  useEffect(() => {
+    if (!selectedRoute?.id) {
+      setExtendedSelectedRoute(null);
+      return;
+    }
+    const fetchExtended = async () => {
+      try {
+        const res = await apiService.getRoute(selectedRoute.id);
+        if (res.data) setExtendedSelectedRoute(res.data);
+      } catch (e) {
+        console.error('Failed to fetch extended route data', e);
+        // Fallback to minimal data
+        setExtendedSelectedRoute(selectedRoute);
+      }
+    };
+    fetchExtended();
+  }, [selectedRoute?.id]);
+
+  const handleDelete = async (route) => {
+    if (window.confirm(`¿Estás seguro de que deseas eliminar la ruta ${route.route_code}? Se eliminarán también sus puntos de control asignados.`)) {
+      try {
+        await apiService.deleteRoute(route.id);
+        if (selectedRoute?.id === route.id) setSelectedRoute(null);
+        fetchRoutes();
+      } catch (err) {
+        alert(err.message || 'Error al eliminar la ruta. Puede que tenga paquetes en tránsito.');
+      }
+    }
+  };
+
+  const handleEdit = async (route) => {
+    if (route.checkpoints) {
+      setEditingRoute(route);
+      setShowForm(true);
+      return;
+    }
+    try {
+      const res = await apiService.getRoute(route.id);
+      setEditingRoute(res.data || route);
+    } catch (err) {
+      console.error('Error fetching full route for edit:', err);
+      setEditingRoute(route);
+    }
+    setShowForm(true);
+  };
+
+  const handleAssign = (route) => {
+    setAssigningRoute(route);
+    setShowAssignModal(true);
+  };
+
   const filteredRoutes = routes.filter((route) => route.route_code?.toLowerCase().includes(searchTerm.toLowerCase()) || route.driver_name?.toLowerCase().includes(searchTerm.toLowerCase()) || route.origin?.toLowerCase().includes(searchTerm.toLowerCase()) || route.destination?.toLowerCase().includes(searchTerm.toLowerCase()));
   const active = routes.filter((r) => r.status === 'active').length;
   const pending = routes.filter((r) => r.status === 'pending').length;
@@ -72,7 +131,12 @@ function RoutesPage() {
             <h1 className="mt-5 max-w-3xl font-display text-[clamp(2.1rem,5vw,4rem)] font-semibold tracking-[-0.06em] text-white">Rutas, checkpoints y vehiculos en una sola superficie de control.</h1>
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">El layout prioriza seleccion, contexto y mapa vivo para que cada ruta se entienda rapido sin perder detalle operativo.</p>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col"><Button size="lg" onClick={() => setShowForm(true)}>+ Nueva ruta</Button><div className="rounded-[1.4rem] border border-white/10 bg-white/7 p-4 text-white backdrop-blur-sm"><p className="text-[0.64rem] uppercase tracking-[0.18em] text-slate-300">Cobertura activa</p><div className="mt-2 flex items-center gap-2"><span className="font-display text-3xl font-semibold tracking-[-0.05em]">{active}</span><Truck size={18} className="text-sky-300" strokeWidth={2.2} /></div></div></div>
+          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+            {hasRole(['admin', 'logistics_operator']) && (
+              <Button size="lg" onClick={() => { setEditingRoute(null); setShowForm(true); }}>+ Nueva ruta</Button>
+            )}
+            <div className="rounded-[1.4rem] border border-white/10 bg-white/7 p-4 text-white backdrop-blur-sm"><p className="text-[0.64rem] uppercase tracking-[0.18em] text-slate-300">Cobertura activa</p><div className="mt-2 flex items-center gap-2"><span className="font-display text-3xl font-semibold tracking-[-0.05em]">{active}</span><Truck size={18} className="text-sky-300" strokeWidth={2.2} /></div></div>
+          </div>
         </div>
       </section>
 
@@ -94,7 +158,7 @@ function RoutesPage() {
           </div>
 
           <div className="max-h-[calc(100vh-18rem)] space-y-3 overflow-y-auto p-4">
-            {filteredRoutes.map((route) => <div key={route.id} className={`${selectedRoute?.id === route.id ? 'ring-2 ring-primary-200 ring-offset-2 ring-offset-white rounded-[1.35rem]' : ''}`}><RouteCard route={route} isSelected={selectedRoute?.id === route.id} onClick={() => setSelectedRoute(route)} /></div>)}
+            {filteredRoutes.map((route) => <div key={route.id} className={`${selectedRoute?.id === route.id ? 'ring-2 ring-primary-200 ring-offset-2 ring-offset-white rounded-[1.35rem]' : ''}`}><RouteCard route={route} isSelected={selectedRoute?.id === route.id} onClick={() => setSelectedRoute(route)} onEdit={() => handleEdit(route)} onDelete={() => handleDelete(route)} /></div>)}
             {filteredRoutes.length === 0 && (
               <EmptyState
                 eyebrow="Sin coincidencias"
@@ -107,17 +171,21 @@ function RoutesPage() {
         </div>
 
         <div className="relative min-h-[42rem] overflow-hidden rounded-[1.8rem] border border-white/60 bg-[linear-gradient(180deg,#eaf0f7_0%,#dfe8f2_100%)] shadow-[0_24px_70px_-42px_rgba(15,23,42,0.24)]">
-          {selectedRoute ? (
+          {extendedSelectedRoute ? (
             <>
               <div className="absolute inset-0">
-                <BaseMap center={[selectedRoute.vehicle_position?.lat || -16.5, selectedRoute.vehicle_position?.lng || -68.15]} zoom={9} className="h-full w-full">
-                  {selectedRoute.checkpoints && selectedRoute.checkpoints.length > 0 && (
-                    <>
-                      <RoutePath checkpoints={selectedRoute.checkpoints} />
-                      {selectedRoute.checkpoints.map((cp) => <CheckpointMarker key={cp.id} checkpoint={cp} />)}
-                    </>
+                <BaseMap center={[extendedSelectedRoute.vehicle_position?.lat || -16.5, extendedSelectedRoute.vehicle_position?.lng || -68.15]} zoom={9} className="h-full w-full">
+                  {extendedSelectedRoute && <RoutePath route={extendedSelectedRoute} />}
+                  
+                  {extendedSelectedRoute?.origin_lat && extendedSelectedRoute?.origin_lng && (
+                    <OriginDestMarker type="origin" position={[extendedSelectedRoute.origin_lat, extendedSelectedRoute.origin_lng]} title={extendedSelectedRoute.origin} subtitle="Punto de partida" />
                   )}
-                  {selectedRoute.vehicle_position && <VehicleMarker position={[selectedRoute.vehicle_position.lat, selectedRoute.vehicle_position.lng]} title={selectedRoute.route_code} subtitle={`${selectedRoute.driver_name} - ${selectedRoute.plate_number}`} />}
+                  {extendedSelectedRoute?.dest_lat && extendedSelectedRoute?.dest_lng && (
+                    <OriginDestMarker type="dest" position={[extendedSelectedRoute.dest_lat, extendedSelectedRoute.dest_lng]} title={extendedSelectedRoute.destination} subtitle="Meta final" />
+                  )}
+
+                  {extendedSelectedRoute.checkpoints?.map((cp) => <CheckpointMarker key={cp.id} checkpoint={cp} />)}
+                  {extendedSelectedRoute.vehicle_position && <VehicleMarker position={[extendedSelectedRoute.vehicle_position.lat, extendedSelectedRoute.vehicle_position.lng]} title={extendedSelectedRoute.route_code} subtitle={`${extendedSelectedRoute.driver_name} - ${extendedSelectedRoute.plate_number}`} />}
                 </BaseMap>
               </div>
               <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-[#0a1c34]/70 to-transparent" />
@@ -125,22 +193,28 @@ function RoutesPage() {
                 <div className="flex items-start justify-between p-6 text-white">
                   <div>
                     <p className="text-[0.64rem] uppercase tracking-[0.24em] text-sky-100/70">Ruta seleccionada</p>
-                    <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em]">{selectedRoute.origin} - {selectedRoute.destination}</h2>
-                    <p className="mt-2 text-sm text-white/72">{selectedRoute.route_code} - {selectedRoute.driver_name} - {selectedRoute.vehicle_brand} {selectedRoute.plate_number}</p>
+                    <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em]">{extendedSelectedRoute.origin} - {extendedSelectedRoute.destination}</h2>
+                    <p className="mt-2 text-sm text-white/72">{extendedSelectedRoute.route_code} - {extendedSelectedRoute.driver_name} - {extendedSelectedRoute.vehicle_brand} {extendedSelectedRoute.plate_number}</p>
                   </div>
-                  <Badge variant={selectedRoute.status === 'active' ? 'success' : selectedRoute.status === 'delayed' ? 'danger' : 'warning'} dot>{selectedRoute.status}</Badge>
+                  <Badge variant={extendedSelectedRoute.status === 'active' ? 'success' : extendedSelectedRoute.status === 'delayed' ? 'danger' : 'warning'} dot>{extendedSelectedRoute.status}</Badge>
                 </div>
                 <div className="pointer-events-none mt-auto flex flex-wrap items-end justify-between gap-4 p-6">
                   <div className="pointer-events-auto rounded-[1.5rem] border border-white/40 bg-white/80 p-4 shadow-xl backdrop-blur-xl">
                     <div className="flex gap-5">
-                      <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">Progreso</p><p className="mt-2 text-lg font-bold text-primary-700">{selectedRoute.progress || 0}%</p></div>
-                      <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">ETA</p><p className="mt-2 text-lg font-bold text-primary-700">{selectedRoute.eta || '--'}</p></div>
-                      <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">Distancia</p><p className="mt-2 text-lg font-bold text-primary-700">{selectedRoute.remaining_distance ? `${selectedRoute.remaining_distance} km` : '--'}</p></div>
+                      <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">Progreso</p><p className="mt-2 text-lg font-bold text-primary-700">{extendedSelectedRoute.progress || 0}%</p></div>
+                      <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">ETA</p><p className="mt-2 text-lg font-bold text-primary-700">{extendedSelectedRoute.eta || '--'}</p></div>
+                      <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">Distancia</p><p className="mt-2 text-lg font-bold text-primary-700">{extendedSelectedRoute.remaining_distance ? `${extendedSelectedRoute.remaining_distance} km` : '--'}</p></div>
                     </div>
                   </div>
                   <div className="pointer-events-auto"><MapLegend /></div>
                 </div>
-                <RouteInfoPanel route={selectedRoute} onClose={() => setSelectedRoute(null)} />
+                <RouteInfoPanel 
+                  route={extendedSelectedRoute} 
+                  onClose={() => setSelectedRoute(null)} 
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onAssign={handleAssign}
+                />
               </div>
             </>
           ) : (
@@ -154,7 +228,21 @@ function RoutesPage() {
         </div>
       </section>
 
-      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Crear ruta de transporte"><RouteForm onSuccess={() => { setShowForm(false); fetchRoutes(); }} onCancel={() => setShowForm(false)} /></Modal>
+      <Modal isOpen={showForm} onClose={() => { setShowForm(false); setEditingRoute(null); }} title={editingRoute ? 'Editar ruta de transporte' : 'Crear ruta de transporte'}>
+        <RouteForm 
+          initialData={editingRoute}
+          onSuccess={() => { setShowForm(false); setEditingRoute(null); fetchRoutes(); }} 
+          onCancel={() => { setShowForm(false); setEditingRoute(null); }} 
+        />
+      </Modal>
+
+      <Modal isOpen={showAssignModal} onClose={() => setShowAssignModal(false)} title="Asignar paquetes a ruta">
+        <PackageAssignmentForm
+          routeId={assigningRoute?.id}
+          onSuccess={() => { setShowAssignModal(false); setAssigningRoute(null); fetchRoutes(); }}
+          onCancel={() => setShowAssignModal(false)}
+        />
+      </Modal>
     </div>
   );
 }

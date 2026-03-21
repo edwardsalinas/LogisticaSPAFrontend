@@ -1,4 +1,4 @@
-﻿import {
+import {
   BarChart3,
   Crosshair,
   LayoutDashboard,
@@ -7,17 +7,23 @@
   Truck,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../../app/AuthContext';
+import useRole from '../../app/useRole';
 
 export const navItems = [
-  { path: '/', label: 'Dashboard', eyebrow: 'Resumen', icon: LayoutDashboard },
-  { path: '/logistics/packages', label: 'Paquetes', eyebrow: 'Operacion', icon: Package },
-  { path: '/logistics/routes', label: 'Rutas', eyebrow: 'Mapa vivo', icon: Map },
-  { path: '/tracking', label: 'Tracking', eyebrow: 'Seguimiento', icon: Crosshair },
-  { path: '/fleet', label: 'Flota', eyebrow: 'Unidades', icon: Truck },
-  { path: '/analytics', label: 'Reportes', eyebrow: 'Metricas', icon: BarChart3 },
+  { path: '/', label: 'Dashboard', eyebrow: 'Resumen', icon: LayoutDashboard, roles: ['admin'] },
+  { path: '/driver', label: 'Mi Viaje', eyebrow: 'Operacion', icon: Truck, roles: ['driver'] },
+  { path: '/logistics/packages', label: 'Paquetes', eyebrow: 'Operacion', icon: Package, roles: ['admin', 'logistics_operator', 'client'] },
+  { path: '/logistics/routes', label: 'Rutas', eyebrow: 'Mapa vivo', icon: Map, roles: ['admin', 'logistics_operator'] },
+  { path: '/tracking', label: 'Tracking', eyebrow: 'Seguimiento', icon: Crosshair, roles: ['admin', 'logistics_operator'] },
+  { path: '/fleet', label: 'Flota', eyebrow: 'Unidades', icon: Truck, roles: ['admin'] },
+  { path: '/analytics', label: 'Reportes', eyebrow: 'Metricas', icon: BarChart3, roles: ['admin'] },
 ];
 
 function Sidebar() {
+  const { user } = useAuth();
+  const { hasRole } = useRole();
+  const visibleNavItems = navItems.filter((item) => hasRole(item.roles));
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-[17rem] flex-col border-r border-white/6 bg-[#06111f] p-4 text-white shadow-[20px_0_60px_-40px_rgba(0,0,0,0.9)] lg:flex">
       <div className="rounded-[1.75rem] border border-white/7 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-5 motion-fade-in">
@@ -40,7 +46,7 @@ function Sidebar() {
       </div>
 
       <nav className="mt-5 flex-1 space-y-2 overflow-y-auto pr-1">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const Icon = item.icon;
 
           return (
@@ -83,20 +89,22 @@ function Sidebar() {
       </nav>
 
       <div className="space-y-3 border-t border-white/6 pt-4">
-        <button className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#0b4ea2_0%,#137fec_100%)] px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_-26px_rgba(19,127,236,0.75)] transition-all duration-250 hover:-translate-y-0.5 hover:shadow-[0_24px_50px_-26px_rgba(19,127,236,0.85)]">
-          <span className="text-base leading-none">+</span>
-          Nueva orden
-        </button>
+        {hasRole(['admin', 'logistics_operator']) && (
+          <button className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#0b4ea2_0%,#137fec_100%)] px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_-26px_rgba(19,127,236,0.75)] transition-all duration-250 hover:-translate-y-0.5 hover:shadow-[0_24px_50px_-26px_rgba(19,127,236,0.85)]">
+            <span className="text-base leading-none">+</span>
+            Nueva orden
+          </button>
+        )}
 
         <div className="rounded-2xl border border-white/7 bg-white/[0.03] p-3">
           <p className="text-[0.58rem] uppercase tracking-[0.24em] text-slate-500">Sesion activa</p>
           <div className="mt-3 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.08] text-sm font-bold text-white">
-              AR
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.08] text-sm font-bold uppercase text-white">
+              {user?.email?.substring(0, 2) || 'US'}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">Alex Rivera</p>
-              <p className="truncate text-xs text-slate-400">Fleet Supervisor</p>
+              <p className="truncate text-sm font-semibold text-white">{user?.email || 'Usuario'}</p>
+              <p className="truncate text-xs capitalize text-slate-400">{user?.user_metadata?.role || 'Invitado'}</p>
             </div>
           </div>
         </div>

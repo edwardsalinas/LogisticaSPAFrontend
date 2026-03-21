@@ -1,4 +1,4 @@
-﻿import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Activity, MapPinned, MoveLeft, PackageCheck, Printer, Route } from 'lucide-react';
 import Badge from '../../../components/atoms/Badge';
@@ -7,7 +7,7 @@ import StatCard from '../../../components/molecules/StatCard';
 import MapCanvasFallback from '../../../components/molecules/MapCanvasFallback';
 import PageSkeleton from '../../../components/organisms/PageSkeleton';
 import { heroImages } from '../../../constants/heroImages';
-import { mockApi } from '../../../services/api.mock';
+import apiService from '../../../services/apiService';
 const PackageTrackingMap = lazy(() => import('../components/PackageTrackingMap'));
 
 function PackageMapPage() {
@@ -20,7 +20,7 @@ function PackageMapPage() {
     const fetchMapData = async () => {
       setLoading(true);
       try {
-        const res = await mockApi.getMapData(packageId);
+        const res = await apiService.getMapData(packageId);
         setMapData(res.data);
       } catch (error) {
         console.error('Error cargando datos del mapa:', error);

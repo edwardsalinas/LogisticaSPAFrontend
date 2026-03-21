@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useMap } from 'react-leaflet';
 import CheckpointAlert from '../../../components/molecules/CheckpointAlert';
 import VehicleMarker from '../../../components/molecules/VehicleMarker';
-import { mockApi } from '../../../services/api.mock';
+import apiService from '../../../services/apiService';
 
 function LiveTracker({ packageId, routeId }) {
   const map = useMap();
@@ -19,7 +19,7 @@ function LiveTracker({ packageId, routeId }) {
 
     const fetchPosition = async () => {
       try {
-        const res = await mockApi.getTrackingLogs(packageId);
+        const res = await apiService.getTrackingLogs(packageId);
         const logs = res.data || [];
         if (!isMounted || logs.length === 0) return;
 
@@ -29,7 +29,7 @@ function LiveTracker({ packageId, routeId }) {
         setHistory(logs);
 
         if (routeId) {
-          const geofenceRes = await mockApi.checkGeofence({
+          const geofenceRes = await apiService.checkGeofence({
             lat: latestLog.lat,
             lng: latestLog.lng,
             package_id: packageId,

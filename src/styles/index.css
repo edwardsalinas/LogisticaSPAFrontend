@@ -1042,3 +1042,8 @@
   outline: 2px solid rgba(19, 127, 236, 0.9);
   outline-offset: 2px;
 }
+
+/* Ocultar el panel de instrucciones de leaflet-routing-machine completamente */
+.leaflet-routing-container {
+  display: none !important;
+}

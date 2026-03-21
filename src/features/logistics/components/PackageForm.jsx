@@ -3,34 +3,71 @@ import { useState, useEffect, useMemo } from 'react';
 import Button from '../../../components/atoms/Button';
 import Input from '../../../components/atoms/Input';
 import Select from '../../../components/atoms/Select';
+import Autocomplete from '../../../components/atoms/Autocomplete';
 import apiService from '../../../services/apiService';
 
 function PackageForm({ onSuccess, onCancel }) {
-  const [form, setForm] = useState({ origen: '', destino: '', peso: '', description: '' });
+  const [form, setForm] = useState({ sender_id: '', origen: '', destino: '', peso: '', description: '', route_id: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [cities, setCities] = useState([]);
+  
+  const [clients, setClients] = useState([]);
+  const [predefinedRoutes, setPredefinedRoutes] = useState([]);
+  const [activeRoutes, setActiveRoutes] = useState([]);
+  const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
-    const fetchCities = async () => {
+    const fetchData = async () => {
       try {
-        const res = await apiService.getPredefinedRoutes();
-        const routes = res.data || [];
-        const uniqueCities = new Set();
-        routes.forEach(r => {
-          uniqueCities.add(r.origin_city);
-          uniqueCities.add(r.destination_city);
-        });
-        setCities(Array.from(uniqueCities).sort());
+        const [prefRes, routesRes, clientsRes] = await Promise.all([
+          apiService.getPredefinedRoutes(),
+          apiService.getRoutes(),
+          apiService.getClients()
+        ]);
+        setPredefinedRoutes(prefRes.data || []);
+        setActiveRoutes(routesRes.data || []);
+        setClients(clientsRes.data || []);
       } catch (err) {
-        console.error("Error fetching cities for package form:", err);
+        console.error("Error fetching data for package form:", err);
+      } finally {
+        setLoadingData(false);
       }
     };
-    fetchCities();
+    fetchData();
   }, []);
 
+  const originCities = useMemo(() => {
+    return Array.from(new Set(activeRoutes.map(r => r.origin))).sort();
+  }, [activeRoutes]);
+
+  const validDestinations = useMemo(() => {
+    if (!form.origen) return [];
+    return Array.from(new Set(
+      activeRoutes.filter(r => r.origin === form.origen).map(r => r.destination)
+    )).sort();
+  }, [activeRoutes, form.origen]);
+
+  const validRoutes = useMemo(() => {
+    if (!form.origen || !form.destino) return [];
+    return activeRoutes.filter(r => r.origin === form.origen && r.destination === form.destino);
+  }, [activeRoutes, form.origen, form.destino]);
+
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    setForm(prev => {
+      const nextForm = { ...prev, [name]: value };
+      
+      // Cascading clear logic
+      if (name === 'origen') {
+        nextForm.destino = '';
+        nextForm.route_id = '';
+      } else if (name === 'destino') {
+        nextForm.route_id = '';
+      }
+      
+      return nextForm;
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -39,7 +76,11 @@ function PackageForm({ onSuccess, onCancel }) {
     setError('');
 
     try {
-      await apiService.post('/logistics/packages', { ...form, peso: parseFloat(form.peso) });
+      await apiService.post('/logistics/packages', { 
+        ...form, 
+        peso: parseFloat(form.peso),
+        route_id: form.route_id || null // Send raw null if empty string
+      });
       onSuccess();
     } catch (err) {
       setError(err.message || 'Error al registrar paquete');
@@ -62,6 +103,19 @@ function PackageForm({ onSuccess, onCancel }) {
         </div>
       </div>
 
+      <div className="grid gap-4">
+        <Autocomplete
+          label="Cliente remitente"
+          name="sender_id"
+          value={form.sender_id}
+          onChange={handleChange}
+          required
+          options={clients.map(c => ({ value: c.id, label: c.name, subtext: c.email }))}
+          placeholder={loadingData ? "Cargando clientes..." : "Buscar por nombre o correo..."}
+          disabled={loadingData}
+        />
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2">
         <Select 
           label="Origen" 
@@ -69,8 +123,9 @@ function PackageForm({ onSuccess, onCancel }) {
           value={form.origen} 
           onChange={handleChange} 
           required 
-          options={cities.map(c => ({ value: c, label: c }))}
-          placeholder="Seleccionar origen..."
+          options={originCities.map(c => ({ value: c, label: c }))}
+          placeholder={loadingData ? "Cargando..." : "Seleccionar origen..."}
+          disabled={loadingData}
         />
         <Select 
           label="Destino" 
@@ -78,35 +133,36 @@ function PackageForm({ onSuccess, onCancel }) {
           value={form.destino} 
           onChange={handleChange} 
           required 
-          options={cities.map(c => ({ value: c, label: c }))}
-          placeholder="Seleccionar destino..."
+          disabled={!form.origen || loadingData}
+          options={validDestinations.map(c => ({ value: c, label: c }))}
+          placeholder={form.origen ? "Seleccionar destino..." : "Escoge un origen primero"}
+        />
+      </div>
+
+      <div className="grid gap-4">
+        <Select
+          label="Asignar a Ruta (Opcional)"
+          name="route_id"
+          value={form.route_id}
+          onChange={handleChange}
+          disabled={!form.origen || !form.destino || loadingData || validRoutes.length === 0}
+          options={validRoutes.map(r => ({
+            value: r.id,
+            label: `${r.route_code || 'Ruta'} (${r.driver_name || 'Sin conductor'})`
+          }))}
+          placeholder={
+            !form.origen || !form.destino 
+              ? "-- Escoge origen y destino para ver rutas --" 
+              : validRoutes.length === 0 
+                ? "-- No hay rutas activas para este trayecto --" 
+                : "-- Seleccionar ruta opcional --"
+          }
         />
       </div>
 
       <div className="grid gap-4 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-        <Input label="Peso (kg)" name="peso" type="number" value={form.peso} onChange={handleChange} placeholder="Ej: 15" required />
+        <Input label="Peso (kg)" name="peso" type="number" step="0.1" value={form.peso} onChange={handleChange} placeholder="Ej: 15.5" required />
         <Input label="Descripcion" name="description" value={form.description} onChange={handleChange} placeholder="Contenido, referencia o nota operativa" />
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2">
-        <div className="rounded-[1.2rem] border border-surface-100 bg-white p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-50 text-sky-700"><MapPinned size={17} strokeWidth={2.2} /></div>
-            <div>
-              <p className="text-sm font-semibold text-surface-900">Ruta inicial</p>
-              <p className="text-xs text-surface-500">La asignacion se podra hacer despues del registro.</p>
-            </div>
-          </div>
-        </div>
-        <div className="rounded-[1.2rem] border border-surface-100 bg-white p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-700"><Boxes size={17} strokeWidth={2.2} /></div>
-            <div>
-              <p className="text-sm font-semibold text-surface-900">Control de carga</p>
-              <p className="text-xs text-surface-500">Verifica peso y descripcion antes de guardar.</p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {error && <p className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}

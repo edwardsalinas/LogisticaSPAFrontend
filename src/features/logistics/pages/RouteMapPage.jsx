@@ -1,4 +1,4 @@
-﻿import { Suspense, lazy, useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { MapPinned, MoveLeft, Route, Ruler, TimerReset } from 'lucide-react';
 import Button from '../../../components/atoms/Button';
@@ -7,6 +7,7 @@ import MapCanvasFallback from '../../../components/molecules/MapCanvasFallback';
 import Modal from '../../../components/molecules/Modal';
 import { heroImages } from '../../../constants/heroImages';
 import { mockRoutes } from '../../../services/api.mock';
+import apiService from '../../../services/apiService';
 import CheckpointForm from '../components/CheckpointForm';
 const RouteMap = lazy(() => import('../components/RouteMap'));
 
@@ -15,14 +16,38 @@ function RouteMapPage() {
   const navigate = useNavigate();
   const [showCheckpointForm, setShowCheckpointForm] = useState(false);
   const [selectedCheckpoint, setSelectedCheckpoint] = useState(null);
+  const [route, setRoute] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const route = mockRoutes.find((r) => r.id === routeId);
+  const fetchRoute = async () => {
+    try {
+      const res = await apiService.getRoute(routeId);
+      setRoute(res.data);
+    } catch (err) {
+      console.error(err);
+      setRoute(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRoute();
+  }, [routeId]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[70vh] items-center justify-center">
+        <p className="text-surface-500">Cargando datos de la ruta...</p>
+      </div>
+    );
+  }
 
   if (!route) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-4 text-center">
         <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-surface-950">Ruta no encontrada</h2>
-        <p className="max-w-md text-sm text-surface-500">No encontramos la ruta solicitada. Podemos volver al modulo de rutas y continuar desde ahi.</p>
+        <p className="max-w-md text-sm text-surface-500">No encontramos la ruta solicitada o fue eliminada.</p>
         <Button onClick={() => navigate('/logistics/routes')}>Volver a rutas</Button>
       </div>
     );
@@ -86,6 +111,7 @@ function RouteMapPage() {
           onSuccess={() => {
             setShowCheckpointForm(false);
             setSelectedCheckpoint(null);
+            fetchRoute();
           }}
           onCancel={() => {
             setShowCheckpointForm(false);

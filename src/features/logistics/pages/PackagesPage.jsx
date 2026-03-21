@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Boxes, MapPinned, PackageCheck, Search, Truck } from 'lucide-react';
 import api from '../../../services/api';
 import Badge from '../../../components/atoms/Badge';
@@ -11,14 +11,17 @@ import PageSkeleton from '../../../components/organisms/PageSkeleton';
 import { heroImages } from '../../../constants/heroImages';
 import PackageDetail from '../components/PackageDetail';
 import PackageForm from '../components/PackageForm';
+import useRole from '../../../app/useRole';
+
 const statusMap = {
-  pending: { label: 'Pendiente', variant: 'warning' },
-  assigned: { label: 'Asignado', variant: 'info' },
-  in_transit: { label: 'En transito', variant: 'info' },
-  delivered: { label: 'Entregado', variant: 'success' },
+  pendiente: { label: 'Pendiente', variant: 'warning' },
+  asignado: { label: 'Asignado', variant: 'info' },
+  en_transito: { label: 'En transito', variant: 'info' },
+  entregado: { label: 'Entregado', variant: 'success' },
 };
 
 function PackagesPage() {
+  const { hasRole } = useRole();
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -103,7 +106,12 @@ function PackagesPage() {
             <h1 className="mt-5 max-w-3xl font-display text-[clamp(2.1rem,5vw,4rem)] font-semibold tracking-[-0.06em] text-white">Inventario de paquetes con lectura clara de flujo, estado y trazabilidad.</h1>
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Concentramos registro, consulta y detalle operativo en una sola vista para que el equipo encuentre rapido lo que necesita.</p>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col"><Button size="lg" onClick={() => setShowForm(true)}>+ Nuevo paquete</Button><div className="rounded-[1.4rem] border border-white/10 bg-white/7 p-4 text-white backdrop-blur-sm"><p className="text-[0.64rem] uppercase tracking-[0.18em] text-slate-300">Volumen visible</p><div className="mt-2 flex items-center gap-2"><span className="font-display text-3xl font-semibold tracking-[-0.05em]">{filteredPackages.length}</span><Search size={18} className="text-sky-300" strokeWidth={2.2} /></div></div></div>
+          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+            {hasRole(['admin', 'logistics_operator']) && (
+              <Button size="lg" onClick={() => setShowForm(true)}>+ Nuevo paquete</Button>
+            )}
+            <div className="rounded-[1.4rem] border border-white/10 bg-white/7 p-4 text-white backdrop-blur-sm"><p className="text-[0.64rem] uppercase tracking-[0.18em] text-slate-300">Volumen visible</p><div className="mt-2 flex items-center gap-2"><span className="font-display text-3xl font-semibold tracking-[-0.05em]">{filteredPackages.length}</span><Search size={18} className="text-sky-300" strokeWidth={2.2} /></div></div>
+          </div>
         </div>
       </section>
 

@@ -1,26 +1,61 @@
-import { Polyline } from 'react-leaflet';
+import { useEffect } from 'react';
+import { useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet-routing-machine';
 
 /**
- * Componente para dibujar la ruta entre checkpoints
+ * Componente para dibujar la ruta real en carretera entre checkpoints
  */
-function RoutePath({ checkpoints, color = '#137fec', weight = 4 }) {
-  if (!checkpoints || checkpoints.length === 0) return null;
+function RoutePath({ route, checkpoints: propCheckpoints, color = '#137fec', weight = 4 }) {
+  const map = useMap();
 
-  // Convertir checkpoints a array de posiciones [lat, lng]
-  const positions = checkpoints.map((cp) => [cp.lat, cp.lng]);
+  useEffect(() => {
+    const cps = route?.checkpoints || propCheckpoints || [];
+    if (!map) return;
 
-  return (
-    <Polyline
-      positions={positions}
-      pathOptions={{
-        color,
-        weight,
-        opacity: 0.8,
-        dashArray: '10, 10', // Línea punteada
-        lineCap: 'round',
-      }}
-    />
-  );
+    const waypoints = [];
+
+    // 1. Origen de la ruta
+    if (route && route.origin_lat && route.origin_lng) {
+      waypoints.push(L.latLng(route.origin_lat, route.origin_lng));
+    }
+
+    // 2. Tramos Intermedios (Checkpoints)
+    const validCheckpoints = [...cps].sort((a,b) => a.sequence_order - b.sequence_order).filter(cp => cp.lat && cp.lng);
+    validCheckpoints.forEach(cp => waypoints.push(L.latLng(cp.lat, cp.lng)));
+
+    // 3. Destino de la ruta
+    if (route && route.dest_lat && route.dest_lng) {
+      waypoints.push(L.latLng(route.dest_lat, route.dest_lng));
+    }
+    
+    if (waypoints.length < 2) return;
+
+    const routingControl = L.Routing.control({
+      waypoints,
+      lineOptions: {
+        styles: [{ color, weight, opacity: 0.8 }]
+      },
+      show: false, // hide instructions panel
+      addWaypoints: false,
+      routeWhileDragging: false,
+      fitSelectedRoutes: false,
+      showAlternatives: false,
+      createMarker: () => null // We already render our own checkpoint markers
+    }).addTo(map);
+
+    return () => {
+      if (map && routingControl) {
+        try {
+          map.removeControl(routingControl);
+        } catch (err) {
+          // ignore leaflet teardown errors
+        }
+      }
+    };
+  }, [map, route, propCheckpoints, color, weight]);
+
+  return null;
 }
 
 export default RoutePath;

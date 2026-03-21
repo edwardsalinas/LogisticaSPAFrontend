@@ -1,8 +1,10 @@
-﻿import { lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import SectionLoader from '../components/molecules/SectionLoader';
 import DashboardLayout from '../components/templates/DashboardLayout';
 import { useAuth } from './AuthContext';
+import useRole from './useRole';
+import RoleRoute from './RoleRoute';
 
 const DashboardPage = lazy(() => import('../features/dashboard/pages/DashboardPage'));
 const PackagesPage = lazy(() => import('../features/logistics/pages/PackagesPage'));
@@ -15,6 +17,7 @@ const FleetPage = lazy(() => import('../features/fleet/pages/FleetPage'));
 const AiChatPage = lazy(() => import('../features/ai-chat/pages/AiChatPage'));
 const AnalyticsPage = lazy(() => import('../features/analytics/pages/AnalyticsPage'));
 const LoginPage = lazy(() => import('../features/auth/pages/LoginPage'));
+const DriverDashboardPage = lazy(() => import('../features/tracking/pages/DriverDashboardPage'));
 
 function PageLoader() {
   return (
@@ -43,6 +46,19 @@ function ProtectedRoute() {
   return <Outlet />;
 }
 
+function RootRoute({ children }) {
+  const { role } = useRole();
+  
+  if (role === 'driver') {
+    return <Navigate to="/driver" replace />;
+  }
+  if (role === 'client') {
+    return <Navigate to="/logistics/packages" replace />;
+  }
+  
+  return children ? children : <DashboardPage />;
+}
+
 function AppRouter() {
   return (
     <Suspense fallback={<PageLoader />}>
@@ -50,16 +66,23 @@ function AppRouter() {
         <Route path="/login" element={<LoginPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/logistics/packages" element={<PackagesPage />} />
-            <Route path="/logistics/packages/:packageId" element={<PackageDetailPage />} />
-            <Route path="/logistics/routes" element={<RoutesPage />} />
-            <Route path="/logistics/routes/:routeId/map" element={<RouteMapPage />} />
-            <Route path="/tracking" element={<TrackingPage />} />
-            <Route path="/tracking/:packageId/map" element={<PackageMapPage />} />
-            <Route path="/fleet" element={<FleetPage />} />
-            <Route path="/ai-chat" element={<AiChatPage />} />
-            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/" element={<RootRoute />} />
+            
+            {/* Rutas compartidas (Operador, Admin, Cliente) */}
+            <Route path="/logistics/packages" element={<RoleRoute roles={['admin', 'logistics_operator', 'client']}><PackagesPage /></RoleRoute>} />
+            <Route path="/logistics/packages/:packageId" element={<RoleRoute roles={['admin', 'logistics_operator', 'client']}><PackageDetailPage /></RoleRoute>} />
+            
+            {/* Rutas administrativas y operativas */}
+            <Route path="/logistics/routes" element={<RoleRoute roles={['admin', 'logistics_operator']}><RoutesPage /></RoleRoute>} />
+            <Route path="/logistics/routes/:routeId/map" element={<RoleRoute roles={['admin', 'logistics_operator']}><RouteMapPage /></RoleRoute>} />
+            <Route path="/tracking" element={<RoleRoute roles={['admin', 'logistics_operator']}><TrackingPage /></RoleRoute>} />
+            <Route path="/tracking/:packageId/map" element={<RoleRoute roles={['admin', 'logistics_operator', 'client']}><PackageMapPage /></RoleRoute>} />
+            <Route path="/fleet" element={<RoleRoute roles={['admin']}><FleetPage /></RoleRoute>} />
+            <Route path="/ai-chat" element={<RoleRoute roles={['admin']}><AiChatPage /></RoleRoute>} />
+            <Route path="/analytics" element={<RoleRoute roles={['admin']}><AnalyticsPage /></RoleRoute>} />
+
+            {/* Ruta exclusiva de conductor */}
+            <Route path="/driver" element={<RoleRoute roles={['driver']}><DriverDashboardPage /></RoleRoute>} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

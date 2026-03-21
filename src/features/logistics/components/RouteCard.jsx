@@ -1,9 +1,11 @@
-﻿import { ArrowRight, Clock3, LocateFixed, Truck } from 'lucide-react';
+import { ArrowRight, Clock3, LocateFixed, Truck, Edit2, Trash2 } from 'lucide-react';
 import Avatar from '../../../components/atoms/Avatar';
 import Badge from '../../../components/atoms/Badge';
 import ProgressBar from '../../../components/atoms/ProgressBar';
+import useRole from '../../../app/useRole';
 
-function RouteCard({ route, isSelected = false, onClick }) {
+function RouteCard({ route, isSelected = false, onClick, onEdit, onDelete }) {
+  const { hasRole } = useRole();
   const statusConfig = {
     active: { label: 'En progreso', variant: 'info' },
     pending: { label: 'Pendiente', variant: 'warning' },
@@ -59,6 +61,27 @@ function RouteCard({ route, isSelected = false, onClick }) {
           <span className="truncate">ETA {route.eta || '--'}</span>
         </div>
       </div>
+
+      {hasRole(['admin', 'logistics_operator']) && (onEdit || onDelete) && (
+        <div className="mt-3 flex justify-end gap-2 border-t border-surface-100 pt-3">
+          {onEdit && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onEdit(); }} 
+              className="flex items-center gap-1.5 rounded-lg bg-surface-50 px-3 py-1.5 text-xs font-semibold text-surface-600 transition-colors hover:bg-surface-200 hover:text-surface-900"
+            >
+              <Edit2 size={13} strokeWidth={2.2} /> Editar
+            </button>
+          )}
+          {onDelete && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onDelete(); }} 
+              className="flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 hover:text-red-700"
+            >
+              <Trash2 size={13} strokeWidth={2.2} /> Borrar
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

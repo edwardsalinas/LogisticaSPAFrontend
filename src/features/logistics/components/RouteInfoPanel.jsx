@@ -1,7 +1,9 @@
-import { Clock3, MapPinned, Phone, Route, X } from 'lucide-react';
+import { Clock3, MapPinned, Phone, Route, X, Edit2, Trash2, PackageCheck } from 'lucide-react';
 import Button from '../../../components/atoms/Button';
+import useRole from '../../../app/useRole';
 
-function RouteInfoPanel({ route, onClose }) {
+function RouteInfoPanel({ route, onClose, onEdit, onDelete, onAssign }) {
+  const { hasRole } = useRole();
   if (!route) return null;
 
   return (
@@ -56,7 +58,7 @@ function RouteInfoPanel({ route, onClose }) {
         </div>
 
         <div className="flex gap-2 pt-1">
-          <Button variant="primary" size="sm" className="flex-1" onClick={() => window.open(`/logistics/routes/${route.id}/map`, '_blank')}>
+          <Button variant="primary" size="sm" className="flex-1" onClick={() => window.open(`/logistics/routes/${route.id}/map`, '_self')}>
             <Route size={15} strokeWidth={2.2} />
             Ver mapa
           </Button>
@@ -65,6 +67,23 @@ function RouteInfoPanel({ route, onClose }) {
             Contactar
           </Button>
         </div>
+
+        {hasRole(['admin', 'logistics_operator']) && (
+          <div className="flex gap-2 pt-2 border-t border-surface-200 mt-2">
+            <Button variant="secondary" size="sm" className="flex-1 bg-surface-100 text-surface-700 hover:bg-surface-200" onClick={() => onAssign?.(route)}>
+              <PackageCheck size={14} strokeWidth={2.2} />
+              Asignar
+            </Button>
+            <Button variant="secondary" size="sm" className="flex-1 bg-surface-100 text-surface-700 hover:bg-surface-200" onClick={() => onEdit?.(route)}>
+              <Edit2 size={14} strokeWidth={2.2} />
+              Editar
+            </Button>
+            <Button variant="secondary" size="sm" className="flex-1 bg-red-50 text-red-600 hover:bg-red-100 border-red-200" onClick={() => onDelete?.(route)}>
+              <Trash2 size={14} strokeWidth={2.2} />
+              Borrar
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -140,6 +140,48 @@ const apiService = {
   },
 
   // ========================================
+  // Nuevos Métodos (Rutas, Trip, Tracking V2)
+  // ========================================
+  async getClients() {
+    return api.get('/fleet/clients');
+  },
+  async getPredefinedRoutes() {
+    return api.get('/logistics/predefined-routes');
+  },
+  async getRoute(id) {
+    if (USE_MOCKS) return { data: mockRoutes.find(r => r.id === id) };
+    return api.get(`/logistics/routes/${id}`);
+  },
+  async createRoute(data) {
+    return api.post('/logistics/routes', data);
+  },
+  async updateRoute(id, data) {
+    return api.put(`/logistics/routes/${id}`, data);
+  },
+  async deleteRoute(id) {
+    return api.delete(`/logistics/routes/${id}`);
+  },
+  async assignPackageToRoute(routeId, packageId) {
+    return api.post(`/logistics/routes/${routeId}/assign`, { package_id: packageId });
+  },
+  async startTrip(routeId) {
+    return api.post('/tracking/trip/start', { route_id: routeId });
+  },
+  async stopTrip() {
+    return api.post('/tracking/trip/stop');
+  },
+  async getActiveTrip() {
+    return api.get('/tracking/trip/active');
+  },
+  async logTripEvent(tripId, data) {
+    return api.post(`/tracking/trip/${tripId}/event`, data);
+  },
+  async checkGeofence(data) {
+    if (USE_MOCKS) return mockApi.checkGeofence(data);
+    return { data: { within_checkpoint: false } }; // El backend real loguea la visita automaticamente durante el logTripEvent, no en el cliente.
+  },
+
+  // ========================================
   // Métodos restantes que pasan directo a la API
   // ========================================
   post: api.post,
