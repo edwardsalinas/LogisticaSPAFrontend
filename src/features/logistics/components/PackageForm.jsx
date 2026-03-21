@@ -1,13 +1,33 @@
-﻿import { Boxes, MapPinned, PackagePlus } from 'lucide-react';
-import { useState } from 'react';
+import { Boxes, MapPinned, PackagePlus } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import Button from '../../../components/atoms/Button';
 import Input from '../../../components/atoms/Input';
-import api from '../../../services/api';
+import Select from '../../../components/atoms/Select';
+import apiService from '../../../services/apiService';
 
 function PackageForm({ onSuccess, onCancel }) {
   const [form, setForm] = useState({ origen: '', destino: '', peso: '', description: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [cities, setCities] = useState([]);
+
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const res = await apiService.getPredefinedRoutes();
+        const routes = res.data || [];
+        const uniqueCities = new Set();
+        routes.forEach(r => {
+          uniqueCities.add(r.origin_city);
+          uniqueCities.add(r.destination_city);
+        });
+        setCities(Array.from(uniqueCities).sort());
+      } catch (err) {
+        console.error("Error fetching cities for package form:", err);
+      }
+    };
+    fetchCities();
+  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -19,7 +39,7 @@ function PackageForm({ onSuccess, onCancel }) {
     setError('');
 
     try {
-      await api.post('/logistics/packages', { ...form, peso: parseFloat(form.peso) });
+      await apiService.post('/logistics/packages', { ...form, peso: parseFloat(form.peso) });
       onSuccess();
     } catch (err) {
       setError(err.message || 'Error al registrar paquete');
@@ -43,8 +63,24 @@ function PackageForm({ onSuccess, onCancel }) {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Input label="Origen" name="origen" value={form.origen} onChange={handleChange} placeholder="Ciudad de origen" required />
-        <Input label="Destino" name="destino" value={form.destino} onChange={handleChange} placeholder="Ciudad de destino" required />
+        <Select 
+          label="Origen" 
+          name="origen" 
+          value={form.origen} 
+          onChange={handleChange} 
+          required 
+          options={cities.map(c => ({ value: c, label: c }))}
+          placeholder="Seleccionar origen..."
+        />
+        <Select 
+          label="Destino" 
+          name="destino" 
+          value={form.destino} 
+          onChange={handleChange} 
+          required 
+          options={cities.map(c => ({ value: c, label: c }))}
+          placeholder="Seleccionar destino..."
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
