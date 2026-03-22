@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Truck, Navigation, Play, Square, Activity, MapPin, Search, Calendar as CalendarIcon } from 'lucide-react';
-import { Marker, Popup } from 'react-leaflet';
+import { Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -75,11 +75,13 @@ function DriverDashboardPage() {
 
   // --- DATOS DERIVADOS ---
   const isActive = !!activeTrip;
-  const activeRouteData = routes.find(r => r.id === selectedRouteId);
+  const activeRouteData = routes.find(r => String(r.id) === String(selectedRouteId));
 
   // Transformar rutas para el calendario
   const calendarEvents = routes.filter(r => r.departure_time).map(r => {
     const start = new Date(r.departure_time);
+    if (isNaN(start.getTime())) return null; // Saltar si fecha invalida
+
     const end = new Date(start.getTime() + (120 * 60000)); // 2h por defecto
     
     let bgColor = r.schedule_id ? '#8b5cf6' : '#3b82f6';
@@ -87,8 +89,8 @@ function DriverDashboardPage() {
     if (r.status === 'completed' || r.status === 'finalizada') bgColor = '#64748b';
 
     return {
-      id: r.id,
-      title: `${r.route_code} | ${r.origin} - ${r.destination}`,
+      id: String(r.id),
+      title: `${r.route_code || 'S/C'} | ${r.origin || ''} - ${r.destination || ''}`,
       start: r.departure_time,
       end: end.toISOString(),
       backgroundColor: bgColor,
@@ -96,7 +98,7 @@ function DriverDashboardPage() {
       display: 'block',
       extendedProps: { route: r }
     };
-  });
+  }).filter(Boolean);
 
   const renderEventContent = (eventInfo) => {
     const { event } = eventInfo;
@@ -132,31 +134,34 @@ function DriverDashboardPage() {
   const intervalRef = useRef(null);
   const lastPositionRef = useRef(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [tripRes, routesRes] = await Promise.all([
-          apiService.getActiveTrip(),
-          apiService.getRoutes() 
-        ]);
-        
-        if (tripRes.data) {
-          setActiveTrip(tripRes.data);
-          setSelectedRouteId(tripRes.data.route_id);
-          const reached = tripRes.data.events
-            ?.filter(e => e.type === 'checkpoint_reached' || (e.data && e.data.checkpoint_id))
-            .map(e => e.checkpoint_id || e.data.checkpoint_id) || [];
-          setCompletedCheckpointIds(reached);
-        }
-        setRoutes(routesRes.data || []);
-      } catch (err) {
-        console.error('Error cargando datos del driver:', err);
-      } finally {
-        setLoading(false);
+  const fetchData = useCallback(async () => {
+    try {
+      const [tripRes, routesRes] = await Promise.all([
+        apiService.getActiveTrip(),
+        apiService.getRoutes() 
+      ]);
+      
+      if (tripRes.data) {
+        setActiveTrip(tripRes.data);
+        setSelectedRouteId(tripRes.data.route_id);
+        const reached = tripRes.data.events
+          ?.filter(e => e.type === 'checkpoint_reached' || (e.data && e.data.checkpoint_id))
+          .map(e => e.checkpoint_id || e.data.checkpoint_id) || [];
+        setCompletedCheckpointIds(reached);
+      } else {
+        setActiveTrip(null);
       }
-    };
-    fetchData();
+      setRoutes(routesRes.data || []);
+    } catch (err) {
+      console.error('Error cargando datos del driver:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleCheckpointCheck = async (checkpointId) => {
     if (!activeTrip || completedCheckpointIds.includes(checkpointId)) return;
@@ -185,7 +190,8 @@ function DriverDashboardPage() {
     try {
       await apiService.stopTrip();
       stopGpsTracking();
-      setActiveTrip(null);
+      // Refrescar datos para que el estado pase a 'completed' y se vea el recorrido
+      await fetchData();
       setCurrentPosition(null);
       setCompletedCheckpointIds([]);
     } catch (err) {
@@ -193,7 +199,7 @@ function DriverDashboardPage() {
     } finally {
       setToggling(false);
     }
-  }, [stopGpsTracking]);
+  }, [stopGpsTracking, fetchData]);
 
   const handleStartTrip = useCallback(async () => {
     if (!selectedRouteId) {
@@ -357,15 +363,32 @@ function DriverDashboardPage() {
                     
                     <div className="flex flex-col items-end gap-2 shrink-0">
                       {['completed', 'finalizada'].includes(activeRouteData?.status) ? (
-                        <Badge tone="slate" icon={Square} className="py-2.5 px-4 h-auto flex items-center gap-2 text-[10px] font-bold shadow-sm border-surface-200">
-                          VIAJE CERRADO
-                        </Badge>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          icon={Square} 
+                          disabled={true}
+                          className="px-4 py-2 h-auto text-[11px] gap-2 cursor-not-allowed opacity-60 border-surface-300 text-surface-400"
+                        >
+                          VIAJE FINALIZADO
+                        </Button>
                       ) : isActive ? (
-                        <Button size="sm" variant="danger" className="px-4 py-2 h-auto text-[11px] gap-2 shadow-lg shadow-danger-200" onClick={handleStopTrip} disabled={toggling}>
+                        <Button 
+                          size="sm" 
+                          variant="danger" 
+                          className="px-4 py-2 h-auto text-[11px] gap-2 shadow-lg shadow-danger-200" 
+                          onClick={handleStopTrip} 
+                          disabled={toggling}
+                        >
                           {toggling ? '...' : <><Square fill="currentColor" size={12} /> Finalizar</>}
                         </Button>
                       ) : (
-                        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 h-auto text-[11px] gap-2 shadow-lg shadow-emerald-200" onClick={handleStartTrip} disabled={toggling || !selectedRouteId}>
+                        <Button 
+                          size="sm" 
+                          className="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 h-auto text-[11px] gap-2 shadow-lg shadow-emerald-200" 
+                          onClick={handleStartTrip} 
+                          disabled={toggling || !selectedRouteId}
+                        >
                           {toggling ? '...' : <><Play fill="currentColor" size={12} /> Iniciar Viaje</>}
                         </Button>
                       )}
@@ -379,8 +402,8 @@ function DriverDashboardPage() {
                     <div className="pt-3 border-t border-surface-200/60">
                       <p className="text-[10px] font-bold text-surface-400 uppercase tracking-widest mb-3">Progreso de Checkpoints</p>
                       <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
-                        {activeRouteData.checkpoints
-                          .sort((a,b) => a.sequence_order - b.sequence_order)
+                        {[...(activeRouteData?.checkpoints || [])]
+                          .sort((a,b) => (a.sequence_order || 0) - (b.sequence_order || 0))
                           .map(cp => {
                             const isReached = completedCheckpointIds.includes(cp.id);
                             return (
@@ -422,7 +445,13 @@ function DriverDashboardPage() {
         <div className="xl:col-span-8">
           <div className="h-[65vh] min-h-[35rem] overflow-hidden rounded-[2rem] border border-white/60 bg-white p-3 shadow-2xl relative">
             <BaseMap
-              center={currentPosition ? [currentPosition.lat, currentPosition.lng] : activeRouteData ? [activeRouteData.origin_lat, activeRouteData.origin_lng] : [-16.5, -68.15]}
+              center={
+                currentPosition?.lat && currentPosition?.lng 
+                  ? [currentPosition.lat, currentPosition.lng] 
+                  : activeRouteData?.origin_lat && activeRouteData?.origin_lng 
+                    ? [activeRouteData.origin_lat, activeRouteData.origin_lng] 
+                    : [-16.5, -68.15]
+              }
               zoom={currentPosition || activeRouteData ? 13 : 7}
               className="h-full w-full rounded-[1.6rem]"
             >
@@ -437,15 +466,32 @@ function DriverDashboardPage() {
                       route={{
                         ...activeRouteData,
                         checkpoints: ['completed', 'finalizada'].includes(activeRouteData?.status)
-                          ? activeRouteData.checkpoints
-                          : activeRouteData.checkpoints.filter(cp => 
-                              cp.sequence_order <= Math.max(0, ...activeRouteData.checkpoints
+                          ? (activeRouteData?.checkpoints || [])
+                          : (activeRouteData?.checkpoints || []).filter(cp => 
+                              (cp.sequence_order || 0) <= Math.max(0, ...(activeRouteData?.checkpoints || [])
                                 .filter(c => completedCheckpointIds.includes(c.id))
-                                .map(c => c.sequence_order))
+                                .map(c => c.sequence_order || 0))
                             )
                       }} 
                       isCompleted={true}
                       fitBounds={false}
+                    />
+                  )}
+
+                  {/* Recorrido Real GPS (Línea Punteada) */}
+                  {(activeTrip?.events || activeRouteData?.trip?.events)?.length > 0 && (
+                    <Polyline 
+                      positions={(activeTrip?.events || activeRouteData?.trip?.events)
+                        .filter(e => e.status === 'in_transit' && e.lat && e.lng)
+                        .sort((a,b) => new Date(a.created_at) - new Date(b.created_at))
+                        .map(e => [e.lat, e.lng])
+                      }
+                      pathOptions={{
+                        color: '#6366f1',
+                        dashArray: '10, 15',
+                        weight: 4,
+                        opacity: 0.8
+                      }}
                     />
                   )}
 
