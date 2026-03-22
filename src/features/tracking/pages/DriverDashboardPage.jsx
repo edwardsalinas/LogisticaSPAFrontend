@@ -44,6 +44,22 @@ const vehicleIcon = L.divIcon({
 });
 
 /**
+ * Calcula la distancia entre dos puntos (Haversine) en metros.
+ */
+const getDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371e3; // Radio de la Tierra en metros
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+/**
  * Dashboard del conductor con toggle de viaje adaptado a nueva UI.
  */
 function DriverDashboardPage() {
@@ -171,37 +187,7 @@ function DriverDashboardPage() {
     }
   }, [activeTrip]);
 
-  const startGpsTracking = useCallback(() => {
-    if (!navigator.geolocation) {
-      setGpsError('Geolocalización no soportada');
-      return;
-    }
-
-    const watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        setCurrentPosition({ lat: position.coords.latitude, lng: position.coords.longitude });
-        lastPositionRef.current = position.coords;
-      },
-      (error) => setGpsError(`Error GPS: ${error.message}`),
-      { enableHighAccuracy: true }
-    );
-    watchIdRef.current = watchId;
-    intervalRef.current = setInterval(sendPosition, GPS_INTERVAL_MS);
-  }, [sendPosition]);
-
-  const stopGpsTracking = useCallback(() => {
-    if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    watchIdRef.current = null;
-    intervalRef.current = null;
-  }, []);
-
-  useEffect(() => {
-    if (activeTrip) startGpsTracking();
-    return () => stopGpsTracking();
-  }, [activeTrip, startGpsTracking, stopGpsTracking]);
-
-  const handleStartTrip = async () => {
+  const handleStartTrip = useCallback(async () => {
     if (!selectedRouteId) {
       alert('Por favor selecciona una ruta para iniciar el viaje');
       return;
@@ -217,9 +203,9 @@ function DriverDashboardPage() {
     } finally {
       setToggling(false);
     }
-  };
+  }, [selectedRouteId]);
 
-  const handleStopTrip = async () => {
+  const handleStopTrip = useCallback(async () => {
     setToggling(true);
     try {
       await apiService.stopTrip();
@@ -232,7 +218,47 @@ function DriverDashboardPage() {
     } finally {
       setToggling(false);
     }
-  }
+  }, [stopGpsTracking]);
+
+  const stopGpsTracking = useCallback(() => {
+    if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    watchIdRef.current = null;
+    intervalRef.current = null;
+  }, []);
+
+  const startGpsTracking = useCallback(() => {
+    if (!navigator.geolocation) {
+      setGpsError('Geolocalización no soportada');
+      return;
+    }
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setCurrentPosition({ lat: latitude, lng: longitude });
+        lastPositionRef.current = position.coords;
+
+        // Auto-finalizar si llega al destino (< 150m)
+        if (activeRouteData?.dest_lat && activeRouteData?.dest_lng) {
+          const dist = getDistance(latitude, longitude, activeRouteData.dest_lat, activeRouteData.dest_lng);
+          if (dist < 150) {
+            console.log('🏁 Destino alcanzado (Auto-Stop):', dist.toFixed(1), 'm');
+            handleStopTrip();
+          }
+        }
+      },
+      (error) => setGpsError(`Error GPS: ${error.message}`),
+      { enableHighAccuracy: true }
+    );
+    watchIdRef.current = watchId;
+    intervalRef.current = setInterval(sendPosition, GPS_INTERVAL_MS);
+  }, [sendPosition, activeRouteData, handleStopTrip]);
+
+  useEffect(() => {
+    if (activeTrip) startGpsTracking();
+    return () => stopGpsTracking();
+  }, [activeTrip, startGpsTracking, stopGpsTracking]);
 
   if (loading) return <PageSkeleton stats={3} layout="map" />;
 
