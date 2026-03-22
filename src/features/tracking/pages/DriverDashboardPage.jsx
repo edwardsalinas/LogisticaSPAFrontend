@@ -55,6 +55,7 @@ function DriverDashboardPage() {
   const [currentPosition, setCurrentPosition] = useState(null);
   const [gpsError, setGpsError] = useState(null);
   const [eventsSent, setEventsSent] = useState(0);
+  const [completedCheckpointIds, setCompletedCheckpointIds] = useState([]);
 
   // Transformar rutas para el calendario
   const calendarEvents = routes.filter(r => r.departure_time).map(r => {
@@ -123,6 +124,11 @@ function DriverDashboardPage() {
         if (tripRes.data) {
           setActiveTrip(tripRes.data);
           setSelectedRouteId(tripRes.data.route_id);
+          // Sincronizar checkpoints ya marcados
+          const reached = tripRes.data.events
+            ?.filter(e => e.type === 'checkpoint_reached' || (e.data && e.data.checkpoint_id))
+            .map(e => e.checkpoint_id || e.data.checkpoint_id) || [];
+          setCompletedCheckpointIds(reached);
         }
         setRoutes(routesRes.data || []);
       } catch (err) {
@@ -133,6 +139,21 @@ function DriverDashboardPage() {
     };
     fetchData();
   }, []);
+
+  const handleCheckpointCheck = async (checkpointId) => {
+    if (!activeTrip || completedCheckpointIds.includes(checkpointId)) return;
+
+    try {
+      await apiService.logTripEvent(activeTrip.id, {
+        checkpoint_id: checkpointId,
+        status: 'reached',
+        type: 'checkpoint_reached'
+      });
+      setCompletedCheckpointIds(prev => [...prev, checkpointId]);
+    } catch (err) {
+      console.error('Error marcando checkpoint:', err);
+    }
+  };
 
   const sendPosition = useCallback(async () => {
     const pos = lastPositionRef.current;
@@ -190,6 +211,7 @@ function DriverDashboardPage() {
       const res = await apiService.startTrip(selectedRouteId);
       setActiveTrip(res.data);
       setEventsSent(0);
+      setCompletedCheckpointIds([]); // Reiniciar al empezar nuevo viaje
     } catch (err) {
       alert(err.message || 'Error al iniciar viaje');
     } finally {
@@ -204,6 +226,7 @@ function DriverDashboardPage() {
       stopGpsTracking();
       setActiveTrip(null);
       setCurrentPosition(null);
+      setCompletedCheckpointIds([]); // Limpiar al finalizar
     } catch (err) {
       alert(err.message || 'Error al finalizar viaje');
     } finally {
@@ -292,38 +315,68 @@ function DriverDashboardPage() {
             
             {(activeRouteData || activeTrip) && (
               <div className="mt-auto p-5 bg-surface-50 border-t border-surface-100 ring-1 ring-black/5">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${isActive ? 'bg-emerald-100 text-emerald-600' : 'bg-primary-100 text-primary-600'}`}>
-                      {isActive ? <Truck size={20} /> : <Navigation size={20} />}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${isActive ? 'bg-emerald-100 text-emerald-600' : 'bg-primary-100 text-primary-600'}`}>
+                        {isActive ? <Truck size={20} /> : <Navigation size={20} />}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold text-surface-400 uppercase tracking-tighter">
+                          {isActive ? 'Viaje en Curso' : 'Ruta Seleccionada'}
+                        </p>
+                        <p className="text-sm font-bold text-surface-800 truncate">
+                          {(activeRouteData || activeTrip.route)?.route_code}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-bold text-surface-400 uppercase tracking-tighter">
-                        {isActive ? 'Viaje en Curso' : 'Ruta Seleccionada'}
-                      </p>
-                      <p className="text-sm font-bold text-surface-800 truncate">
-                        {(activeRouteData || activeTrip.route)?.route_code}
-                      </p>
-                      <p className="text-[10px] text-surface-500 truncate mt-0.5 font-medium">
-                        {(activeRouteData || activeTrip.route)?.origin} → {(activeRouteData || activeTrip.route)?.destination}
-                      </p>
+                    
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      {isActive ? (
+                        <Button size="sm" variant="danger" className="px-4 py-2 h-auto text-[11px] gap-2 shadow-lg shadow-danger-200" onClick={handleStopTrip} disabled={toggling}>
+                          {toggling ? '...' : <><Square fill="currentColor" size={12} /> Finalizar</>}
+                        </Button>
+                      ) : (
+                        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 h-auto text-[11px] gap-2 shadow-lg shadow-emerald-200" onClick={handleStartTrip} disabled={toggling || !selectedRouteId}>
+                          {toggling ? '...' : <><Play fill="currentColor" size={12} /> Iniciar Viaje</>}
+                        </Button>
+                      )}
+                      <Badge variant={isActive ? "emerald" : "blue"} className="text-[9px] px-2.5 py-0.5">
+                        {(activeRouteData || activeTrip.route)?.type === 'schedule' ? 'Recurrente' : 'Único'}
+                      </Badge>
                     </div>
                   </div>
-                  
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    {isActive ? (
-                      <Button size="sm" variant="danger" className="px-4 py-2 h-auto text-[11px] gap-2 shadow-lg shadow-danger-200" onClick={handleStopTrip} disabled={toggling}>
-                        {toggling ? '...' : <><Square fill="currentColor" size={12} /> Finalizar</>}
-                      </Button>
-                    ) : (
-                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 h-auto text-[11px] gap-2 shadow-lg shadow-emerald-200" onClick={handleStartTrip} disabled={toggling || !selectedRouteId}>
-                        {toggling ? '...' : <><Play fill="currentColor" size={12} /> Iniciar Viaje</>}
-                      </Button>
-                    )}
-                    <Badge variant={isActive ? "emerald" : "blue"} className="text-[9px] px-2.5 py-0.5">
-                      {(activeRouteData || activeTrip.route)?.type === 'schedule' ? 'Recurrente' : 'Único'}
-                    </Badge>
-                  </div>
+
+                  {isActive && (activeRouteData?.checkpoints?.length > 0) && (
+                    <div className="pt-3 border-t border-surface-200/60">
+                      <p className="text-[10px] font-bold text-surface-400 uppercase tracking-widest mb-3">Progreso de Checkpoints</p>
+                      <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+                        {activeRouteData.checkpoints
+                          .sort((a,b) => a.sequence_order - b.sequence_order)
+                          .map(cp => {
+                            const isReached = completedCheckpointIds.includes(cp.id);
+                            return (
+                              <div key={cp.id} className={`flex items-center justify-between p-2 rounded-lg border transition-all ${isReached ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-surface-100 hover:border-surface-200'}`}>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className={`h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${isReached ? 'bg-emerald-500 text-white' : 'bg-surface-100 text-surface-500'}`}>
+                                    {isReached ? '✓' : cp.sequence_order}
+                                  </div>
+                                  <span className={`text-[11px] font-medium truncate ${isReached ? 'text-emerald-800' : 'text-surface-600'}`}>{cp.name}</span>
+                                </div>
+                                {!isReached && (
+                                  <button 
+                                    onClick={() => handleCheckpointCheck(cp.id)}
+                                    className="text-[9px] font-bold text-primary-600 hover:text-primary-700 uppercase tracking-tighter px-2 py-1 rounded bg-primary-50 active:scale-95 transition-transform"
+                                  >
+                                    Check
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -347,7 +400,25 @@ function DriverDashboardPage() {
             >
               {activeRouteData && (
                 <>
-                  <RoutePath route={activeRouteData} />
+                  {/* Ruta Completa (Tenue) */}
+                  <RoutePath route={activeRouteData} color="#64748b" weight={3} fitBounds={!isActive} />
+                  
+                  {/* Ruta Completada (Solid Green) */}
+                  {isActive && completedCheckpointIds.length > 0 && (
+                    <RoutePath 
+                      route={{
+                        ...activeRouteData,
+                        checkpoints: activeRouteData.checkpoints.filter(cp => 
+                          cp.sequence_order <= Math.max(0, ...activeRouteData.checkpoints
+                            .filter(c => completedCheckpointIds.includes(c.id))
+                            .map(c => c.sequence_order))
+                        )
+                      }} 
+                      isCompleted={true}
+                      fitBounds={false}
+                    />
+                  )}
+
                   {activeRouteData.origin_lat && activeRouteData.origin_lng && (
                     <OriginDestMarker type="origin" position={[activeRouteData.origin_lat, activeRouteData.origin_lng]} title="Punto de Inicio" subtitle={activeRouteData.origin} />
                   )}
@@ -355,7 +426,11 @@ function DriverDashboardPage() {
                     <OriginDestMarker type="dest" position={[activeRouteData.dest_lat, activeRouteData.dest_lng]} title="Destino Final" subtitle={activeRouteData.destination} />
                   )}
                   {activeRouteData.checkpoints?.map(cp => (
-                    <CheckpointMarker key={cp.id} checkpoint={cp} />
+                    <CheckpointMarker 
+                      key={cp.id} 
+                      checkpoint={cp} 
+                      isCompleted={completedCheckpointIds.includes(cp.id)}
+                    />
                   ))}
                 </>
               )}
