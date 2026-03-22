@@ -73,6 +73,10 @@ function DriverDashboardPage() {
   const [eventsSent, setEventsSent] = useState(0);
   const [completedCheckpointIds, setCompletedCheckpointIds] = useState([]);
 
+  // --- DATOS DERIVADOS ---
+  const isActive = !!activeTrip;
+  const activeRouteData = routes.find(r => r.id === selectedRouteId);
+
   // Transformar rutas para el calendario
   const calendarEvents = routes.filter(r => r.departure_time).map(r => {
     const start = new Date(r.departure_time);
@@ -122,7 +126,6 @@ function DriverDashboardPage() {
 
   const handleEventClick = (info) => {
     setSelectedRouteId(info.event.id);
-    // Ya no cambiamos a 'controls', el conductor puede iniciar desde el footer
   };
   
   const watchIdRef = useRef(null);
@@ -140,7 +143,6 @@ function DriverDashboardPage() {
         if (tripRes.data) {
           setActiveTrip(tripRes.data);
           setSelectedRouteId(tripRes.data.route_id);
-          // Sincronizar checkpoints ya marcados
           const reached = tripRes.data.events
             ?.filter(e => e.type === 'checkpoint_reached' || (e.data && e.data.checkpoint_id))
             .map(e => e.checkpoint_id || e.data.checkpoint_id) || [];
@@ -171,6 +173,46 @@ function DriverDashboardPage() {
     }
   };
 
+  const stopGpsTracking = useCallback(() => {
+    if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    watchIdRef.current = null;
+    intervalRef.current = null;
+  }, []);
+
+  const handleStopTrip = useCallback(async () => {
+    setToggling(true);
+    try {
+      await apiService.stopTrip();
+      stopGpsTracking();
+      setActiveTrip(null);
+      setCurrentPosition(null);
+      setCompletedCheckpointIds([]);
+    } catch (err) {
+      alert(err.message || 'Error al finalizar viaje');
+    } finally {
+      setToggling(false);
+    }
+  }, [stopGpsTracking]);
+
+  const handleStartTrip = useCallback(async () => {
+    if (!selectedRouteId) {
+      alert('Por favor selecciona una ruta para iniciar el viaje');
+      return;
+    }
+    setToggling(true);
+    try {
+      const res = await apiService.startTrip(selectedRouteId);
+      setActiveTrip(res.data);
+      setEventsSent(0);
+      setCompletedCheckpointIds([]);
+    } catch (err) {
+      alert(err.message || 'Error al iniciar viaje');
+    } finally {
+      setToggling(false);
+    }
+  }, [selectedRouteId]);
+
   const sendPosition = useCallback(async () => {
     const pos = lastPositionRef.current;
     if (!pos || !activeTrip) return;
@@ -187,46 +229,6 @@ function DriverDashboardPage() {
     }
   }, [activeTrip]);
 
-  const handleStartTrip = useCallback(async () => {
-    if (!selectedRouteId) {
-      alert('Por favor selecciona una ruta para iniciar el viaje');
-      return;
-    }
-    setToggling(true);
-    try {
-      const res = await apiService.startTrip(selectedRouteId);
-      setActiveTrip(res.data);
-      setEventsSent(0);
-      setCompletedCheckpointIds([]); // Reiniciar al empezar nuevo viaje
-    } catch (err) {
-      alert(err.message || 'Error al iniciar viaje');
-    } finally {
-      setToggling(false);
-    }
-  }, [selectedRouteId]);
-
-  const handleStopTrip = useCallback(async () => {
-    setToggling(true);
-    try {
-      await apiService.stopTrip();
-      stopGpsTracking();
-      setActiveTrip(null);
-      setCurrentPosition(null);
-      setCompletedCheckpointIds([]); // Limpiar al finalizar
-    } catch (err) {
-      alert(err.message || 'Error al finalizar viaje');
-    } finally {
-      setToggling(false);
-    }
-  }, [stopGpsTracking]);
-
-  const stopGpsTracking = useCallback(() => {
-    if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    watchIdRef.current = null;
-    intervalRef.current = null;
-  }, []);
-
   const startGpsTracking = useCallback(() => {
     if (!navigator.geolocation) {
       setGpsError('Geolocalización no soportada');
@@ -239,7 +241,6 @@ function DriverDashboardPage() {
         setCurrentPosition({ lat: latitude, lng: longitude });
         lastPositionRef.current = position.coords;
 
-        // Auto-finalizar si llega al destino (< 150m)
         if (activeRouteData?.dest_lat && activeRouteData?.dest_lng) {
           const dist = getDistance(latitude, longitude, activeRouteData.dest_lat, activeRouteData.dest_lng);
           if (dist < 150) {
@@ -261,9 +262,6 @@ function DriverDashboardPage() {
   }, [activeTrip, startGpsTracking, stopGpsTracking]);
 
   if (loading) return <PageSkeleton stats={3} layout="map" />;
-
-  const isActive = !!activeTrip;
-  const activeRouteData = routes.find(r => r.id === selectedRouteId);
 
   return (
     <div className="space-y-6 sm:space-y-8">
