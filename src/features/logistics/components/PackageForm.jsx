@@ -146,10 +146,15 @@ function PackageForm({ onSuccess, onCancel }) {
           value={form.route_id}
           onChange={handleChange}
           disabled={!form.origen || !form.destino || loadingData || validRoutes.length === 0}
-          options={validRoutes.map(r => ({
-            value: r.id,
-            label: `${r.route_code || 'Ruta'} (${r.driver_name || 'Sin conductor'})`
-          }))}
+          options={validRoutes.map(r => {
+            const date = r.departure_time ? new Date(r.departure_time).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit' }) : '';
+            const time = r.departure_time ? new Date(r.departure_time).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }) : '';
+            const driver = r.driver?.full_name ? ` - ${r.driver.full_name}` : ' (Sin conductor)';
+            return {
+              value: r.id,
+              label: `${r.route_code || 'Ruta'} ${date} ${time}${driver}`
+            };
+          })}
           placeholder={
             !form.origen || !form.destino 
               ? "-- Escoge origen y destino para ver rutas --" 

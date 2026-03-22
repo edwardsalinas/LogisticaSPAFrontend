@@ -28,6 +28,13 @@ function LiveTracker({ packageId, routeId }) {
         setPosition(newPosition);
         setHistory(logs);
 
+        // OPTIMIZACIÓN: Si el paquete ya está entregado, detener el intervalo
+        const statusLower = latestLog.status.toLowerCase();
+        if (statusLower.includes('entregado') || statusLower.includes('delivered')) {
+          console.log('[LiveTracker] Paquete entregado. Deteniendo seguimiento activo.');
+          clearInterval(intervalId);
+        }
+
         if (routeId) {
           const geofenceRes = await apiService.checkGeofence({
             lat: latestLog.lat,

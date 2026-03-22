@@ -47,14 +47,25 @@ function RoutesPage() {
         apiService.getSchedules()
       ]);
 
-      const realRoutes = routesRes.status === 'fulfilled' ? (Array.isArray(routesRes.value.data) ? routesRes.value.data : (routesRes.value.data?.data || [])) : [];
-      const schedules = schedsRes.status === 'fulfilled' ? (schedsRes.value.data?.data || []) : [];
+      const extractData = (res) => {
+        if (res.status !== 'fulfilled') return [];
+        const val = res.value;
+        // Si ya es un array (unwrapped por interceptor)
+        if (Array.isArray(val)) return val;
+        // Si es el objeto { success, data: [...] }
+        if (Array.isArray(val?.data)) return val.data;
+        // Fallback
+        return [];
+      };
 
-      const mappedSchedules = schedules.map(sch => ({
+      const rawSchedules = extractData(schedsRes);
+      const rawRoutes = extractData(routesRes);
+
+      const mappedSchedules = rawSchedules.map(sch => ({
         ...sch,
         type: 'schedule',
         route_code: sch.label || `SCH-${sch.id.slice(0, 5).toUpperCase()}`,
-        status: 'schedule',
+        status: sch.status || 'schedule',
         driver_name: sch.drivers?.full_name || sch.drivers?.email || 'Sin conductor',
         vehicle_brand: sch.vehicles?.brand || 'Vehículo',
         plate_number: sch.vehicles?.plate || '--',
@@ -62,7 +73,15 @@ function RoutesPage() {
         eta: '--',
       }));
 
-      const combined = [...mappedSchedules, ...realRoutes];
+      const mappedRoutes = rawRoutes.map(r => ({
+        ...r,
+        type: 'route',
+        driver_name: r.driver?.full_name || 'Sin asignar',
+        vehicle_brand: r.vehicles?.brand || 'Vehículo',
+        plate_number: r.vehicles?.plate || '--',
+      }));
+
+      const combined = [...mappedSchedules, ...mappedRoutes];
 
       setRoutes(combined.length > 0 ? combined : MOCK_ROUTES);
       
@@ -163,10 +182,24 @@ function RoutesPage() {
     setShowAssignModal(true);
   };
 
+  const handleGenerateRoutes = async () => {
+    try {
+      setLoading(true);
+      const res = await apiService.generateRoutesFromSchedules(7);
+      const count = res.data?.generatedCount || 0;
+      alert(`Se han generado ${count} despachos para la próxima semana.`);
+      fetchRoutes();
+    } catch (err) {
+      console.error('Error generando despachos:', err);
+      alert('Error al proyectar los cronogramas.');
+      setLoading(false);
+    }
+  };
+
   const filteredRoutes = routes.filter((route) => route.route_code?.toLowerCase().includes(searchTerm.toLowerCase()) || route.driver_name?.toLowerCase().includes(searchTerm.toLowerCase()) || route.origin?.toLowerCase().includes(searchTerm.toLowerCase()) || route.destination?.toLowerCase().includes(searchTerm.toLowerCase()));
-  const active = routes.filter((r) => r.status === 'active').length;
-  const pending = routes.filter((r) => r.status === 'pending').length;
-  const completed = routes.filter((r) => r.status === 'completed').length;
+  const active = routes.filter((r) => r.status === 'active' || r.status === 'en_transito').length;
+  const pending = routes.filter((r) => r.status === 'pending' || r.status === 'planeada').length;
+  const completed = routes.filter((r) => r.status === 'completed' || r.status === 'finalizada').length;
 
   return (
     <div className="space-y-8">
@@ -180,12 +213,15 @@ function RoutesPage() {
         <div className="overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/88 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
           <div className="border-b border-surface-100 p-6">
             <div className="flex items-start justify-between gap-4">
-              <div><p className="text-[0.64rem] uppercase tracking-[0.24em] text-surface-500">Resumen de operacion</p><h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Seleccion de rutas</h2></div>
-              <Badge variant="info" dot>{filteredRoutes.length} visibles</Badge>
+              <div><p className="text-[0.64rem] uppercase tracking-[0.24em] text-surface-500">Resumen de operacion</p><h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Gestión de Viajes y Cronogramas</h2></div>
+              <Badge variant="info" dot>{filteredRoutes.length} elementos</Badge>
             </div>
             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="w-full sm:max-w-md"><SearchInput value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar ruta, conductor o destino..." /></div>
-              <Button className="w-full sm:w-auto whitespace-nowrap" onClick={() => { setEditingRoute(null); setShowForm(true); }}>+ Crear ruta</Button>
+              <div className="w-full sm:max-w-md"><SearchInput value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar viaje, conductor o destino..." /></div>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button variant="secondary" className="whitespace-nowrap" onClick={handleGenerateRoutes}>Proyectar Semana</Button>
+                <Button className="whitespace-nowrap" onClick={() => { setEditingRoute(null); setShowForm(true); }}>+ Nuevo</Button>
+              </div>
             </div>
           </div>
 
@@ -228,9 +264,9 @@ function RoutesPage() {
               <div className="relative z-10 flex h-full flex-col">
                 <div className="flex items-start justify-between p-6 text-white">
                   <div>
-                    <p className="text-[0.64rem] uppercase tracking-[0.24em] text-sky-100/70">Ruta seleccionada</p>
+                    <p className="text-[0.64rem] uppercase tracking-[0.24em] text-sky-100/70">{extendedSelectedRoute.type === 'schedule' ? 'Cronograma' : 'Despacho'} seleccionado</p>
                     <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em]">{extendedSelectedRoute.origin} - {extendedSelectedRoute.destination}</h2>
-                    <p className="mt-2 text-sm text-white/72">{extendedSelectedRoute.route_code} - {extendedSelectedRoute.driver_name} - {extendedSelectedRoute.vehicle_brand} {extendedSelectedRoute.plate_number}</p>
+                    <p className="mt-2 text-sm text-white/72">{extendedSelectedRoute.route_code} - {extendedSelectedRoute.driver_name || 'Sin conductor'} - {extendedSelectedRoute.vehicle_brand || 'Vehículo'} {extendedSelectedRoute.plate_number || ''}</p>
                   </div>
                   <Badge variant={extendedSelectedRoute.status === 'active' ? 'success' : extendedSelectedRoute.status === 'delayed' ? 'danger' : 'warning'} dot>{extendedSelectedRoute.status}</Badge>
                 </div>
@@ -264,7 +300,7 @@ function RoutesPage() {
         </div>
       </section>
 
-      <Modal isOpen={showForm} onClose={() => { setShowForm(false); setEditingRoute(null); }} title={editingRoute ? 'Editar ruta de transporte' : 'Crear ruta de transporte'}>
+      <Modal isOpen={showForm} onClose={() => { setShowForm(false); setEditingRoute(null); }} title={editingRoute ? 'Editar Viaje / Cronograma' : 'Configurar Nuevo Viaje o Cronograma'}>
         <RouteForm 
           initialData={editingRoute}
           onSuccess={() => { setShowForm(false); setEditingRoute(null); fetchRoutes(); }} 

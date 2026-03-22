@@ -203,17 +203,17 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
       {/* ── Mapa + Ruta Predefinida (todo junto) ── */}
       <div className="border border-surface-200 rounded-[1.5rem] bg-surface-50 p-5 flex flex-col gap-4 shadow-sm">
         <div>
-          <h4 className="font-display font-semibold text-lg text-surface-900 tracking-tight">Ruta</h4>
-          <p className="text-sm text-surface-500 mb-3">Selecciona una ruta predefinida o marca origen, paradas y destino directamente en el mapa.</p>
+          <h4 className="font-display font-semibold text-lg text-surface-900 tracking-tight">Recorrido</h4>
+          <p className="text-sm text-surface-500 mb-3">Selecciona un trazado predefinido o marca origen, paradas y destino directamente en el mapa.</p>
         </div>
 
         {/* Selector de ruta predefinida arriba del mapa */}
         <Select
-          label="Ruta Predefinida (opcional)"
+          label="Trazado Predefinido (opcional)"
           value={form.predefined_route_id}
           onChange={handlePredefinedChange}
-          placeholder="— Seleccionar ruta para precargar —"
-          hint="Al seleccionar una ruta, se marcarán el origen y destino automáticamente en el mapa."
+          placeholder="— Seleccionar tramo para precargar —"
+          hint="Al seleccionar un trazado, se marcarán el origen y destino automáticamente en el mapa."
           options={predefinedRoutes.map((r) => ({
             value: r.id,
             label: `${r.name} (${r.estimated_km} km - Aprox. ${Math.round(r.estimated_minutes / 60)}h)`
@@ -366,7 +366,7 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
       <div className="mt-2 flex justify-end gap-3">
         <Button variant="secondary" onClick={onCancel} type="button">Cancelar</Button>
         <Button type="submit" disabled={submitting || (tripType === 'schedule' && selectedDays.length === 0)}>
-          {submitting ? 'Guardando...' : initialData ? 'Guardar Cambios' : 'Crear Ruta'}
+          {submitting ? 'Guardando...' : initialData ? 'Guardar Cambios' : `Confirmar ${tripType === 'schedule' ? 'Cronograma' : 'Viaje'}`}
         </Button>
       </div>
     </form>

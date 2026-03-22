@@ -32,7 +32,7 @@ export default function RoutesHero({ active, pending, completed }) {
                   <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-400/20 text-sky-300">
                     <Route size={16} strokeWidth={2.4} />
                   </div>
-                  <p className="text-[0.45rem] font-bold uppercase tracking-[0.15em] text-white/70">Activas</p>
+                  <p className="text-[0.45rem] font-bold uppercase tracking-[0.15em] text-white/70">En Curso</p>
                 </div>
                 <p className="relative mt-1 text-center font-display text-2xl sm:text-3xl font-bold tracking-[-0.04em]">{active}</p>
               </div>
@@ -43,7 +43,7 @@ export default function RoutesHero({ active, pending, completed }) {
                   <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400/20 text-amber-300">
                     <Search size={16} strokeWidth={2.4} />
                   </div>
-                  <p className="text-[0.45rem] font-bold uppercase tracking-[0.15em] text-white/70">Pendit</p>
+                  <p className="text-[0.45rem] font-bold uppercase tracking-[0.15em] text-white/70">Planeados</p>
                 </div>
                 <p className="relative mt-1 text-center font-display text-2xl sm:text-3xl font-bold tracking-[-0.04em]">{pending}</p>
               </div>
@@ -54,7 +54,7 @@ export default function RoutesHero({ active, pending, completed }) {
                   <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-400/20 text-emerald-300">
                     <MapPinned size={16} strokeWidth={2.4} />
                   </div>
-                  <p className="text-[0.45rem] font-bold uppercase tracking-[0.15em] text-white/70">Entreg</p>
+                  <p className="text-[0.45rem] font-bold uppercase tracking-[0.15em] text-white/70">Finalizados</p>
                 </div>
                 <p className="relative mt-1 text-center font-display text-2xl sm:text-3xl font-bold tracking-[-0.04em]">{completed}</p>
               </div>

@@ -11,7 +11,7 @@ function RouteCard({ route, isSelected = false, onClick, onEdit, onDelete }) {
     pending: { label: 'Pendiente', variant: 'warning' },
     completed: { label: 'Completada', variant: 'success' },
     delayed: { label: 'Retrasada', variant: 'danger' },
-    schedule: { label: 'Recurrente', variant: 'primary' },
+    schedule: { label: 'Cronograma', variant: 'primary' },
   };
 
   const isSchedule = route.type === 'schedule';

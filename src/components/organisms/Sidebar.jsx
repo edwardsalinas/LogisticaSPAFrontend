@@ -14,7 +14,7 @@ export const navItems = [
   { path: '/', label: 'Dashboard', eyebrow: 'Resumen', icon: LayoutDashboard, roles: ['admin'] },
   { path: '/driver', label: 'Mi Viaje', eyebrow: 'Operacion', icon: Truck, roles: ['driver'] },
   { path: '/logistics/packages', label: 'Paquetes', eyebrow: 'Operacion', icon: Package, roles: ['admin', 'logistics_operator', 'client'] },
-  { path: '/logistics/routes', label: 'Rutas', eyebrow: 'Mapa vivo', icon: Map, roles: ['admin', 'logistics_operator'] },
+  { path: '/logistics/routes', label: 'Viajes', eyebrow: 'Planificación', icon: Map, roles: ['admin', 'logistics_operator'] },
   { path: '/tracking', label: 'Tracking', eyebrow: 'Seguimiento', icon: Crosshair, roles: ['admin', 'logistics_operator'] },
   { path: '/fleet', label: 'Flota', eyebrow: 'Unidades', icon: Truck, roles: ['admin'] },
   { path: '/analytics', label: 'Reportes', eyebrow: 'Metricas', icon: BarChart3, roles: ['admin'] },
