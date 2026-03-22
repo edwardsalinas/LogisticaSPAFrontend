@@ -1,12 +1,20 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Truck, Navigation, Play, Square, Activity, MapPin, Search } from 'lucide-react';
+import { Truck, Navigation, Play, Square, Activity, MapPin, Search, Calendar as CalendarIcon } from 'lucide-react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
+import FullCalendar from '@fullcalendar/react';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
 import BaseMap from '../../../components/molecules/BaseMap';
 import StatCard from '../../../components/molecules/StatCard';
 import PageSkeleton from '../../../components/organisms/PageSkeleton';
+import RoutePath from '../../../components/molecules/RoutePath';
+import CheckpointMarker from '../../../components/molecules/CheckpointMarker';
+import OriginDestMarker from '../../../components/molecules/OriginDestMarker';
 import { heroImages } from '../../../constants/heroImages';
 import apiService from '../../../services/apiService';
 
@@ -47,6 +55,58 @@ function DriverDashboardPage() {
   const [currentPosition, setCurrentPosition] = useState(null);
   const [gpsError, setGpsError] = useState(null);
   const [eventsSent, setEventsSent] = useState(0);
+
+  // Transformar rutas para el calendario
+  const calendarEvents = routes.filter(r => r.departure_time).map(r => {
+    const start = new Date(r.departure_time);
+    const end = new Date(start.getTime() + (120 * 60000)); // 2h por defecto
+    
+    let bgColor = r.schedule_id ? '#8b5cf6' : '#3b82f6';
+    if (r.status === 'active' || r.status === 'en_transito') bgColor = '#10b981';
+    if (r.status === 'completed' || r.status === 'finalizada') bgColor = '#64748b';
+
+    return {
+      id: r.id,
+      title: `${r.route_code} | ${r.origin} - ${r.destination}`,
+      start: r.departure_time,
+      end: end.toISOString(),
+      backgroundColor: bgColor,
+      borderColor: 'transparent',
+      display: 'block',
+      extendedProps: { route: r }
+    };
+  });
+
+  const renderEventContent = (eventInfo) => {
+    const { event } = eventInfo;
+    const isPast = new Date(event.start) < new Date();
+    const isMonthView = eventInfo.view.type === 'dayGridMonth';
+
+    if (isMonthView) {
+      return (
+        <div className={`w-full overflow-hidden flex items-center gap-1 px-1 ${isPast && event.extendedProps.route.status === 'laneada' ? 'opacity-70' : ''}`}>
+          <span className="font-bold text-[9px] text-white/90 whitespace-nowrap">{eventInfo.timeText}</span>
+          <span className="text-[10px] font-medium text-white truncate">{event.title.split('|')[0].trim()}</span>
+          {(event.extendedProps.route.status === 'active' || event.extendedProps.route.status === 'en_transito') && <Truck size={10} className="animate-pulse text-white ml-auto shrink-0" />}
+        </div>
+      );
+    }
+    return (
+      <div className={`p-1 flex flex-col h-full overflow-hidden leading-tight ${isPast && event.extendedProps.route.status === 'laneada' ? 'opacity-70' : ''}`}>
+        <div className="flex justify-between items-center mb-0.5">
+          <span className="font-bold text-[10px] text-white/90">{eventInfo.timeText}</span>
+          {(event.extendedProps.route.status === 'active' || event.extendedProps.route.status === 'en_transito') && <Truck size={10} className="animate-pulse text-white" />}
+        </div>
+        <p className="text-[10px] font-medium text-white truncate">{event.title.split('|')[0]}</p>
+        <p className="text-[9px] text-white/80 truncate mt-0.5">{event.title.split('|')[1]}</p>
+      </div>
+    );
+  };
+
+  const handleEventClick = (info) => {
+    setSelectedRouteId(info.event.id);
+    // Ya no cambiamos a 'controls', el conductor puede iniciar desde el footer
+  };
   
   const watchIdRef = useRef(null);
   const intervalRef = useRef(null);
@@ -192,58 +252,114 @@ function DriverDashboardPage() {
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-12">
         <div className="xl:col-span-4 flex flex-col gap-4">
-          <div className="rounded-[1.6rem] border border-surface-100 bg-white shadow-xl overflow-hidden">
-            <div className={`p-6 border-b-4 ${isActive ? 'border-emerald-500 bg-emerald-50' : 'border-surface-200 bg-surface-50'}`}>
-              <h2 className="text-xl font-display font-semibold text-surface-900 mb-2">Control de Viaje</h2>
-              <p className="text-sm text-surface-500 mb-6">Selecciona la ruta asignada y habilita la recoleccion in-app de tu posicion para el calculo de ETA.</p>
-              
-              {!isActive ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-[0.68rem] font-bold uppercase tracking-[0.18em] text-surface-500 mb-2">
-                      Rutas Pendientes
-                    </label>
-                    <select
-                      value={selectedRouteId}
-                      onChange={(e) => setSelectedRouteId(e.target.value)}
-                      className="w-full h-11 px-4 border border-surface-200 rounded-xl bg-white text-surface-900 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
-                    >
-                      <option value="">-- Elige una ruta --</option>
-                      {routes.map(r => (
-                        <option key={r.id} value={r.id}>{r.route_code} ({r.origin} → {r.destination})</option>
-                      ))}
-                    </select>
-                  </div>
-                  <Button size="lg" className="w-full justify-center gap-2 bg-emerald-600 hover:bg-emerald-700" onClick={handleStartTrip} disabled={toggling || !selectedRouteId}>
-                    {toggling ? 'Iniciando...' : <><Play fill="currentColor" size={16} /> Iniciar Viaje</>}
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-5">
-                  <div className="p-4 rounded-xl bg-emerald-100/50 border border-emerald-200">
-                    <p className="text-sm font-semibold text-emerald-800">
-                      🟢 Viaje Activo
-                    </p>
-                    <p className="text-xs text-emerald-600 mt-1 max-w-[200px]">
-                      {activeTrip.route ? `${activeTrip.route.origin} → ${activeTrip.route.destination}` : 'Ruta activa'}
-                    </p>
-                  </div>
-                  <Button size="lg" variant="danger" className="w-full justify-center gap-2" onClick={handleStopTrip} disabled={toggling}>
-                    {toggling ? 'Finalizando...' : <><Square fill="currentColor" size={16} /> Finalizar Viaje</>}
-                  </Button>
+          <div className="rounded-[1.6rem] border border-surface-100 bg-white shadow-xl overflow-hidden flex flex-col h-full min-h-[500px]">
+            <div className={`p-5 border-b flex items-center justify-between ${isActive ? 'bg-emerald-50 border-emerald-100' : 'bg-surface-50 border-surface-100'}`}>
+              <div>
+                <h2 className="text-lg font-display font-bold text-surface-900 leading-tight">Itinerario de Viajes</h2>
+                <p className="text-[10px] uppercase tracking-wider text-surface-500 font-bold mt-0.5">Gestión Operativa</p>
+              </div>
+              {isActive && (
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700 text-[10px] font-bold animate-pulse">
+                  <Activity size={12} /> EN TRÁNSITO
                 </div>
               )}
             </div>
+
+            <div className="flex-1 overflow-hidden p-4 text-xs custom-driver-calendar">
+              <style>{`
+                .custom-driver-calendar .fc-toolbar { margin-bottom: 1rem !important; }
+                .custom-driver-calendar .fc-toolbar-title { font-size: 0.9rem !important; font-weight: 800; }
+                .custom-driver-calendar .fc-button { padding: 4px 8px !important; font-size: 0.75rem !important; border-radius: 8px !important; }
+                .custom-driver-calendar .fc-theme-standard td, .custom-driver-calendar .fc-theme-standard th { border-color: #f1f5f9; }
+                .custom-driver-calendar .fc-event { cursor: pointer; border: none; }
+              `}</style>
+              <FullCalendar
+                plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
+                initialView="timeGridDay"
+                headerToolbar={{ left: 'prev,next', center: 'title', right: 'timeGridDay,timeGridWeek,dayGridMonth' }}
+                events={calendarEvents}
+                eventClick={handleEventClick}
+                eventContent={renderEventContent}
+                height="100%"
+                allDaySlot={false}
+                locale="es"
+                slotMinTime="06:00:00"
+                slotMaxTime="22:00:00"
+                dayMaxEvents={true}
+                buttonText={{ today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día' }}
+              />
+            </div>
+            
+            {(activeRouteData || activeTrip) && (
+              <div className="mt-auto p-5 bg-surface-50 border-t border-surface-100 ring-1 ring-black/5">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${isActive ? 'bg-emerald-100 text-emerald-600' : 'bg-primary-100 text-primary-600'}`}>
+                      {isActive ? <Truck size={20} /> : <Navigation size={20} />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold text-surface-400 uppercase tracking-tighter">
+                        {isActive ? 'Viaje en Curso' : 'Ruta Seleccionada'}
+                      </p>
+                      <p className="text-sm font-bold text-surface-800 truncate">
+                        {(activeRouteData || activeTrip.route)?.route_code}
+                      </p>
+                      <p className="text-[10px] text-surface-500 truncate mt-0.5 font-medium">
+                        {(activeRouteData || activeTrip.route)?.origin} → {(activeRouteData || activeTrip.route)?.destination}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    {isActive ? (
+                      <Button size="sm" variant="danger" className="px-4 py-2 h-auto text-[11px] gap-2 shadow-lg shadow-danger-200" onClick={handleStopTrip} disabled={toggling}>
+                        {toggling ? '...' : <><Square fill="currentColor" size={12} /> Finalizar</>}
+                      </Button>
+                    ) : (
+                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 h-auto text-[11px] gap-2 shadow-lg shadow-emerald-200" onClick={handleStartTrip} disabled={toggling || !selectedRouteId}>
+                        {toggling ? '...' : <><Play fill="currentColor" size={12} /> Iniciar Viaje</>}
+                      </Button>
+                    )}
+                    <Badge variant={isActive ? "emerald" : "blue"} className="text-[9px] px-2.5 py-0.5">
+                      {(activeRouteData || activeTrip.route)?.type === 'schedule' ? 'Recurrente' : 'Único'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!activeRouteData && !activeTrip && (
+              <div className="mt-auto p-6 text-center bg-surface-50 border-t border-surface-100">
+                <p className="text-xs font-medium text-surface-400 uppercase tracking-widest flex items-center justify-center gap-2">
+                  <CalendarIcon size={14} /> Selecciona un viaje del calendario
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
         <div className="xl:col-span-8">
-          <div className="h-[60vh] min-h-[30rem] overflow-hidden rounded-[1.6rem] border border-surface-100 bg-white p-3 shadow-xl relative">
+          <div className="h-[65vh] min-h-[35rem] overflow-hidden rounded-[2rem] border border-white/60 bg-white p-3 shadow-2xl relative">
             <BaseMap
-              center={currentPosition ? [currentPosition.lat, currentPosition.lng] : [-16.5, -68.15]}
-              zoom={currentPosition ? 15 : 7}
-              className="h-full w-full rounded-2xl"
+              center={currentPosition ? [currentPosition.lat, currentPosition.lng] : activeRouteData ? [activeRouteData.origin_lat, activeRouteData.origin_lng] : [-16.5, -68.15]}
+              zoom={currentPosition || activeRouteData ? 13 : 7}
+              className="h-full w-full rounded-[1.6rem]"
             >
+              {activeRouteData && (
+                <>
+                  <RoutePath route={activeRouteData} />
+                  {activeRouteData.origin_lat && activeRouteData.origin_lng && (
+                    <OriginDestMarker type="origin" position={[activeRouteData.origin_lat, activeRouteData.origin_lng]} title="Punto de Inicio" subtitle={activeRouteData.origin} />
+                  )}
+                  {activeRouteData.dest_lat && activeRouteData.dest_lng && (
+                    <OriginDestMarker type="dest" position={[activeRouteData.dest_lat, activeRouteData.dest_lng]} title="Destino Final" subtitle={activeRouteData.destination} />
+                  )}
+                  {activeRouteData.checkpoints?.map(cp => (
+                    <CheckpointMarker key={cp.id} checkpoint={cp} />
+                  ))}
+                </>
+              )}
+
               {currentPosition && (
                 <Marker position={[currentPosition.lat, currentPosition.lng]} icon={vehicleIcon}>
                   <Popup>Tu ubicación actual (Transmitiendo...)</Popup>
@@ -251,8 +367,8 @@ function DriverDashboardPage() {
               )}
             </BaseMap>
 
-            {!isActive && !currentPosition && (
-              <div className="absolute inset-0 flex items-center justify-center bg-surface-900/15 backdrop-blur-sm z-[1000] rounded-2xl pointer-events-none m-3">
+            {!isActive && !selectedRouteId && !currentPosition && (
+              <div className="absolute inset-0 flex items-center justify-center bg-surface-900/15 backdrop-blur-sm z-[1000] rounded-[1.6rem] pointer-events-none m-3">
                 <div className="bg-white/95 p-8 rounded-2xl shadow-2xl text-center border border-white/20 max-w-sm">
                   <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-surface-100 text-surface-400 mb-4">
                     <Navigation size={28} />
