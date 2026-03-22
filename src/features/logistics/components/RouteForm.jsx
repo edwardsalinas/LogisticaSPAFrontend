@@ -303,7 +303,7 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
           <div className="flex bg-white p-1 rounded-2xl gap-1 border border-surface-100">
             <button type="button" onClick={() => setTripType('schedule')}
               className={clsx("flex-1 py-2.5 px-4 flex items-center justify-center gap-2 text-sm font-semibold rounded-xl transition-all", tripType === 'schedule' ? "bg-primary-600 text-white shadow-md" : "text-surface-500 hover:text-surface-700")}
-            ><CalendarRange size={16} /> Programación Semanal</button>
+            ><CalendarRange size={16} /> Viaje Recurrente (Permanente)</button>
             <button type="button" onClick={() => setTripType('single')}
               className={clsx("flex-1 py-2.5 px-4 flex items-center justify-center gap-2 text-sm font-semibold rounded-xl transition-all", tripType === 'single' ? "bg-primary-600 text-white shadow-md" : "text-surface-500 hover:text-surface-700")}
             ><Rocket size={16} /> Viaje Único</button>
@@ -314,7 +314,7 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
           ) : (
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-surface-700 mb-2 block">Días de Operación *</label>
+                <label className="text-sm font-medium text-surface-700 mb-2 block">Días de Operación Fija *</label>
                 <div className="flex gap-2 flex-wrap">
                   {DAY_NAMES.map((name, idx) => (
                     <button key={idx} type="button" onClick={() => toggleDay(idx)}
@@ -366,7 +366,7 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
       <div className="mt-2 flex justify-end gap-3">
         <Button variant="secondary" onClick={onCancel} type="button">Cancelar</Button>
         <Button type="submit" disabled={submitting || (tripType === 'schedule' && selectedDays.length === 0)}>
-          {submitting ? 'Guardando...' : initialData ? 'Guardar Cambios' : `Confirmar ${tripType === 'schedule' ? 'Cronograma' : 'Viaje'}`}
+          {submitting ? 'Guardando...' : initialData ? 'Guardar Cambios' : `Confirmar ${tripType === 'schedule' ? 'Rutina' : 'Viaje'}`}
         </Button>
       </div>
     </form>

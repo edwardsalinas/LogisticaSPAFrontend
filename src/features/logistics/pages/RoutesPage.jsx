@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
-import { MapPinned, Route, Search, Truck } from 'lucide-react';
+import { MapPinned, Route, Search, Truck, Calendar, List, User, MapPin, Flag, Layers, ChevronDown, Plus, Filter, X } from 'lucide-react';
+import FullCalendar from '@fullcalendar/react';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
 import SearchInput from '../../../components/atoms/SearchInput';
@@ -38,6 +42,12 @@ function RoutesPage() {
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [extendedSelectedRoute, setExtendedSelectedRoute] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState('calendar');
+  const [selectedDriverId, setSelectedDriverId] = useState('');
+  const [selectedOrigin, setSelectedOrigin] = useState('');
+  const [selectedDestination, setSelectedDestination] = useState('');
+  const [selectedTripType, setSelectedTripType] = useState('');
+  const [clickTimeout, setClickTimeout] = useState(null);
 
   const fetchRoutes = async () => {
     setLoading(true);
@@ -59,7 +69,16 @@ function RoutesPage() {
       };
 
       const rawSchedules = extractData(schedsRes);
-      const rawRoutes = extractData(routesRes);
+      const allRealRoutes = routesRes.status === 'fulfilled' ? (Array.isArray(routesRes.value.data) ? routesRes.value.data : (routesRes.value.data?.data || [])) : [];
+
+      const mappedRoutes = allRealRoutes.map(r => ({
+        ...r,
+        type: 'route',
+        driver_name: r.driver?.full_name || 'Sin asignar',
+        driver_id: r.driver_id || r.driver?.id || null,
+        vehicle_brand: r.vehicles?.brand || 'Vehículo',
+        plate_number: r.vehicles?.plate || '--',
+      }));
 
       const mappedSchedules = rawSchedules.map(sch => ({
         ...sch,
@@ -67,18 +86,11 @@ function RoutesPage() {
         route_code: sch.label || `SCH-${sch.id.slice(0, 5).toUpperCase()}`,
         status: sch.status || 'schedule',
         driver_name: sch.drivers?.full_name || sch.drivers?.email || 'Sin conductor',
+        driver_id: sch.driver_id || sch.drivers?.id || null,
         vehicle_brand: sch.vehicles?.brand || 'Vehículo',
         plate_number: sch.vehicles?.plate || '--',
         progress: 0,
         eta: '--',
-      }));
-
-      const mappedRoutes = rawRoutes.map(r => ({
-        ...r,
-        type: 'route',
-        driver_name: r.driver?.full_name || 'Sin asignar',
-        vehicle_brand: r.vehicles?.brand || 'Vehículo',
-        plate_number: r.vehicles?.plate || '--',
       }));
 
       const combined = [...mappedSchedules, ...mappedRoutes];
@@ -182,24 +194,148 @@ function RoutesPage() {
     setShowAssignModal(true);
   };
 
-  const handleGenerateRoutes = async () => {
-    try {
-      setLoading(true);
-      const res = await apiService.generateRoutesFromSchedules(7);
-      const count = res.data?.generatedCount || 0;
-      alert(`Se han generado ${count} despachos para la próxima semana.`);
-      fetchRoutes();
-    } catch (err) {
-      console.error('Error generando despachos:', err);
-      alert('Error al proyectar los cronogramas.');
-      setLoading(false);
+  const uniqueDrivers = Array.from(new Map(
+    routes.filter(r => r.driver_id).map(r => [r.driver_id, { id: r.driver_id, name: r.driver_name }])
+  ).values());
+  const uniqueOrigins = [...new Set(routes.filter(r => r.origin).map(r => r.origin))].sort();
+  const uniqueDestinations = [...new Set(routes.filter(r => r.destination).map(r => r.destination))].sort();
+
+  const driverFilteredRoutes = selectedDriverId 
+    ? routes.filter(r => String(r.driver_id) === String(selectedDriverId))
+    : routes;
+
+  const locationFilteredRoutes = driverFilteredRoutes.filter(r => {
+    if (selectedOrigin && r.origin !== selectedOrigin) return false;
+    if (selectedDestination && r.destination !== selectedDestination) return false;
+    return true;
+  });
+
+  const typeFilteredRoutes = locationFilteredRoutes.filter(r => {
+    if (selectedTripType === 'single') return !r.schedule_id && r.type !== 'schedule';
+    if (selectedTripType === 'schedule') return !!r.schedule_id || r.type === 'schedule';
+    return true;
+  });
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  
+  const listRoutes = typeFilteredRoutes.filter(r => {
+    if (r.type === 'schedule') return true;
+    if (r.schedule_id && (r.status === 'planeada' || r.status === 'pending')) {
+      if (!r.scheduled_date || r.scheduled_date > todayStr) return false;
+    }
+    return true;
+  });
+
+  const filteredListRoutes = listRoutes.filter((route) => route.route_code?.toLowerCase().includes(searchTerm.toLowerCase()) || route.driver_name?.toLowerCase().includes(searchTerm.toLowerCase()) || route.origin?.toLowerCase().includes(searchTerm.toLowerCase()) || route.destination?.toLowerCase().includes(searchTerm.toLowerCase()));
+  const calendarEvents = typeFilteredRoutes.filter(r => r.type === 'route' && r.departure_time).map(r => {
+    const start = new Date(r.departure_time);
+    const end = new Date(start.getTime() + ((r.eta_minutes || 120) * 60000));
+    
+    let bgColor = r.schedule_id ? '#8b5cf6' : '#3b82f6'; // Morado para recurrentes, Azul para únicos
+    if (r.status === 'active' || r.status === 'en_transito') bgColor = '#059669'; // Verde
+    if (r.status === 'completed' || r.status === 'finalizada') bgColor = '#475569'; // Gris
+
+    return {
+      id: r.id,
+      title: `${r.route_code} | ${r.origin} - ${r.destination}`,
+      start: r.departure_time,
+      end: end.toISOString(),
+      backgroundColor: bgColor,
+      borderColor: 'transparent',
+      display: 'block',
+      extendedProps: { route: r }
+    };
+  });
+
+  const active = typeFilteredRoutes.filter((r) => r.type === 'route' && (r.status === 'active' || r.status === 'en_transito')).length;
+  const pending = listRoutes.filter((r) => r.type === 'route' && (r.status === 'pending' || r.status === 'planeada')).length;
+  const completed = typeFilteredRoutes.filter((r) => r.type === 'route' && (r.status === 'completed' || r.status === 'finalizada')).length;
+
+  const handleEventClick = (info) => {
+    const found = routes.find(r => r.id === info.event.extendedProps.route.id);
+    if (!found) return;
+
+    if (clickTimeout) {
+      clearTimeout(clickTimeout);
+      setClickTimeout(null);
+      // Double click
+      handleEdit(found);
+    } else {
+      // Single click
+      const timeout = setTimeout(() => {
+        setClickTimeout(null);
+        setSelectedRoute(found);
+      }, 250);
+      setClickTimeout(timeout);
     }
   };
 
-  const filteredRoutes = routes.filter((route) => route.route_code?.toLowerCase().includes(searchTerm.toLowerCase()) || route.driver_name?.toLowerCase().includes(searchTerm.toLowerCase()) || route.origin?.toLowerCase().includes(searchTerm.toLowerCase()) || route.destination?.toLowerCase().includes(searchTerm.toLowerCase()));
-  const active = routes.filter((r) => r.status === 'active' || r.status === 'en_transito').length;
-  const pending = routes.filter((r) => r.status === 'pending' || r.status === 'planeada').length;
-  const completed = routes.filter((r) => r.status === 'completed' || r.status === 'finalizada').length;
+  const renderEventContent = (eventInfo) => {
+    const event = eventInfo.event;
+    const isPast = new Date(event.start) < new Date();
+    const isMonthView = eventInfo.view.type === 'dayGridMonth';
+
+    if (isMonthView) {
+      return (
+        <div className={`w-full overflow-hidden flex items-center gap-1 px-1 ${isPast && event.extendedProps.route.status === 'planeada' ? 'opacity-70' : ''}`}>
+          <span className="font-bold text-[9px] text-white/90 whitespace-nowrap">{eventInfo.timeText}</span>
+          <span className="text-[10px] sm:text-xs font-medium text-white truncate">{event.title.split('|')[0].trim()}</span>
+          {(event.extendedProps.route.status === 'active' || event.extendedProps.route.status === 'en_transito') && <Truck size={10} className="animate-pulse text-white ml-auto shrink-0" />}
+        </div>
+      );
+    }
+
+    return (
+      <div className={`p-1 flex flex-col h-full overflow-hidden leading-tight ${isPast && event.extendedProps.route.status === 'planeada' ? 'opacity-70' : ''}`}>
+        <div className="flex justify-between items-center mb-0.5">
+          <span className="font-bold text-[10px] sm:text-xs text-white/90">{eventInfo.timeText}</span>
+          {(event.extendedProps.route.status === 'active' || event.extendedProps.route.status === 'en_transito') && <Truck size={10} className="animate-pulse text-white" />}
+        </div>
+        <p className="text-[10px] sm:text-xs font-medium text-white truncate">{event.title}</p>
+        <p className="text-[9px] text-white/80 truncate mt-0.5">{event.extendedProps.route.driver_name}</p>
+      </div>
+    );
+  };
+
+  const FilterSelect = ({ icon: Icon, value, onChange, options, placeholder, className = "" }) => {
+    const isActive = !!value;
+    return (
+      <div className={`relative flex items-center group transition-all duration-300 ${className}`}>
+        <div className={`absolute left-3.5 z-10 pointer-events-none transition-colors duration-300 ${isActive ? 'text-primary-600' : 'text-surface-400 group-hover:text-surface-600'}`}>
+          <Icon size={16} strokeWidth={2.5} />
+        </div>
+        <select
+          value={value}
+          onChange={onChange}
+          className={`w-full appearance-none h-[40px] pl-10 pr-9 text-[13px] font-bold rounded-xl border transition-all duration-300 outline-none cursor-pointer
+            ${isActive 
+              ? 'bg-primary-50/80 border-primary-300 text-primary-900 ring-2 ring-primary-500/10' 
+              : 'bg-white border-surface-200 text-surface-700 hover:border-surface-400 hover:shadow-sm'
+            }`}
+        >
+          <option value="">{placeholder}</option>
+          {options.map(opt => (
+            <option key={opt.id || opt.value || opt} value={opt.id || opt.value || opt}>
+              {opt.name || opt.label || opt}
+            </option>
+          ))}
+        </select>
+        <div className={`absolute right-3 z-10 pointer-events-none transition-all duration-300 ${isActive ? 'text-primary-500 rotate-180' : 'text-surface-400'}`}>
+          <ChevronDown size={14} strokeWidth={2.5} />
+        </div>
+      </div>
+    );
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setSelectedDriverId('');
+    setSelectedOrigin('');
+    setSelectedDestination('');
+    setSelectedTripType('');
+  };
+
+  const anyFilterActive = searchTerm || selectedDriverId || selectedOrigin || selectedDestination || selectedTripType;
 
   return (
     <div className="space-y-8">
@@ -211,35 +347,142 @@ function RoutesPage() {
 
       <section className="grid gap-6 xl:grid-cols-[minmax(22rem,40%)_minmax(0,1fr)]">
         <div className="overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/88 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
-          <div className="border-b border-surface-100 p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div><p className="text-[0.64rem] uppercase tracking-[0.24em] text-surface-500">Resumen de operacion</p><h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Gestión de Viajes y Cronogramas</h2></div>
-              <Badge variant="info" dot>{filteredRoutes.length} elementos</Badge>
+          <div className="p-5 border-b border-surface-100">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
+              <div className="flex items-center gap-3.5">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-lg shadow-primary-500/20">
+                  <Truck size={22} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h2 className="font-display text-xl font-black tracking-tight text-surface-950 leading-tight">Control de Rutas</h2>
+                  <p className="text-[9px] font-black text-surface-400 uppercase tracking-[0.2em] mt-0.5">Operativa Logística</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                <div className="flex bg-surface-100 p-1 rounded-xl border border-surface-200/50 flex-1 sm:flex-none">
+                  <button onClick={() => setViewMode('calendar')} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all ${viewMode === 'calendar' ? 'bg-white shadow-sm text-primary-700' : 'text-surface-500 hover:text-surface-700'}`}><Calendar size={13} strokeWidth={2.5}/> Calendario</button>
+                  <button onClick={() => setViewMode('list')} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-primary-700' : 'text-surface-500 hover:text-surface-700'}`}><List size={13} strokeWidth={2.5}/> Lista</button>
+                </div>
+                <Button size="md" className="flex-1 sm:flex-none whitespace-nowrap px-5 h-9 text-xs" onClick={() => { setEditingRoute(null); setShowForm(true); }}>
+                  <Plus size={16} strokeWidth={3} className="mr-1.5" /> Nuevo Despacho
+                </Button>
+              </div>
             </div>
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="w-full sm:max-w-md"><SearchInput value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar viaje, conductor o destino..." /></div>
-              <div className="flex gap-2 w-full sm:w-auto">
-                <Button variant="secondary" className="whitespace-nowrap" onClick={handleGenerateRoutes}>Proyectar Semana</Button>
-                <Button className="whitespace-nowrap" onClick={() => { setEditingRoute(null); setShowForm(true); }}>+ Nuevo</Button>
+
+            <div className="bg-surface-50/50 rounded-2xl border border-surface-100/80 px-3 py-2 flex items-center gap-3">
+              {/* Compact Search */}
+              <div className="relative group shrink-0">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-surface-400 group-focus-within:text-primary-500 transition-colors">
+                  <Search size={16} strokeWidth={2.5} />
+                </div>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-10 w-10 group-focus-within:w-44 bg-white border border-surface-200 rounded-xl outline-none transition-all duration-300 focus:pl-10 focus:pr-4 cursor-pointer focus:cursor-text shadow-sm"
+                  placeholder=""
+                />
+              </div>
+
+              <div className="h-6 w-px bg-surface-200/60 hidden md:block" />
+
+              {/* Filters Flex Row - ensuring no wrap on desktop if possible, or tight grid */}
+              <div className="grid grid-cols-2 lg:flex lg:items-center gap-2 flex-1">
+                <FilterSelect 
+                  icon={User}
+                  value={selectedDriverId}
+                  onChange={(e) => setSelectedDriverId(e.target.value)}
+                  options={uniqueDrivers}
+                  placeholder="Conductor"
+                  className="w-full lg:w-[150px]"
+                />
+                <FilterSelect 
+                  icon={MapPin}
+                  value={selectedOrigin}
+                  onChange={(e) => setSelectedOrigin(e.target.value)}
+                  options={uniqueOrigins.map(o => ({ value: o, label: o }))}
+                  placeholder="Origen"
+                  className="w-full lg:w-[125px]"
+                />
+                <FilterSelect 
+                  icon={Flag}
+                  value={selectedDestination}
+                  onChange={(e) => setSelectedDestination(e.target.value)}
+                  options={uniqueDestinations.map(d => ({ value: d, label: d }))}
+                  placeholder="Destino"
+                  className="w-full lg:w-[125px]"
+                />
+                <FilterSelect 
+                  icon={Layers}
+                  value={selectedTripType}
+                  onChange={(e) => setSelectedTripType(e.target.value)}
+                  options={[
+                    { value: 'single', label: 'Único' },
+                    { value: 'schedule', label: 'Tipo' }
+                  ]}
+                  placeholder="Tipo"
+                  className="w-full lg:w-[125px]"
+                />
+
+                {anyFilterActive && (
+                  <button 
+                    onClick={handleClearFilters}
+                    className="flex shrink-0 items-center justify-center h-9 w-9 text-surface-400 hover:text-danger-600 transition-all bg-white border border-surface-200 rounded-xl hover:bg-danger-50 shadow-sm"
+                    title="Limpiar"
+                  >
+                    <X size={14} strokeWidth={3} />
+                  </button>
+                )}
               </div>
             </div>
           </div>
 
-          <div className="max-h-[calc(100vh-18rem)] space-y-3 overflow-y-auto p-4">
-            {loading ? (
-              Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-2xl" />)
+
+
+
+
+          <div className="p-4" style={{ height: 'calc(100vh - 18rem)' }}>
+            {viewMode === 'calendar' ? (
+              <div className="h-full bg-white rounded-2xl overflow-hidden shadow-sm border border-surface-100 text-xs sm:text-sm custom-calendar">
+                <style>{`
+                  .custom-calendar .fc-theme-standard th { border:none; padding: 10px 0; background-color: #f8fafc; font-weight: 600; color: #475569; }
+                  .custom-calendar .fc-toolbar-title { font-size: 1.1rem !important; font-weight: 700; color: #0f172a; }
+                  .custom-calendar .fc-button-primary { background-color: #0f172a !important; border-color: #0f172a !important; border-radius: 0.5rem; text-transform: capitalize; font-weight: 600; }
+                  .custom-calendar .fc-button-active { background-color: #3b82f6 !important; border-color: #3b82f6 !important; }
+                  .custom-calendar .fc-event { cursor: pointer; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.2); }
+                  .custom-calendar .fc-timegrid-slot { height: 2.5em; }
+                  .custom-calendar .fc-v-event .fc-event-main { padding: 4px; }
+                  .custom-calendar .fc-scrollgrid { border-radius: 1rem; overflow: hidden; border: none; }
+                `}</style>
+                <FullCalendar
+                  plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
+                  initialView="timeGridWeek"
+                  headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' }}
+                  events={calendarEvents}
+                  eventClick={handleEventClick}
+                  eventContent={renderEventContent}
+                  height="100%"
+                  slotMinTime="05:00:00"
+                  slotMaxTime="23:00:00"
+                  allDaySlot={false}
+                  locale="es"
+                  buttonText={{ today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día' }}
+                />
+              </div>
             ) : (
-              filteredRoutes.map((route) => <div key={route.id} className={`${selectedRoute?.id === route.id ? 'ring-2 ring-primary-200 ring-offset-2 ring-offset-white rounded-[1.35rem]' : ''}`}><RouteCard route={route} isSelected={selectedRoute?.id === route.id} onClick={() => setSelectedRoute(route)} onEdit={() => handleEdit(route)} onDelete={() => handleDelete(route)} /></div>)
+              <div className="h-full overflow-y-auto space-y-3">
+                {loading ? (
+                  Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-2xl" />)
+                ) : (
+                  filteredListRoutes.map((route) => <div key={route.id} className={`${selectedRoute?.id === route.id ? 'ring-2 ring-primary-200 ring-offset-2 ring-offset-white rounded-[1.35rem]' : ''}`}><RouteCard route={route} isSelected={selectedRoute?.id === route.id} onClick={() => setSelectedRoute(route)} onEdit={() => handleEdit(route)} onDelete={() => handleDelete(route)} /></div>)
+                )}
+                {!loading && filteredListRoutes.length === 0 && (
+                  <EmptyState eyebrow="Sin coincidencias" title="No encontramos viajes con ese criterio" description="Prueba ajustando conductor, codigo o destino para volver a poblar la vista." className="min-h-[15rem] border-surface-100 bg-surface-50/70" />
+                )}
+              </div>
             )}
-            {!loading && filteredRoutes.length === 0 && (
-              <EmptyState
-                eyebrow="Sin coincidencias"
-                title="No encontramos rutas con ese criterio"
-                description="Prueba ajustando conductor, codigo o destino para volver a poblar la vista."
-                className="min-h-[15rem] border-surface-100 bg-surface-50/70"
-              />
-            )}
-          </div>
+           </div>
         </div>
 
         <div className="relative min-h-[42rem] overflow-hidden rounded-[1.8rem] border border-white/60 bg-[linear-gradient(180deg,#eaf0f7_0%,#dfe8f2_100%)] shadow-[0_24px_70px_-42px_rgba(15,23,42,0.24)]">
@@ -292,8 +535,8 @@ function RoutesPage() {
           ) : (
             <EmptyState
               eyebrow="Mapa en espera"
-              title="Selecciona una ruta para abrir el mapa"
-              description="Al elegir una ruta mostraremos checkpoints, progreso, ETA y lectura espacial del recorrido."
+              title="Selecciona un viaje para abrir el mapa"
+              description="Al elegir un viaje mostraremos checkpoints, progreso, ETA y lectura espacial del recorrido."
               className="h-full min-h-[42rem] border-0 bg-transparent"
             />
           )}
