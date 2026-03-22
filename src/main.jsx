@@ -4,10 +4,17 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './app/App';
 import './styles/index.css';
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </StrictMode>,
-);
+async function enableMocking() {
+  // MSW temporalmente desactivado para conectar directamente con LogisticaSPABackend
+  return;
+}
+
+enableMocking().then(() => {
+  createRoot(document.getElementById('root')).render(
+    <StrictMode>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </StrictMode>,
+  );
+});

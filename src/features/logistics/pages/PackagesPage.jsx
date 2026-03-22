@@ -6,7 +6,7 @@ import Button from '../../../components/atoms/Button';
 import SearchInput from '../../../components/atoms/SearchInput';
 import Modal from '../../../components/molecules/Modal';
 import DataTable from '../../../components/organisms/DataTable';
-import PageSkeleton from '../../../components/organisms/PageSkeleton';
+import Skeleton from '../../../components/atoms/Skeleton';
 import { heroImages } from '../../../constants/heroImages';
 import PackageDetail from '../components/PackageDetail';
 import PackageForm from '../components/PackageForm';
@@ -90,11 +90,13 @@ function PackagesPage() {
   const inTransit = packages.filter((p) => p.status === 'in_transit' || p.status === 'assigned').length;
   const pending = packages.filter((p) => p.status === 'pending').length;
 
-  if (loading) return <PageSkeleton stats={4} layout="table" />;
-
   return (
     <div className="space-y-8">
-      <PackagesHero totalPackages={totalPackages} deliveredCount={delivered} transitCount={inTransit} pendingCount={pending} />
+      {loading ? (
+        <Skeleton className="h-[220px] w-full" />
+      ) : (
+        <PackagesHero totalPackages={totalPackages} deliveredCount={delivered} transitCount={inTransit} pendingCount={pending} />
+      )}
 
       <section className="rounded-[1.8rem] border border-white/70 bg-white/88 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
         <div className="flex flex-col gap-4 border-b border-surface-100 p-6 lg:flex-row lg:items-center lg:justify-between">
@@ -102,10 +104,13 @@ function PackagesPage() {
             <p className="text-[0.64rem] uppercase tracking-[0.24em] text-surface-500">Centro de datos</p>
             <h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Listado de paquetes</h2>
           </div>
-          <div className="w-full lg:w-80"><SearchInput value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar codigo, origen, destino o estado..." /></div>
+          <div className="flex flex-col gap-3 w-full sm:flex-row sm:w-auto sm:items-center">
+            <div className="w-full sm:w-80"><SearchInput value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar codigo, origen, destino o estado..." /></div>
+            <Button className="w-full sm:w-auto whitespace-nowrap" onClick={() => setShowForm(true)}>+ Registrar paquete</Button>
+          </div>
         </div>
         <div className="px-6 pt-5"><p className="text-sm text-surface-500">Mostrando {filteredPackages.length} paquetes en la vista actual.</p></div>
-        <DataTable columns={columns} data={filteredPackages} onRowClick={(row) => setSelectedPackage(row)} />
+        <DataTable columns={columns} data={filteredPackages} loading={loading} onRowClick={(row) => setSelectedPackage(row)} />
       </section>
 
       <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Registrar nuevo paquete">

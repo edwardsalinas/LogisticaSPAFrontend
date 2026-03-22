@@ -1,56 +1,38 @@
-import { useEffect, useState } from 'react';
-import PageSkeleton from '../../../components/organisms/PageSkeleton';
-import apiService from '../../../services/apiService';
+import { usePackages } from '../../../hooks/queries/usePackages';
+import { useRoutes } from '../../../hooks/queries/useRoutes';
+import { useVehicles, useDrivers } from '../../../hooks/queries/useFleet';
+import Skeleton from '../../../components/atoms/Skeleton';
 import DashboardHero from '../components/DashboardHero';
 import PrioritizedShipments from '../components/PrioritizedShipments';
 import LiveMapSummary from '../components/LiveMapSummary';
 import AlertsPanel from '../components/AlertsPanel';
 
 function DashboardPage() {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { data: packages = [], isLoading: pLoading, isError: pError } = usePackages();
+  const { data: routes = [], isLoading: rLoading, isError: rError } = useRoutes();
+  const { data: vehicles = [], isLoading: vLoading, isError: vError } = useVehicles();
+  const { data: drivers = [], isLoading: dLoading, isError: dError } = useDrivers();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [pkgRes, routesRes, vehiclesRes, driversRes] = await Promise.all([
-          apiService.getPackages(),
-          apiService.getRoutes(),
-          apiService.getVehicles(),
-          apiService.getDrivers(),
-        ]);
-        const packages = pkgRes.data || [];
-        const routes = routesRes.data || [];
-        const vehicles = vehiclesRes.data || [];
-        const drivers = driversRes.data || [];
-        setStats({
-          totalPackages: packages.length,
-          activeRoutes: routes.filter((route) => route.status === 'active').length,
-          totalVehicles: vehicles.length,
-          totalDrivers: drivers.length,
-        });
-      } catch (err) {
-        console.error('Error cargando dashboard:', err);
-        setStats({ totalPackages: 24, activeRoutes: 8, totalVehicles: 42, totalDrivers: 38 });
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  const loading = pLoading || rLoading || vLoading || dLoading;
+  const isError = pError || rError || vError || dError;
 
-  if (loading) return <PageSkeleton stats={4} layout="dashboard" />;
+  const stats = {
+    totalPackages: isError ? 24 : packages.length,
+    activeRoutes: isError ? 8 : routes.filter((route) => route.status === 'active').length,
+    totalVehicles: isError ? 42 : vehicles.length,
+    totalDrivers: isError ? 38 : drivers.length,
+  };
 
   return (
     <div className="space-y-8">
-      <DashboardHero stats={stats} />
+      {loading ? <Skeleton className="h-[220px] w-full" /> : <DashboardHero stats={stats} />}
       
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,0.9fr)]">
-        <PrioritizedShipments />
+        {loading ? <Skeleton className="h-[500px] w-full" /> : <PrioritizedShipments />}
         
         <div className="space-y-6">
-          <LiveMapSummary />
-          <AlertsPanel />
+          {loading ? <Skeleton className="h-[250px] w-full" /> : <LiveMapSummary />}
+          {loading ? <Skeleton className="h-[220px] w-full" /> : <AlertsPanel />}
         </div>
       </section>
     </div>

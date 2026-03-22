@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Input from '../../../components/atoms/Input';
 import Button from '../../../components/atoms/Button';
-import { mockApi } from '../../../services/api.mock';
+import apiService from '../../../services/apiService';
 
 /**
  * Formulario para crear/editar un checkpoint
@@ -53,7 +53,7 @@ function CheckpointForm({ routeId, checkpoint, onSuccess, onCancel }) {
     try {
       if (checkpoint) {
         // Editar checkpoint existente
-        await mockApi.updateCheckpoint(routeId, checkpoint.id, {
+        await apiService.updateCheckpoint(routeId, checkpoint.id, {
           ...form,
           lat: parseFloat(form.lat),
           lng: parseFloat(form.lng),
@@ -62,7 +62,7 @@ function CheckpointForm({ routeId, checkpoint, onSuccess, onCancel }) {
         });
       } else {
         // Crear nuevo checkpoint
-        await mockApi.createCheckpoint(routeId, {
+        await apiService.createCheckpoint(routeId, {
           ...form,
           lat: parseFloat(form.lat),
           lng: parseFloat(form.lng),

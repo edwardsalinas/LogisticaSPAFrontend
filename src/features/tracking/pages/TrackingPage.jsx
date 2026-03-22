@@ -7,7 +7,7 @@ import SearchInput from '../../../components/atoms/SearchInput';
 import EmptyState from '../../../components/molecules/EmptyState';
 import Modal from '../../../components/molecules/Modal';
 
-import PageSkeleton from '../../../components/organisms/PageSkeleton';
+import Skeleton from '../../../components/atoms/Skeleton';
 import { heroImages } from '../../../constants/heroImages';
 import apiService from '../../../services/apiService';
 import TrackingHero from '../components/TrackingHero';
@@ -63,11 +63,13 @@ function TrackingPage() {
   const active = packages.filter((pkg) => pkg.status === 'in_transit' || pkg.status === 'assigned').length;
   const pending = packages.filter((pkg) => pkg.status === 'pending').length;
 
-  if (loading) return <PageSkeleton stats={4} layout="split" />;
-
   return (
     <div className="space-y-8">
-      <TrackingHero visibleCount={filteredPackages.length} activeCount={active} pendingCount={pending} deliveredCount={delivered} />
+      {loading ? (
+        <Skeleton className="h-[220px] w-full" />
+      ) : (
+        <TrackingHero visibleCount={filteredPackages.length} activeCount={active} pendingCount={pending} deliveredCount={delivered} />
+      )}
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(19rem,0.86fr)_minmax(0,1.14fr)]">
         <div className="rounded-[1.8rem] border border-white/70 bg-white/88 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
@@ -77,7 +79,10 @@ function TrackingPage() {
             <div className="mt-5"><SearchInput value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar codigo, origen, destino o estado..." /></div>
           </div>
           <div className="max-h-[42rem] space-y-3 overflow-y-auto p-4">
-            {filteredPackages.map((pkg) => {
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-[1.3rem]" />)
+            ) : (
+              filteredPackages.map((pkg) => {
               const status = statusMap[pkg.status] || { label: pkg.status, variant: 'neutral' };
               const isSelected = selectedPackageId === pkg.id;
               return (
@@ -87,8 +92,9 @@ function TrackingPage() {
                   <p className="mt-2 text-xs text-surface-500">Peso: {pkg.peso} kg</p>
                 </button>
               );
-            })}
-            {filteredPackages.length === 0 && (
+            })
+            )}
+            {!loading && filteredPackages.length === 0 && (
               <EmptyState
                 eyebrow="Sin coincidencias"
                 title="No encontramos paquetes con ese criterio"

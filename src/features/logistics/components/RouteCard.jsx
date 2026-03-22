@@ -11,7 +11,18 @@ function RouteCard({ route, isSelected = false, onClick, onEdit, onDelete }) {
     pending: { label: 'Pendiente', variant: 'warning' },
     completed: { label: 'Completada', variant: 'success' },
     delayed: { label: 'Retrasada', variant: 'danger' },
+    schedule: { label: 'Recurrente', variant: 'primary' },
   };
+
+  const isSchedule = route.type === 'schedule';
+  const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  let scheduleFreq = '';
+  if (isSchedule && route.day_times) {
+    const days = Object.keys(route.day_times).map(Number).sort();
+    if (days.length === 7) scheduleFreq = 'Todos los días';
+    else if (days.length > 0) scheduleFreq = days.map(d => DAY_NAMES[d]).join(', ');
+    else scheduleFreq = 'Sin días asignados';
+  }
 
   const status = statusConfig[route.status] || { label: route.status, variant: 'neutral' };
   const progress = route.progress || 0;
@@ -47,20 +58,31 @@ function RouteCard({ route, isSelected = false, onClick, onEdit, onDelete }) {
         <span className="truncate">{route.destination || 'Destino'}</span>
       </div>
 
-      <div className="mb-3">
-        <ProgressBar value={progress} size="sm" variant={progress === 100 ? 'success' : progress >= 50 ? 'primary' : 'warning'} showLabel />
-      </div>
+      {!isSchedule ? (
+        <>
+          <div className="mb-3">
+            <ProgressBar value={progress} size="sm" variant={progress === 100 ? 'success' : progress >= 50 ? 'primary' : 'warning'} showLabel />
+          </div>
 
-      <div className="grid grid-cols-1 gap-2 text-xs text-surface-500 sm:grid-cols-2 sm:gap-3">
-        <div className="flex items-center gap-2 rounded-xl bg-surface-50 px-3 py-2 min-w-0">
-          <LocateFixed size={13} strokeWidth={2.2} className="shrink-0" />
-          <span className="truncate">{route.next_checkpoint || 'Sin checkpoint'}</span>
+          <div className="grid grid-cols-1 gap-2 text-xs text-surface-500 sm:grid-cols-2 sm:gap-3">
+            <div className="flex items-center gap-2 rounded-xl bg-surface-50 px-3 py-2 min-w-0">
+              <LocateFixed size={13} strokeWidth={2.2} className="shrink-0" />
+              <span className="truncate">{route.next_checkpoint || 'Sin checkpoint'}</span>
+            </div>
+            <div className="flex items-center gap-2 rounded-xl bg-surface-50 px-3 py-2 min-w-0">
+              <Clock3 size={13} strokeWidth={2.2} className="shrink-0" />
+              <span className="truncate">ETA {route.eta || '--'}</span>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="grid grid-cols-1 gap-2 text-xs text-surface-700 font-semibold sm:grid-cols-1 sm:gap-3">
+          <div className="flex items-center gap-2 rounded-xl bg-primary-50 px-3 py-2.5 min-w-0 border border-primary-100/50">
+            <Clock3 size={14} strokeWidth={2.2} className="shrink-0 text-primary-500" />
+            <span className="truncate">Días: {scheduleFreq}</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 rounded-xl bg-surface-50 px-3 py-2 min-w-0">
-          <Clock3 size={13} strokeWidth={2.2} className="shrink-0" />
-          <span className="truncate">ETA {route.eta || '--'}</span>
-        </div>
-      </div>
+      )}
 
       {hasRole(['admin', 'logistics_operator']) && (onEdit || onDelete) && (
         <div className="mt-3 flex justify-end gap-2 border-t border-surface-100 pt-3">

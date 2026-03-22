@@ -6,6 +6,16 @@ function RouteInfoPanel({ route, onClose, onEdit, onDelete, onAssign }) {
   const { hasRole } = useRole();
   if (!route) return null;
 
+  const isSchedule = route.type === 'schedule';
+  const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  let scheduleFreq = '';
+  if (isSchedule && route.day_times) {
+    const days = Object.keys(route.day_times).map(Number).sort();
+    if (days.length === 7) scheduleFreq = 'Todos los días de la semana';
+    else if (days.length > 0) scheduleFreq = days.map(d => DAY_NAMES[d]).join(', ');
+    else scheduleFreq = 'Sin días asignados';
+  }
+
   return (
     <div className="route-info-panel absolute right-4 top-4 z-[1000] w-[21rem] overflow-hidden rounded-[1.5rem] shadow-xl">
       <div className="bg-[linear-gradient(135deg,#0b4ea2_0%,#137fec_100%)] p-5 text-white">
@@ -22,29 +32,46 @@ function RouteInfoPanel({ route, onClose, onEdit, onDelete, onAssign }) {
       </div>
 
       <div className="space-y-5 p-5">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4">
-            <p className="text-[0.62rem] uppercase tracking-[0.18em] text-surface-500">Progreso</p>
-            <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">{route.progress || 65}%</p>
-          </div>
-          <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4">
-            <p className="text-[0.62rem] uppercase tracking-[0.18em] text-surface-500">Restante</p>
-            <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">{route.remaining_distance || '45.2'} km</p>
-          </div>
-        </div>
+        {!isSchedule ? (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4">
+                <p className="text-[0.62rem] uppercase tracking-[0.18em] text-surface-500">Progreso</p>
+                <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">{route.progress || 65}%</p>
+              </div>
+              <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4">
+                <p className="text-[0.62rem] uppercase tracking-[0.18em] text-surface-500">Restante</p>
+                <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">{route.remaining_distance || '45.2'} km</p>
+              </div>
+            </div>
 
-        <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4">
-          <p className="mb-3 text-[0.62rem] uppercase tracking-[0.18em] text-surface-500">Siguiente parada</p>
-          <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
-              <MapPinned size={18} strokeWidth={2.1} />
+            <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4">
+              <p className="mb-3 text-[0.62rem] uppercase tracking-[0.18em] text-surface-500">Siguiente parada</p>
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+                  <MapPinned size={18} strokeWidth={2.1} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-surface-900">{route.next_checkpoint || 'Centro logistico norte'}</p>
+                  <p className="mt-1 flex items-center gap-1.5 text-xs text-surface-500"><Clock3 size={13} strokeWidth={2.2} /> ETA {route.eta || '14:30'} ({route.eta_minutes || '25'} min)</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-surface-900">{route.next_checkpoint || 'Centro logistico norte'}</p>
-              <p className="mt-1 flex items-center gap-1.5 text-xs text-surface-500"><Clock3 size={13} strokeWidth={2.2} /> ETA {route.eta || '14:30'} ({route.eta_minutes || '25'} min)</p>
+          </>
+        ) : (
+          <div className="rounded-[1.2rem] border border-primary-100 bg-primary-50 p-5">
+            <p className="mb-3 text-[0.62rem] font-bold uppercase tracking-[0.18em] text-primary-600">Frecuencia de Operación</p>
+            <div className="flex items-start gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-primary-600 shadow-sm">
+                <Clock3 size={20} strokeWidth={2.5} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-surface-900 leading-snug">{scheduleFreq}</p>
+                <p className="mt-1.5 text-xs text-primary-700 font-medium">Cronograma Activo</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4">
           <p className="mb-3 text-[0.62rem] uppercase tracking-[0.18em] text-surface-500">Conductor asignado</p>

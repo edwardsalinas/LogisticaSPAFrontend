@@ -1,37 +1,43 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+import axios from 'axios';
 
-async function request(endpoint, options = {}) {
-  const url = `${API_BASE}${endpoint}`;
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-  const config = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  };
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-  const token = localStorage.getItem('auth_token');
-  if (token) {
-    config.headers['Authorization'] = `Bearer ${token}`;
+api.interceptors.response.use(
+  (response) => {
+    // Al desempaquetar response.data, compatibilizamos directamente con el comportamiento 
+    // anterior del fetch (data = await response.json(); return data;)
+    return response.data;
+  },
+  (error) => {
+    if (error.response?.status === 401) {
+      console.warn('Unauthorized. Eliminando token y redirigiendo...');
+      localStorage.removeItem('auth_token');
+      // Prevenir bucles de redirección
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    
+    // Mantener la forma de Error para try-catch anteriores
+    const message = error.response?.data?.message || error.message || 'Error en la petición';
+    return Promise.reject(new Error(message));
   }
-
-  const response = await fetch(url, config);
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || 'Error en la petición');
-  }
-
-  return data;
-}
-
-export const api = {
-  get: (endpoint) => request(endpoint),
-  post: (endpoint, body) => request(endpoint, { method: 'POST', body: JSON.stringify(body) }),
-  put: (endpoint, body) => request(endpoint, { method: 'PUT', body: JSON.stringify(body) }),
-  patch: (endpoint, body) => request(endpoint, { method: 'PATCH', body: JSON.stringify(body) }),
-  delete: (endpoint) => request(endpoint, { method: 'DELETE' }),
-};
+);
 
 export default api;

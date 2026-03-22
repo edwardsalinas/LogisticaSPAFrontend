@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useVehicles, useDrivers } from '../../../hooks/queries/useFleet';
 import {
   Eye,
   Pencil,
@@ -16,9 +17,9 @@ import SearchInput from '../../../components/atoms/SearchInput';
 import ActionMenu from '../../../components/molecules/ActionMenu';
 import Modal from '../../../components/molecules/Modal';
 import Pagination from '../../../components/molecules/Pagination';
+import Skeleton from '../../../components/atoms/Skeleton';
 
 import DataTable from '../../../components/organisms/DataTable';
-import PageSkeleton from '../../../components/organisms/PageSkeleton';
 import { heroImages } from '../../../constants/heroImages';
 import apiService from '../../../services/apiService';
 import FleetHero from '../components/FleetHero';
@@ -56,9 +57,6 @@ const vehicleTypeLabel = {
 };
 
 function FleetPage() {
-  const [vehicles, setVehicles] = useState([]);
-  const [drivers, setDrivers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('vehicles');
   const [searchTerm, setSearchTerm] = useState('');
   const [showVehicleForm, setShowVehicleForm] = useState(false);
@@ -66,23 +64,12 @@ function FleetPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [vRes, dRes] = await Promise.all([apiService.getVehicles(), apiService.getDrivers()]);
-        setVehicles(vRes.data || MOCK_VEHICLES);
-        setDrivers(dRes.data || MOCK_DRIVERS);
-      } catch (err) {
-        console.error('Error cargando flota:', err);
-        setVehicles(MOCK_VEHICLES);
-        setDrivers(MOCK_DRIVERS);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const { data: vData, isLoading: vLoading, isError: vError } = useVehicles();
+  const { data: dData, isLoading: dLoading, isError: dError } = useDrivers();
 
-    fetchData();
-  }, []);
+  const vehicles = vError || !vData?.length ? MOCK_VEHICLES : vData;
+  const drivers = dError || !dData?.length ? MOCK_DRIVERS : dData;
+  const loading = vLoading || dLoading;
 
   const filterData = (data) => {
     if (!searchTerm) return data;
@@ -148,24 +135,26 @@ function FleetPage() {
     },
   ];
 
-  if (loading) return <PageSkeleton stats={4} layout="split" />;
-
   return (
     <div className="space-y-8">
-      <FleetHero vehiclesCount={vehicles.length} driversCount={drivers.length} availability={availability} maintenanceCount={maintenanceVehicles} />
+      {loading ? (
+        <Skeleton className="h-[220px] w-full" />
+      ) : (
+        <FleetHero vehiclesCount={vehicles.length} driversCount={drivers.length} availability={availability} maintenanceCount={maintenanceVehicles} />
+      )}
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.82fr)]">
         <div className="rounded-[1.8rem] border border-white/70 bg-white/88 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
           <div className="flex flex-col gap-4 border-b border-surface-100 p-6 lg:flex-row lg:items-center lg:justify-between">
             <div><p className="text-[0.64rem] uppercase tracking-[0.24em] text-surface-500">Centro de datos</p><h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Vehiculos y conductores</h2></div>
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-              <div className="rounded-2xl bg-surface-100 p-1"><button onClick={() => { setActiveTab('vehicles'); setCurrentPage(1); }} className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all ${activeTab === 'vehicles' ? 'bg-white text-primary-700 shadow-sm' : 'text-surface-500'}`}>Vehiculos</button><button onClick={() => { setActiveTab('drivers'); setCurrentPage(1); }} className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all ${activeTab === 'drivers' ? 'bg-white text-primary-700 shadow-sm' : 'text-surface-500'}`}>Conductores</button></div>
-              <div className="w-full lg:w-80"><SearchInput value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder={`Buscar ${activeTab === 'vehicles' ? 'vehiculo, placa o marca' : 'conductor, email o licencia'}`} /></div>
-              {activeTab === 'vehicles' ? <Button size="md" onClick={() => setShowVehicleForm(true)}>+ Agregar vehiculo</Button> : <Button size="md" onClick={() => setShowDriverForm(true)}>+ Registrar conductor</Button>}
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+              <div className="rounded-2xl bg-surface-100 p-1 flex"><button onClick={() => { setActiveTab('vehicles'); setCurrentPage(1); }} className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all sm:flex-none ${activeTab === 'vehicles' ? 'bg-white text-primary-700 shadow-sm' : 'text-surface-500'}`}>Vehiculos</button><button onClick={() => { setActiveTab('drivers'); setCurrentPage(1); }} className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all sm:flex-none ${activeTab === 'drivers' ? 'bg-white text-primary-700 shadow-sm' : 'text-surface-500'}`}>Conductores</button></div>
+              <div className="w-full xl:w-80"><SearchInput value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder={`Buscar ${activeTab === 'vehicles' ? 'vehiculo o placa' : 'conductor o licencia'}`} /></div>
+              {activeTab === 'vehicles' ? <Button size="md" className="w-full sm:w-auto whitespace-nowrap" onClick={() => setShowVehicleForm(true)}>+ Agregar vehiculo</Button> : <Button size="md" className="w-full sm:w-auto whitespace-nowrap" onClick={() => setShowDriverForm(true)}>+ Registrar conductor</Button>}
             </div>
           </div>
           <div className="px-6 pt-5"><p className="text-sm text-surface-500">Mostrando {activeTab === 'vehicles' ? filteredVehicles.length : filteredDrivers.length} registros en la vista actual.</p></div>
-          {activeTab === 'vehicles' ? <><DataTable columns={vehicleColumns} data={paginatedVehicles} /><div className="border-t border-surface-100 p-6"><Pagination currentPage={currentPage} totalPages={totalPagesVehicles} totalItems={filteredVehicles.length} itemsPerPage={itemsPerPage} onPageChange={setCurrentPage} /></div></> : <><DataTable columns={driverColumns} data={paginatedDrivers} /><div className="border-t border-surface-100 p-6"><Pagination currentPage={currentPage} totalPages={totalPagesDrivers} totalItems={filteredDrivers.length} itemsPerPage={itemsPerPage} onPageChange={setCurrentPage} /></div></>}
+          {activeTab === 'vehicles' ? <><DataTable columns={vehicleColumns} data={paginatedVehicles} loading={loading} /><div className="border-t border-surface-100 p-6"><Pagination currentPage={currentPage} totalPages={totalPagesVehicles} totalItems={filteredVehicles.length} itemsPerPage={itemsPerPage} onPageChange={setCurrentPage} /></div></> : <><DataTable columns={driverColumns} data={paginatedDrivers} loading={loading} /><div className="border-t border-surface-100 p-6"><Pagination currentPage={currentPage} totalPages={totalPagesDrivers} totalItems={filteredDrivers.length} itemsPerPage={itemsPerPage} onPageChange={setCurrentPage} /></div></>}
         </div>
 
         <aside className="space-y-5">

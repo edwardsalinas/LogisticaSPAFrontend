@@ -1,6 +1,7 @@
-﻿import { Inbox } from 'lucide-react';
+import { Inbox } from 'lucide-react';
+import Skeleton from '../atoms/Skeleton';
 
-function DataTable({ columns, data, onRowClick, emptyMessage = 'No hay datos disponibles' }) {
+function DataTable({ columns, data, loading = false, onRowClick, emptyMessage = 'No hay datos disponibles' }) {
   const handleRowKeyDown = (event, row) => {
     if (!onRowClick) return;
     if (event.key === 'Enter' || event.key === ' ') {
@@ -22,7 +23,20 @@ function DataTable({ columns, data, onRowClick, emptyMessage = 'No hay datos dis
           </tr>
         </thead>
         <tbody>
-          {data.length === 0 ? (
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <tr key={`loading-${i}`} className="bg-surface-50/75 shadow-[0_10px_35px_-30px_rgba(15,23,42,0.35)]">
+                {columns.map((col, colIndex) => (
+                  <td
+                    key={`loading-${col.key}`}
+                    className={`px-4 py-4 align-middle ${colIndex === 0 ? 'rounded-l-[1.2rem]' : ''} ${colIndex === columns.length - 1 ? 'rounded-r-[1.2rem]' : ''}`}
+                  >
+                    <Skeleton className="h-5 w-full rounded-md" />
+                  </td>
+                ))}
+              </tr>
+            ))
+          ) : data.length === 0 ? (
             <tr>
               <td colSpan={columns.length} className="rounded-[1.35rem] bg-surface-50 px-6 py-12 text-center">
                 <div className="mx-auto flex max-w-md flex-col items-center">

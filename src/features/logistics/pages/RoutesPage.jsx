@@ -11,7 +11,7 @@ import Modal from '../../../components/molecules/Modal';
 import RoutePath from '../../../components/molecules/RoutePath';
 import VehicleMarker from '../../../components/molecules/VehicleMarker';
 import OriginDestMarker from '../../../components/molecules/OriginDestMarker';
-import PageSkeleton from '../../../components/organisms/PageSkeleton';
+import Skeleton from '../../../components/atoms/Skeleton';
 import { heroImages } from '../../../constants/heroImages';
 import apiService from '../../../services/apiService';
 import RoutesHero from '../components/RoutesHero';
@@ -20,7 +20,7 @@ import RouteForm from '../components/RouteForm';
 import RouteInfoPanel from '../components/RouteInfoPanel';
 import PackageAssignmentForm from '../components/PackageAssignmentForm';
 import useRole from '../../../app/useRole';
-
+import StatCard from '../../../components/molecules/StatCard';
 const MOCK_ROUTES = [
   { id: 'route-001', route_code: 'RT-001', origin: 'La Paz', destination: 'Oruro', driver_name: 'Juan Perez', vehicle_brand: 'Volvo', plate_number: 'INT-1234', status: 'active', progress: 65, next_checkpoint: 'Centro Logistico El Alto', eta: '14:30', eta_minutes: 25, remaining_distance: 45.2, driver_phone: '+591 70012345', checkpoints: [{ id: 'cp-001', name: 'Terminal La Paz', lat: -16.5, lng: -68.1193, sequence_order: 1 }, { id: 'cp-002', name: 'Checkpoint El Alto', lat: -16.51, lng: -68.15, sequence_order: 2 }, { id: 'cp-003', name: 'Puesto Viacha', lat: -16.65, lng: -68.31, sequence_order: 3 }, { id: 'cp-004', name: 'Terminal Oruro', lat: -17.9833, lng: -67.15, sequence_order: 4 }], vehicle_position: { lat: -16.58, lng: -68.25 } },
   { id: 'route-002', route_code: 'RT-002', origin: 'Santa Cruz', destination: 'Cochabamba', driver_name: 'Maria Lopez', vehicle_brand: 'Mercedes', plate_number: 'ABC-5678', status: 'delayed', progress: 45, next_checkpoint: 'Sacaba', eta: '16:00', eta_minutes: 90, remaining_distance: 78.5, driver_phone: '+591 70054321', checkpoints: [{ id: 'cp-005', name: 'Terminal Santa Cruz', lat: -17.7833, lng: -63.1821, sequence_order: 1 }, { id: 'cp-006', name: 'Colomi', lat: -17.4167, lng: -66.2833, sequence_order: 2 }, { id: 'cp-007', name: 'Terminal Cochabamba', lat: -17.3895, lng: -66.1568, sequence_order: 3 }], vehicle_position: { lat: -17.55, lng: -65.8 } },
@@ -42,10 +42,34 @@ function RoutesPage() {
   const fetchRoutes = async () => {
     setLoading(true);
     try {
-      const res = await apiService.getRoutes();
-      const realRoutes = res.data || [];
-      setRoutes(realRoutes.length > 0 ? realRoutes : MOCK_ROUTES);
-      if (!selectedRoute && (realRoutes[0] || MOCK_ROUTES[0])) setSelectedRoute(realRoutes[0] || MOCK_ROUTES[0]);
+      const [routesRes, schedsRes] = await Promise.allSettled([
+        apiService.getRoutes(),
+        apiService.getSchedules()
+      ]);
+
+      const realRoutes = routesRes.status === 'fulfilled' ? (Array.isArray(routesRes.value.data) ? routesRes.value.data : (routesRes.value.data?.data || [])) : [];
+      const schedules = schedsRes.status === 'fulfilled' ? (schedsRes.value.data?.data || []) : [];
+
+      const mappedSchedules = schedules.map(sch => ({
+        ...sch,
+        type: 'schedule',
+        route_code: sch.label || `SCH-${sch.id.slice(0, 5).toUpperCase()}`,
+        status: 'schedule',
+        driver_name: sch.drivers?.full_name || sch.drivers?.email || 'Sin conductor',
+        vehicle_brand: sch.vehicles?.brand || 'Vehículo',
+        plate_number: sch.vehicles?.plate || '--',
+        progress: 0,
+        eta: '--',
+      }));
+
+      const combined = [...mappedSchedules, ...realRoutes];
+
+      setRoutes(combined.length > 0 ? combined : MOCK_ROUTES);
+      
+      // Only set initial selectedRoute if none exists OR if the current one was deleted
+      if (!selectedRoute || !combined.find(r => r.id === selectedRoute.id)) {
+        setSelectedRoute(combined[0] || MOCK_ROUTES[0]);
+      }
     } catch (err) {
       console.error('Error cargando rutas:', err);
       setRoutes(MOCK_ROUTES);
@@ -66,11 +90,30 @@ function RoutesPage() {
     }
     const fetchExtended = async () => {
       try {
-        const res = await apiService.getRoute(selectedRoute.id);
-        if (res.data) setExtendedSelectedRoute(res.data);
+        if (selectedRoute.type === 'schedule') {
+          // It's a schedule, grab from getSchedule endpoint
+          const res = await apiService.getSchedule(selectedRoute.id);
+          const schedData = res.data?.data || res.data;
+          if (schedData) {
+            setExtendedSelectedRoute({
+              ...schedData,
+              type: 'schedule',
+              route_code: schedData.label || `SCH-${schedData.id.slice(0, 5).toUpperCase()}`,
+              status: 'schedule',
+              driver_name: schedData.drivers?.full_name || schedData.drivers?.email || 'Sin conductor',
+              vehicle_brand: schedData.vehicles?.brand || 'Vehículo',
+              plate_number: schedData.vehicles?.plate || '--',
+              progress: 0,
+              eta: '--',
+            });
+          }
+        } else {
+          const res = await apiService.getRoute(selectedRoute.id);
+          const routeData = res.data?.data || res.data;
+          if (routeData) setExtendedSelectedRoute(routeData);
+        }
       } catch (e) {
-        console.error('Failed to fetch extended route data', e);
-        // Fallback to minimal data
+        console.error('Failed to fetch extended data', e);
         setExtendedSelectedRoute(selectedRoute);
       }
     };
@@ -78,28 +121,38 @@ function RoutesPage() {
   }, [selectedRoute?.id]);
 
   const handleDelete = async (route) => {
-    if (window.confirm(`¿Estás seguro de que deseas eliminar la ruta ${route.route_code}? Se eliminarán también sus puntos de control asignados.`)) {
+    if (window.confirm(`¿Estás seguro de que deseas eliminar ${route.type === 'schedule' ? 'el cronograma' : 'la ruta'} ${route.route_code}?`)) {
       try {
-        await apiService.deleteRoute(route.id);
+        if (route.type === 'schedule') {
+          await apiService.deleteSchedule(route.id);
+        } else {
+          await apiService.deleteRoute(route.id);
+        }
         if (selectedRoute?.id === route.id) setSelectedRoute(null);
         fetchRoutes();
       } catch (err) {
-        alert(err.message || 'Error al eliminar la ruta. Puede que tenga paquetes en tránsito.');
+        alert(err.message || 'Error al eliminar. Verifica si hay dependencias activas.');
       }
     }
   };
 
   const handleEdit = async (route) => {
-    if (route.checkpoints) {
-      setEditingRoute(route);
-      setShowForm(true);
-      return;
-    }
     try {
-      const res = await apiService.getRoute(route.id);
-      setEditingRoute(res.data || route);
+      if (route.type === 'schedule') {
+        const res = await apiService.getSchedule(route.id);
+        setEditingRoute(res.data?.data || res.data || route);
+      } else {
+        if (route.checkpoints) {
+          setEditingRoute(route);
+          setShowForm(true);
+          return;
+        }
+        const res = await apiService.getRoute(route.id);
+        const routeData = res.data?.data || res.data;
+        setEditingRoute(routeData || route);
+      }
     } catch (err) {
-      console.error('Error fetching full route for edit:', err);
+      console.error('Error fetching full data for edit:', err);
       setEditingRoute(route);
     }
     setShowForm(true);
@@ -115,11 +168,13 @@ function RoutesPage() {
   const pending = routes.filter((r) => r.status === 'pending').length;
   const completed = routes.filter((r) => r.status === 'completed').length;
 
-  if (loading) return <PageSkeleton stats={3} layout="split" />;
-
   return (
     <div className="space-y-8">
-      <RoutesHero active={active} pending={pending} completed={completed} />
+      {loading ? (
+        <Skeleton className="h-[220px] w-full" />
+      ) : (
+        <RoutesHero active={active} pending={pending} completed={completed} />
+      )}
 
       <section className="grid gap-6 xl:grid-cols-[minmax(22rem,40%)_minmax(0,1fr)]">
         <div className="overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/88 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
@@ -128,13 +183,19 @@ function RoutesPage() {
               <div><p className="text-[0.64rem] uppercase tracking-[0.24em] text-surface-500">Resumen de operacion</p><h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Seleccion de rutas</h2></div>
               <Badge variant="info" dot>{filteredRoutes.length} visibles</Badge>
             </div>
-            <div className="mt-6 grid grid-cols-3 gap-3"><div className="rounded-2xl border border-surface-100 bg-surface-50 p-4"><p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-surface-500">Activas</p><p className="mt-2 text-3xl font-bold text-primary-700">{active}</p></div><div className="rounded-2xl border border-surface-100 bg-surface-50 p-4"><p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-surface-500">Pendientes</p><p className="mt-2 text-3xl font-bold text-primary-700">{pending}</p></div><div className="rounded-2xl border border-surface-100 bg-surface-50 p-4"><p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-surface-500">Completadas</p><p className="mt-2 text-3xl font-bold text-primary-700">{completed}</p></div></div>
-            <div className="mt-5"><SearchInput value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar ruta, conductor o destino..." /></div>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="w-full sm:max-w-md"><SearchInput value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar ruta, conductor o destino..." /></div>
+              <Button className="w-full sm:w-auto whitespace-nowrap" onClick={() => { setEditingRoute(null); setShowForm(true); }}>+ Crear ruta</Button>
+            </div>
           </div>
 
           <div className="max-h-[calc(100vh-18rem)] space-y-3 overflow-y-auto p-4">
-            {filteredRoutes.map((route) => <div key={route.id} className={`${selectedRoute?.id === route.id ? 'ring-2 ring-primary-200 ring-offset-2 ring-offset-white rounded-[1.35rem]' : ''}`}><RouteCard route={route} isSelected={selectedRoute?.id === route.id} onClick={() => setSelectedRoute(route)} onEdit={() => handleEdit(route)} onDelete={() => handleDelete(route)} /></div>)}
-            {filteredRoutes.length === 0 && (
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-2xl" />)
+            ) : (
+              filteredRoutes.map((route) => <div key={route.id} className={`${selectedRoute?.id === route.id ? 'ring-2 ring-primary-200 ring-offset-2 ring-offset-white rounded-[1.35rem]' : ''}`}><RouteCard route={route} isSelected={selectedRoute?.id === route.id} onClick={() => setSelectedRoute(route)} onEdit={() => handleEdit(route)} onDelete={() => handleDelete(route)} /></div>)
+            )}
+            {!loading && filteredRoutes.length === 0 && (
               <EmptyState
                 eyebrow="Sin coincidencias"
                 title="No encontramos rutas con ese criterio"
@@ -218,6 +279,7 @@ function RoutesPage() {
           onCancel={() => setShowAssignModal(false)}
         />
       </Modal>
+
     </div>
   );
 }

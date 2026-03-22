@@ -1,4 +1,4 @@
-﻿import { MapPinned, PenLine, Route, Ruler, X } from 'lucide-react';
+import { MapPinned, PenLine, Route, Ruler, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
@@ -9,7 +9,7 @@ import CheckpointMarker from '../../../components/molecules/CheckpointMarker';
 import FitBounds from '../../../components/molecules/FitBounds';
 import RoutePath from '../../../components/molecules/RoutePath';
 import VehicleMarker from '../../../components/molecules/VehicleMarker';
-import { mockApi } from '../../../services/api.mock';
+import apiService from '../../../services/apiService';
 
 function RouteMap({ routeId, initialPosition, showControls = false }) {
   const [checkpoints, setCheckpoints] = useState([]);
@@ -20,7 +20,7 @@ function RouteMap({ routeId, initialPosition, showControls = false }) {
     const fetchCheckpoints = async () => {
       setLoading(true);
       try {
-        const res = await mockApi.getCheckpointsByRoute(routeId);
+        const res = await apiService.getCheckpointsByRoute(routeId);
         setCheckpoints(res.data || []);
       } catch (error) {
         console.error('Error cargando checkpoints:', error);

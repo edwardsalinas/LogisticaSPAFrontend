@@ -6,7 +6,6 @@ import StatCard from '../../../components/molecules/StatCard';
 import MapCanvasFallback from '../../../components/molecules/MapCanvasFallback';
 import Modal from '../../../components/molecules/Modal';
 import { heroImages } from '../../../constants/heroImages';
-import { mockRoutes } from '../../../services/api.mock';
 import apiService from '../../../services/apiService';
 import CheckpointForm from '../components/CheckpointForm';
 const RouteMap = lazy(() => import('../components/RouteMap'));

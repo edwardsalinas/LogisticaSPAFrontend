@@ -2,8 +2,7 @@ import { Clock3, MapPinned, PackageSearch } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import EmptyState from '../../../components/molecules/EmptyState';
 import SectionLoader from '../../../components/molecules/SectionLoader';
-import api from '../../../services/api';
-
+import apiService from '../../../services/apiService';
 function TrackingHistory({ packageId }) {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,7 +11,7 @@ function TrackingHistory({ packageId }) {
     const fetchLogs = async () => {
       setLoading(true);
       try {
-        const res = await api.get(`/tracking/logs/${packageId}`);
+        const res = await apiService.getTrackingLogs(packageId);
         setLogs(res.data || []);
       } catch (err) {
         console.error('Error cargando historial:', err);

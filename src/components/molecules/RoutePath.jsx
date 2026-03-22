@@ -29,6 +29,16 @@ function RoutePath({ route, checkpoints: propCheckpoints, color = '#137fec', wei
       waypoints.push(L.latLng(route.dest_lat, route.dest_lng));
     }
     
+    // Auto-enfocar el mapa en los puntos ingresados
+    if (waypoints.length > 0) {
+      if (waypoints.length === 1) {
+        map.flyTo(waypoints[0], 14, { duration: 1 });
+      } else {
+        const bounds = L.latLngBounds(waypoints);
+        map.flyToBounds(bounds, { padding: [50, 50], duration: 1 });
+      }
+    }
+
     if (waypoints.length < 2) return;
 
     const routingControl = L.Routing.control({
@@ -47,6 +57,16 @@ function RoutePath({ route, checkpoints: propCheckpoints, color = '#137fec', wei
     return () => {
       if (map && routingControl) {
         try {
+          // Cancel pending routing queries to avoid trailing async map manipulation
+          if (routingControl.getPlan) {
+            routingControl.getPlan().setWaypoints([]);
+          }
+          
+          // Patch internal methods to ensure no delayed execution
+          routingControl._updateLines = () => {};
+          routingControl._clearLines = () => {};
+          routingControl.route = () => {};
+
           map.removeControl(routingControl);
         } catch (err) {
           // ignore leaflet teardown errors

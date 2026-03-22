@@ -1,204 +1,44 @@
-/**
- * Servicio híbrido: Usa mocks en desarrollo, API real en producción
- * Cambia la variable USE_MOCKS para alternar
- */
-
-import { mockApi, mockRoutes, mockCheckpoints, mockTrackingLogs } from './api.mock';
 import api from './api';
 
-// ========================================
-// CONFIGURACIÓN: Cambiar a false para usar API real
-// ========================================
-const USE_MOCKS = import.meta.env.VITE_USE_MOCKS !== 'false';
-
-/**
- * Wrapper que decide si usar mocks o API real
- */
 const apiService = {
-  /**
-   * GET /api/logistics/routes
-   */
-  async getRoutes() {
-    if (USE_MOCKS) {
-      return mockApi.getRoutes();
-    }
-    return api.get('/logistics/routes');
-  },
+  getRoutes: () => api.get('/logistics/routes'),
+  getCheckpointsByRoute: (routeId) => api.get(`/logistics/routes/${routeId}/checkpoints`),
+  getPackages: () => api.get('/logistics/packages'),
+  getTrackingLogs: (packageId) => api.get(`/tracking/logs/${packageId}`),
+  createTrackingEvent: (data) => api.post('/tracking', data),
+  getVehicles: () => api.get('/fleet/vehicles'),
+  getDrivers: () => api.get('/fleet/drivers'),
+  getMapData: (packageId) => api.get(`/tracking/${packageId}/map-data`),
+  
+  getClients: () => api.get('/fleet/clients'),
+  getPredefinedRoutes: () => api.get('/logistics/predefined-routes'),
+  getRoute: (id) => api.get(`/logistics/routes/${id}`),
+  createRoute: (data) => api.post('/logistics/routes', data),
+  updateRoute: (id, data) => api.put(`/logistics/routes/${id}`, data),
+  deleteRoute: (id) => api.delete(`/logistics/routes/${id}`),
+  createCheckpoint: (routeId, data) => api.post(`/logistics/routes/${routeId}/checkpoints`, data),
+  updateCheckpoint: (routeId, checkpointId, data) => api.put(`/logistics/routes/${routeId}/checkpoints/${checkpointId}`, data),
+  deleteCheckpoint: (routeId, checkpointId) => api.delete(`/logistics/routes/${routeId}/checkpoints/${checkpointId}`),
+  assignPackageToRoute: (routeId, packageId) => api.post(`/logistics/routes/${routeId}/assign`, { package_id: packageId }),
+  startTrip: (routeId) => api.post('/tracking/trip/start', { route_id: routeId }),
+  stopTrip: () => api.post('/tracking/trip/stop'),
+  getActiveTrip: () => api.get('/tracking/trip/active'),
+  logTripEvent: (tripId, data) => api.post(`/tracking/trip/${tripId}/event`, data),
+  checkGeofence: (data) => api.post('/tracking/check-geofence', data),
 
-  /**
-   * GET /api/logistics/routes/:routeId/checkpoints
-   */
-  async getCheckpointsByRoute(routeId) {
-    if (USE_MOCKS) {
-      return mockApi.getCheckpointsByRoute(routeId);
-    }
-    return api.get(`/logistics/routes/${routeId}/checkpoints`);
-  },
+  // Schedules (Cronogramas)
+  getSchedules: (params) => api.get('/fleet/schedules', { params }),
+  getSchedule: (id) => api.get(`/fleet/schedules/${id}`),
+  createSchedule: (data) => api.post('/fleet/schedules', data),
+  updateSchedule: (id, data) => api.put(`/fleet/schedules/${id}`, data),
+  deleteSchedule: (id) => api.delete(`/fleet/schedules/${id}`),
+  generateRoutesFromSchedules: (daysAhead = 7) => api.post('/fleet/schedules/generate', { days_ahead: daysAhead }),
 
-  /**
-   * GET /api/logistics/packages
-   */
-  async getPackages() {
-    if (USE_MOCKS) {
-      // Devolver paquetes mock si existen, sino llamar API real
-      try {
-        return await api.get('/logistics/packages');
-      } catch {
-        return {
-          data: [
-            {
-              id: 'pkg-001',
-              tracking_code: 'PKG-001',
-              origen: 'La Paz',
-              destino: 'Oruro',
-              peso: 15.5,
-              status: 'in_transit',
-              route_id: 'route-001'
-            },
-            {
-              id: 'pkg-002',
-              tracking_code: 'PKG-002',
-              origen: 'Santa Cruz',
-              destino: 'Cochabamba',
-              peso: 8.2,
-              status: 'pending',
-              route_id: null
-            },
-          ]
-        };
-      }
-    }
-    return api.get('/logistics/packages');
-  },
-
-  /**
-   * GET /api/tracking/logs/:packageId
-   */
-  async getTrackingLogs(packageId) {
-    if (USE_MOCKS) {
-      return mockApi.getTrackingLogs(packageId);
-    }
-    return api.get(`/tracking/logs/${packageId}`);
-  },
-
-  /**
-   * POST /api/tracking
-   */
-  async createTrackingEvent(data) {
-    if (USE_MOCKS) {
-      return mockApi.createTrackingEvent(data);
-    }
-    return api.post('/tracking', data);
-  },
-
-  /**
-   * GET /api/fleet/vehicles
-   */
-  async getVehicles() {
-    if (USE_MOCKS) {
-      try {
-        return await api.get('/fleet/vehicles');
-      } catch {
-        return {
-          data: [
-            { id: 'vehicle-001', plate_number: 'INT-1234', brand: 'Volvo', model: 'FH16', year: 2023, status: 'active' },
-            { id: 'vehicle-002', plate_number: 'ABC-5678', brand: 'Mercedes', model: 'Actros', year: 2022, status: 'maintenance' },
-          ]
-        };
-      }
-    }
-    return api.get('/fleet/vehicles');
-  },
-
-  /**
-   * GET /api/fleet/drivers
-   */
-  async getDrivers() {
-    if (USE_MOCKS) {
-      try {
-        return await api.get('/fleet/drivers');
-      } catch {
-        return {
-          data: [
-            { id: 'driver-001', full_name: 'Juan Pérez', email: 'juan@transportes.bo', phone: '+591 70012345' },
-            { id: 'driver-002', full_name: 'María López', email: 'maria@transportes.bo', phone: '+591 70054321' },
-          ]
-        };
-      }
-    }
-    return api.get('/fleet/drivers');
-  },
-
-  /**
-   * GET /api/tracking/:packageId/map-data
-   */
-  async getMapData(packageId) {
-    if (USE_MOCKS) {
-      return mockApi.getMapData(packageId);
-    }
-    return api.get(`/tracking/${packageId}/map-data`);
-  },
-
-  // ========================================
-  // Nuevos Métodos (Rutas, Trip, Tracking V2)
-  // ========================================
-  async getClients() {
-    return api.get('/fleet/clients');
-  },
-  async getPredefinedRoutes() {
-    return api.get('/logistics/predefined-routes');
-  },
-  async getRoute(id) {
-    if (USE_MOCKS) return { data: mockRoutes.find(r => r.id === id) };
-    return api.get(`/logistics/routes/${id}`);
-  },
-  async createRoute(data) {
-    return api.post('/logistics/routes', data);
-  },
-  async updateRoute(id, data) {
-    return api.put(`/logistics/routes/${id}`, data);
-  },
-  async deleteRoute(id) {
-    return api.delete(`/logistics/routes/${id}`);
-  },
-  async assignPackageToRoute(routeId, packageId) {
-    return api.post(`/logistics/routes/${routeId}/assign`, { package_id: packageId });
-  },
-  async startTrip(routeId) {
-    return api.post('/tracking/trip/start', { route_id: routeId });
-  },
-  async stopTrip() {
-    return api.post('/tracking/trip/stop');
-  },
-  async getActiveTrip() {
-    return api.get('/tracking/trip/active');
-  },
-  async logTripEvent(tripId, data) {
-    return api.post(`/tracking/trip/${tripId}/event`, data);
-  },
-  async checkGeofence(data) {
-    if (USE_MOCKS) return mockApi.checkGeofence(data);
-    return { data: { within_checkpoint: false } }; // El backend real loguea la visita automaticamente durante el logTripEvent, no en el cliente.
-  },
-
-  // ========================================
-  // Métodos restantes que pasan directo a la API
-  // ========================================
   post: api.post,
   put: api.put,
   patch: api.patch,
   delete: api.delete,
-  get: (endpoint) => {
-    if (USE_MOCKS && endpoint.includes('/checkpoints')) {
-      // Manejo especial para checkpoints
-      const routeId = endpoint.match(/\/routes\/([^/]+)\/checkpoints/)?.[1];
-      if (routeId) {
-        return mockApi.getCheckpointsByRoute(routeId);
-      }
-    }
-    return api.get(endpoint);
-  },
+  get: api.get,
 };
 
 export default apiService;
-export { USE_MOCKS };
