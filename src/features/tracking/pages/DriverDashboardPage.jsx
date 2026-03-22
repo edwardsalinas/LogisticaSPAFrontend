@@ -105,18 +105,18 @@ function DriverDashboardPage() {
 
     if (isMonthView) {
       return (
-        <div className={`w-full overflow-hidden flex items-center gap-1 px-1 ${isPast && event.extendedProps.route.status === 'laneada' ? 'opacity-70' : ''}`}>
+        <div className={`w-full overflow-hidden flex items-center gap-1 px-1 ${isPast && event.extendedProps.route?.status === 'laneada' ? 'opacity-70' : ''}`}>
           <span className="font-bold text-[9px] text-white/90 whitespace-nowrap">{eventInfo.timeText}</span>
           <span className="text-[10px] font-medium text-white truncate">{event.title.split('|')[0].trim()}</span>
-          {(event.extendedProps.route.status === 'active' || event.extendedProps.route.status === 'en_transito') && <Truck size={10} className="animate-pulse text-white ml-auto shrink-0" />}
+          {(['active', 'en_transito'].includes(event.extendedProps.route?.status)) && <Truck size={10} className="animate-pulse text-white ml-auto shrink-0" />}
         </div>
       );
     }
     return (
-      <div className={`p-1 flex flex-col h-full overflow-hidden leading-tight ${isPast && event.extendedProps.route.status === 'laneada' ? 'opacity-70' : ''}`}>
+      <div className={`p-1 flex flex-col h-full overflow-hidden leading-tight ${isPast && event.extendedProps.route?.status === 'laneada' ? 'opacity-70' : ''}`}>
         <div className="flex justify-between items-center mb-0.5">
           <span className="font-bold text-[10px] text-white/90">{eventInfo.timeText}</span>
-          {(event.extendedProps.route.status === 'active' || event.extendedProps.route.status === 'en_transito') && <Truck size={10} className="animate-pulse text-white" />}
+          {(['active', 'en_transito'].includes(event.extendedProps.route?.status)) && <Truck size={10} className="animate-pulse text-white" />}
         </div>
         <p className="text-[10px] font-medium text-white truncate">{event.title.split('|')[0]}</p>
         <p className="text-[9px] text-white/80 truncate mt-0.5">{event.title.split('|')[1]}</p>
@@ -350,13 +350,17 @@ function DriverDashboardPage() {
                           {isActive ? 'Viaje en Curso' : 'Ruta Seleccionada'}
                         </p>
                         <p className="text-sm font-bold text-surface-800 truncate">
-                          {(activeRouteData || activeTrip.route)?.route_code}
+                          {(activeRouteData || activeTrip?.route)?.route_code || '---'}
                         </p>
                       </div>
                     </div>
                     
                     <div className="flex flex-col items-end gap-2 shrink-0">
-                      {isActive ? (
+                      {['completed', 'finalizada'].includes(activeRouteData?.status) ? (
+                        <Badge tone="slate" icon={Square} className="py-2.5 px-4 h-auto flex items-center gap-2 text-[10px] font-bold shadow-sm border-surface-200">
+                          VIAJE CERRADO
+                        </Badge>
+                      ) : isActive ? (
                         <Button size="sm" variant="danger" className="px-4 py-2 h-auto text-[11px] gap-2 shadow-lg shadow-danger-200" onClick={handleStopTrip} disabled={toggling}>
                           {toggling ? '...' : <><Square fill="currentColor" size={12} /> Finalizar</>}
                         </Button>
@@ -365,8 +369,8 @@ function DriverDashboardPage() {
                           {toggling ? '...' : <><Play fill="currentColor" size={12} /> Iniciar Viaje</>}
                         </Button>
                       )}
-                      <Badge variant={isActive ? "emerald" : "blue"} className="text-[9px] px-2.5 py-0.5">
-                        {(activeRouteData || activeTrip.route)?.type === 'schedule' ? 'Recurrente' : 'Único'}
+                      <Badge variant={isActive ? "emerald" : (['completed', 'finalizada'].includes(activeRouteData?.status) ? "slate" : "blue")} className="text-[9px] px-2.5 py-0.5">
+                        {(activeRouteData || activeTrip?.route)?.type === 'schedule' ? 'Recurrente' : 'Único'}
                       </Badge>
                     </div>
                   </div>
@@ -428,15 +432,17 @@ function DriverDashboardPage() {
                   <RoutePath route={activeRouteData} color="#64748b" weight={3} fitBounds={!isActive} />
                   
                   {/* Ruta Completada (Solid Green) */}
-                  {isActive && completedCheckpointIds.length > 0 && (
+                  {(isActive || ['completed', 'finalizada'].includes(activeRouteData?.status)) && (
                     <RoutePath 
                       route={{
                         ...activeRouteData,
-                        checkpoints: activeRouteData.checkpoints.filter(cp => 
-                          cp.sequence_order <= Math.max(0, ...activeRouteData.checkpoints
-                            .filter(c => completedCheckpointIds.includes(c.id))
-                            .map(c => c.sequence_order))
-                        )
+                        checkpoints: ['completed', 'finalizada'].includes(activeRouteData?.status)
+                          ? activeRouteData.checkpoints
+                          : activeRouteData.checkpoints.filter(cp => 
+                              cp.sequence_order <= Math.max(0, ...activeRouteData.checkpoints
+                                .filter(c => completedCheckpointIds.includes(c.id))
+                                .map(c => c.sequence_order))
+                            )
                       }} 
                       isCompleted={true}
                       fitBounds={false}
@@ -453,7 +459,7 @@ function DriverDashboardPage() {
                     <CheckpointMarker 
                       key={cp.id} 
                       checkpoint={cp} 
-                      isCompleted={completedCheckpointIds.includes(cp.id)}
+                      isCompleted={completedCheckpointIds.includes(cp.id) || ['completed', 'finalizada'].includes(activeRouteData?.status)}
                     />
                   ))}
                 </>
