@@ -492,19 +492,19 @@ function DriverDashboardPage() {
                 </div>
               ) : (
                 <div className="p-0">
-                  <div className="p-5 border-b border-surface-100 bg-surface-50/50">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className={`h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${isActive ? 'bg-emerald-500 text-white shadow-emerald-200' : 'bg-primary-500 text-white shadow-primary-200'}`}>
-                          {isActive ? <Truck size={22} strokeWidth={2.5} /> : <Navigation size={22} strokeWidth={2.5} />}
+                  <div className="p-4 border-b border-surface-100">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${isActive ? 'bg-emerald-500/10 text-emerald-600' : 'bg-primary-500/10 text-primary-600'}`}>
+                          {isActive ? <Truck size={20} strokeWidth={2.5} /> : <Navigation size={20} strokeWidth={2.5} />}
                         </div>
-                        <div className="min-w-0">
-                          <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${isActive ? 'text-emerald-600' : 'text-primary-600'}`}>
-                            {isActive ? 'Misión en Curso' : 'Ruta Seleccionada'}
-                          </p>
-                          <p className="text-base font-black text-surface-900 truncate tracking-tight">
+                        <div className="min-w-0 flex flex-col sm:flex-row sm:items-baseline gap-x-3 gap-y-0.5">
+                          <p className="text-sm font-black text-surface-900 truncate tracking-tight">
                             {(activeRouteData || activeTrip?.route)?.route_code || '---'}
                           </p>
+                          <span className={`text-[8px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded-full border ${isActive ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-primary-50 border-primary-100 text-primary-600'} shrink-0`}>
+                            {isActive ? 'En Curso' : 'Seleccionada'}
+                          </span>
                         </div>
                       </div>
                       
@@ -512,19 +512,19 @@ function DriverDashboardPage() {
                         {isActive ? (
                           <Button 
                             variant="danger" 
-                            className="px-5 py-2.5 h-auto text-[11px] font-black uppercase tracking-widest gap-2 shadow-xl shadow-danger-100/50 border-none rounded-xl" 
+                            className="px-4 py-2 h-9 text-[10px] font-black uppercase tracking-wider gap-1.5 shadow-none border-none rounded-xl" 
                             onClick={handleStopTrip} 
                             disabled={toggling}
                           >
-                            {toggling ? '...' : <><Square fill="currentColor" size={12} stroke="none" /> Finalizar</>}
+                            {toggling ? '...' : <><Square fill="currentColor" size={10} stroke="none" /> Finalizar</>}
                           </Button>
                         ) : (
                           <Button 
-                            className={`${(isFinished || !selectedRouteId) ? 'bg-surface-200 text-surface-400 border-surface-200 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200/60 shadow-xl'} px-5 py-2.5 h-auto text-[11px] font-black uppercase tracking-widest gap-2 transition-all active:scale-95 border-none rounded-xl`} 
+                            className={`${(isFinished || !selectedRouteId) ? 'bg-surface-100 text-surface-400' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200/40'} px-4 py-2 h-9 text-[10px] font-black uppercase tracking-wider gap-1.5 transition-all active:scale-95 border-none rounded-xl`} 
                             onClick={handleStartTrip} 
                             disabled={toggling || !selectedRouteId || isFinished}
                           >
-                            {toggling ? '...' : isFinished ? 'Completado' : <><Play fill="currentColor" size={12} stroke="none" /> Iniciar</>}
+                            {toggling ? '...' : isFinished ? 'Completado' : <><Play fill="currentColor" size={10} stroke="none" /> Iniciar</>}
                           </Button>
                         )}
                       </div>
