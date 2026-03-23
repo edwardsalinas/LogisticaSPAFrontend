@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { toast } from 'sonner';
 import { MapPinned, Route, Search, Truck, Calendar, List, User, MapPin, Flag, Layers, ChevronDown, Plus, Filter, X, CalendarRange } from 'lucide-react';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -25,6 +26,8 @@ import RouteInfoPanel from '../components/RouteInfoPanel';
 import PackageAssignmentForm from '../components/PackageAssignmentForm';
 import useRole from '../../../app/useRole';
 import StatCard from '../../../components/molecules/StatCard';
+import HistoryPath from '../../../components/molecules/HistoryPath';
+import { haversineDistance, calculateTripProgress } from '../../../utils/geoUtils';
 const MOCK_ROUTES = [
   { id: 'route-001', route_code: 'RT-001', origin: 'La Paz', destination: 'Oruro', driver_name: 'Juan Perez', vehicle_brand: 'Volvo', plate_number: 'INT-1234', status: 'active', progress: 65, next_checkpoint: 'Centro Logistico El Alto', eta: '14:30', eta_minutes: 25, remaining_distance: 45.2, driver_phone: '+591 70012345', checkpoints: [{ id: 'cp-001', name: 'Terminal La Paz', lat: -16.5, lng: -68.1193, sequence_order: 1 }, { id: 'cp-002', name: 'Checkpoint El Alto', lat: -16.51, lng: -68.15, sequence_order: 2 }, { id: 'cp-003', name: 'Puesto Viacha', lat: -16.65, lng: -68.31, sequence_order: 3 }, { id: 'cp-004', name: 'Terminal Oruro', lat: -17.9833, lng: -67.15, sequence_order: 4 }], vehicle_position: { lat: -16.58, lng: -68.25 } },
   { id: 'route-002', route_code: 'RT-002', origin: 'Santa Cruz', destination: 'Cochabamba', driver_name: 'Maria Lopez', vehicle_brand: 'Mercedes', plate_number: 'ABC-5678', status: 'delayed', progress: 45, next_checkpoint: 'Sacaba', eta: '16:00', eta_minutes: 90, remaining_distance: 78.5, driver_phone: '+591 70054321', checkpoints: [{ id: 'cp-005', name: 'Terminal Santa Cruz', lat: -17.7833, lng: -63.1821, sequence_order: 1 }, { id: 'cp-006', name: 'Colomi', lat: -17.4167, lng: -66.2833, sequence_order: 2 }, { id: 'cp-007', name: 'Terminal Cochabamba', lat: -17.3895, lng: -66.1568, sequence_order: 3 }], vehicle_position: { lat: -17.55, lng: -65.8 } },
@@ -41,6 +44,7 @@ function RoutesPage() {
   const [assigningRoute, setAssigningRoute] = useState(null);
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [extendedSelectedRoute, setExtendedSelectedRoute] = useState(null);
+  const [trackingLogs, setTrackingLogs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('calendar');
   const [selectedDriverId, setSelectedDriverId] = useState('');
@@ -48,9 +52,10 @@ function RoutesPage() {
   const [selectedDestination, setSelectedDestination] = useState('');
   const [selectedTripType, setSelectedTripType] = useState('');
   const [clickTimeout, setClickTimeout] = useState(null);
+  const prevPackagesState = useRef({}); // {pkgId: status}
 
-  const fetchRoutes = async () => {
-    setLoading(true);
+  const fetchRoutes = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
       const [routesRes, schedsRes] = await Promise.allSettled([
         apiService.getRoutes(),
@@ -78,6 +83,7 @@ function RoutesPage() {
         driver_id: r.driver_id || r.driver?.id || null,
         vehicle_brand: r.vehicles?.brand || 'Vehículo',
         plate_number: r.vehicles?.plate || '--',
+        progress: r.progress || 0,
       }));
 
       const mappedSchedules = rawSchedules.map(sch => ({
@@ -95,10 +101,36 @@ function RoutesPage() {
 
       const combined = [...mappedSchedules, ...mappedRoutes];
 
+      combined.forEach(route => {
+        if (route.packages) {
+          route.packages.forEach(pkg => {
+            const prevStatus = prevPackagesState.current[pkg.id];
+            if (prevStatus && prevStatus !== pkg.status && (pkg.status === 'delivered' || pkg.status === 'completada')) {
+              toast.success(`¡Paquete Entregado!`, {
+                description: `Código: ${pkg.tracking_code} en la ruta ${route.route_code}`,
+                duration: 5000,
+              });
+            }
+            prevPackagesState.current[pkg.id] = pkg.status;
+          });
+        }
+      });
+
       setRoutes(combined.length > 0 ? combined : MOCK_ROUTES);
       
+      // Actualizar extendedSelectedRoute si hay una ruta seleccionada
+      if (selectedRoute && selectedRoute.type !== 'schedule') {
+        const updated = combined.find(r => String(r.id) === String(selectedRoute.id));
+        if (updated) {
+          setSelectedRoute(updated);
+        }
+      }
+
       // Only set initial selectedRoute if none exists OR if the current one was deleted
-      if (!selectedRoute || !combined.find(r => r.id === selectedRoute.id)) {
+      const currentId = selectedRoute?.id;
+      const isStillPresent = combined.some(r => String(r.id) === String(currentId));
+      
+      if (!selectedRoute || !isStillPresent) {
         setSelectedRoute(combined[0] || MOCK_ROUTES[0]);
       }
     } catch (err) {
@@ -106,27 +138,23 @@ function RoutesPage() {
       setRoutes(MOCK_ROUTES);
       if (!selectedRoute) setSelectedRoute(MOCK_ROUTES[0]);
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchRoutes();
-  }, []);
+    
+    // Polling cada 10 segundos
+    const interval = setInterval(() => {
+      // Solo refrescamos si no estamos en medio de una operación (loading inicial)
+      if (!loading) {
+        fetchRoutes(true); // Pasar un flag para no resetear el loading principal (opcional)
+      }
+    }, 10000);
 
-  const handleGenerateRoutes = async () => {
-    try {
-      setLoading(true);
-      const res = await apiService.generateRoutesFromSchedules(7);
-      const count = res.data?.generatedCount || 0;
-      alert(`Se han generado ${count} despachos para la próxima semana.`);
-      fetchRoutes();
-    } catch (err) {
-      console.error('Error generando despachos:', err);
-      alert('Error al proyectar los cronogramas.');
-      setLoading(false);
-    }
-  };
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!selectedRoute?.id) {
@@ -137,6 +165,7 @@ function RoutesPage() {
       try {
         if (selectedRoute.type === 'schedule') {
           // It's a schedule, grab from getSchedule endpoint
+          setTrackingLogs([]); // No logs for schedules
           const res = await apiService.getSchedule(selectedRoute.id);
           const schedData = res.data?.data || res.data;
           if (schedData) {
@@ -153,13 +182,22 @@ function RoutesPage() {
             });
           }
         } else {
-          const res = await apiService.getRoute(selectedRoute.id);
-          const routeData = res.data?.data || res.data;
+          // It's a real route
+          const [routeRes, trackingRes] = await Promise.all([
+            apiService.getRoute(selectedRoute.id),
+            apiService.getRouteTracking(selectedRoute.id)
+          ]);
+
+          const routeData = routeRes.data?.data || routeRes.data;
           if (routeData) setExtendedSelectedRoute(routeData);
+
+          const logs = trackingRes.data?.data || trackingRes.data || [];
+          setTrackingLogs(logs);
         }
       } catch (e) {
         console.error('Failed to fetch extended data', e);
         setExtendedSelectedRoute(selectedRoute);
+        setTrackingLogs([]);
       }
     };
     fetchExtended();
@@ -240,17 +278,24 @@ function RoutesPage() {
     return true;
   });
 
-  const filteredListRoutes = listRoutes.filter((route) => route.route_code?.toLowerCase().includes(searchTerm.toLowerCase()) || route.driver_name?.toLowerCase().includes(searchTerm.toLowerCase()) || route.origin?.toLowerCase().includes(searchTerm.toLowerCase()) || route.destination?.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredListRoutes = listRoutes.filter((route) => {
+    const s = searchTerm.toLowerCase();
+    const code = (route.route_code || "").toLowerCase();
+    const driver = (route.driver_name || "").toLowerCase();
+    const origin = (route.origin || "").toLowerCase();
+    const dest = (route.destination || "").toLowerCase();
+    return code.includes(s) || driver.includes(s) || origin.includes(s) || dest.includes(s);
+  });
   const calendarEvents = typeFilteredRoutes.filter(r => r.type === 'route' && r.departure_time).map(r => {
     const start = new Date(r.departure_time);
     const end = new Date(start.getTime() + ((r.eta_minutes || 120) * 60000));
     
     let bgColor = r.schedule_id ? '#8b5cf6' : '#3b82f6'; // Morado para recurrentes, Azul para únicos
     if (r.status === 'active' || r.status === 'en_transito') bgColor = '#059669'; // Verde
-    if (r.status === 'completed' || r.status === 'finalizada') bgColor = '#475569'; // Gris
+    if (r.status === 'completed' || r.status === 'finalizada' || r.status === 'completada') bgColor = '#475569'; // Gris
 
     return {
-      id: r.id,
+      id: String(r.id),
       title: `${r.route_code} | ${r.origin} - ${r.destination}`,
       start: r.departure_time,
       end: end.toISOString(),
@@ -261,9 +306,24 @@ function RoutesPage() {
     };
   });
 
+  // --- METRICAS REALES ---
+  const lastLog = trackingLogs && trackingLogs.length > 0 ? trackingLogs[trackingLogs.length - 1] : null;
+  const isFinished = extendedSelectedRoute?.status === 'completed' || extendedSelectedRoute?.status === 'finalizada' || extendedSelectedRoute?.status === 'completada';
+  
+  const realRemainingDistance = (extendedSelectedRoute?.status === 'active' || extendedSelectedRoute?.status === 'en_transito') && lastLog && extendedSelectedRoute?.dest_lat
+    ? (haversineDistance(lastLog.lat, lastLog.lng, extendedSelectedRoute.dest_lat, extendedSelectedRoute.dest_lng) / 1000).toFixed(1)
+    : (isFinished ? '0.0' : null);
+
+  const realProgress = extendedSelectedRoute ? calculateTripProgress(
+    extendedSelectedRoute.checkpoints?.length || 0,
+    (extendedSelectedRoute.events?.filter(e => e.type === 'checkpoint_reached') || []).length,
+    extendedSelectedRoute.packages?.length || 0,
+    (extendedSelectedRoute.packages?.filter(p => p.status === 'delivered' || p.status === 'completada') || []).length
+  ) : 0;
+
   const active = typeFilteredRoutes.filter((r) => r.type === 'route' && (r.status === 'active' || r.status === 'en_transito')).length;
-  const pending = listRoutes.filter((r) => r.type === 'route' && (r.status === 'pending' || r.status === 'planeada')).length;
-  const completed = typeFilteredRoutes.filter((r) => r.type === 'route' && (r.status === 'completed' || r.status === 'finalizada')).length;
+  const pending = listRoutes.filter((r) => r.type === 'route' && (r.status === 'pending' || r.status === 'planeada' || r.status === 'planned')).length;
+  const completed = typeFilteredRoutes.filter((r) => r.type === 'route' && (r.status === 'completed' || r.status === 'finalizada' || r.status === 'completada')).length;
 
   const handleEventClick = (info) => {
     const found = routes.find(r => r.id === info.event.extendedProps.route.id);
@@ -378,9 +438,6 @@ function RoutesPage() {
                   <button onClick={() => setViewMode('calendar')} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all ${viewMode === 'calendar' ? 'bg-white shadow-sm text-primary-700' : 'text-surface-500 hover:text-surface-700'}`}><Calendar size={13} strokeWidth={2.5}/> Calendario</button>
                   <button onClick={() => setViewMode('list')} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-primary-700' : 'text-surface-500 hover:text-surface-700'}`}><List size={13} strokeWidth={2.5}/> Lista</button>
                 </div>
-                <Button variant="secondary" size="md" className="flex-1 sm:flex-none whitespace-nowrap px-4 h-9 text-xs" onClick={handleGenerateRoutes}>
-                  <CalendarRange size={16} strokeWidth={2.5} className="mr-1.5" /> Proyectar Semana
-                </Button>
                 <Button size="md" className="flex-1 sm:flex-none whitespace-nowrap px-5 h-9 text-xs" onClick={() => { setEditingRoute(null); setShowForm(true); }}>
                   <Plus size={16} strokeWidth={3} className="mr-1.5" /> Nuevo
                 </Button>
@@ -506,8 +563,9 @@ function RoutesPage() {
           {extendedSelectedRoute ? (
             <>
               <div className="absolute inset-0">
-                <BaseMap center={[extendedSelectedRoute.vehicle_position?.lat || -16.5, extendedSelectedRoute.vehicle_position?.lng || -68.15]} zoom={9} className="h-full w-full">
-                  {extendedSelectedRoute && <RoutePath route={extendedSelectedRoute} />}
+                <BaseMap center={[extendedSelectedRoute.vehicle_position?.lat || extendedSelectedRoute.origin_lat || -16.5, extendedSelectedRoute.vehicle_position?.lng || extendedSelectedRoute.origin_lng || -68.15]} zoom={9} className="h-full w-full">
+                  {extendedSelectedRoute && <RoutePath route={extendedSelectedRoute} isCompleted={['completed', 'finalizada', 'completada'].includes(extendedSelectedRoute.status)} />}
+                  <HistoryPath logs={trackingLogs} />
                   
                   {extendedSelectedRoute?.origin_lat && extendedSelectedRoute?.origin_lng && (
                     <OriginDestMarker type="origin" position={[extendedSelectedRoute.origin_lat, extendedSelectedRoute.origin_lng]} title={extendedSelectedRoute.origin} subtitle="Punto de partida" />
@@ -517,7 +575,33 @@ function RoutesPage() {
                   )}
 
                   {extendedSelectedRoute.checkpoints?.map((cp) => <CheckpointMarker key={cp.id} checkpoint={cp} />)}
-                  {extendedSelectedRoute.vehicle_position && <VehicleMarker position={[extendedSelectedRoute.vehicle_position.lat, extendedSelectedRoute.vehicle_position.lng]} title={extendedSelectedRoute.route_code} subtitle={`${extendedSelectedRoute.driver_name} - ${extendedSelectedRoute.plate_number}`} />}
+                  
+                  {/* Posición del vehículo (última posición GPS o destino si terminó) */}
+                  {(() => {
+                    const hasLogs = trackingLogs && trackingLogs.length > 0;
+                    const lastLog = hasLogs ? trackingLogs[trackingLogs.length - 1] : null;
+                    const isFinished = ['completed', 'finalizada', 'completada'].includes(extendedSelectedRoute.status);
+                    
+                    let pos = null;
+                    if (hasLogs) {
+                      pos = [lastLog.lat, lastLog.lng];
+                    } else if (isFinished && extendedSelectedRoute.dest_lat) {
+                      pos = [extendedSelectedRoute.dest_lat, extendedSelectedRoute.dest_lng];
+                    } else if (extendedSelectedRoute.vehicle_position) {
+                      pos = [extendedSelectedRoute.vehicle_position.lat, extendedSelectedRoute.vehicle_position.lng];
+                    }
+
+                    if (!pos) return null;
+
+                    return (
+                      <VehicleMarker 
+                        position={pos} 
+                        title={extendedSelectedRoute.route_code} 
+                        subtitle={`${extendedSelectedRoute.driver_name} - ${extendedSelectedRoute.plate_number}`} 
+                        isFinished={isFinished}
+                      />
+                    );
+                  })()}
                 </BaseMap>
               </div>
               <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-[#0a1c34]/70 to-transparent" />
@@ -533,9 +617,9 @@ function RoutesPage() {
                 <div className="pointer-events-none mt-auto flex flex-wrap items-end justify-between gap-4 p-6">
                   <div className="pointer-events-auto rounded-[1.5rem] border border-white/40 bg-white/80 p-4 shadow-xl backdrop-blur-xl">
                     <div className="flex gap-5">
-                      <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">Progreso</p><p className="mt-2 text-lg font-bold text-primary-700">{extendedSelectedRoute.progress || 0}%</p></div>
+                      <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">Progreso</p><p className="mt-2 text-lg font-bold text-primary-700">{realProgress || extendedSelectedRoute.progress || 0}%</p></div>
                       <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">ETA</p><p className="mt-2 text-lg font-bold text-primary-700">{extendedSelectedRoute.eta || '--'}</p></div>
-                      <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">Distancia</p><p className="mt-2 text-lg font-bold text-primary-700">{extendedSelectedRoute.remaining_distance ? `${extendedSelectedRoute.remaining_distance} km` : '--'}</p></div>
+                      <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">Distancia</p><p className="mt-2 text-lg font-bold text-primary-700">{realRemainingDistance || extendedSelectedRoute.remaining_distance || '--'} km</p></div>
                     </div>
                   </div>
                   <div className="pointer-events-auto"><MapLegend /></div>
@@ -546,6 +630,8 @@ function RoutesPage() {
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                   onAssign={handleAssign}
+                  realProgress={realProgress}
+                  realRemainingDistance={realRemainingDistance}
                 />
               </div>
             </>

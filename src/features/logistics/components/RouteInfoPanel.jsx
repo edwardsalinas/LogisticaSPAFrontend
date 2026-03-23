@@ -1,8 +1,8 @@
-import { Clock3, MapPinned, Phone, Route, X, Edit2, Trash2, PackageCheck } from 'lucide-react';
+import { Clock3, MapPinned, Phone, Route, X, Edit2, Trash2, PackageCheck, Truck } from 'lucide-react';
 import Button from '../../../components/atoms/Button';
 import useRole from '../../../app/useRole';
 
-function RouteInfoPanel({ route, onClose, onEdit, onDelete, onAssign }) {
+function RouteInfoPanel({ route, onClose, onEdit, onDelete, onAssign, realProgress, realRemainingDistance }) {
   const { hasRole } = useRole();
   if (!route) return null;
 
@@ -22,7 +22,7 @@ function RouteInfoPanel({ route, onClose, onEdit, onDelete, onAssign }) {
         <div className="mb-3 flex items-center justify-between">
           <div>
             <p className="text-[0.62rem] uppercase tracking-[0.2em] text-sky-100/70">Ruta activa</p>
-            <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em]">{route.route_code || `RT-${route.id?.substring(0, 6).toUpperCase()}`}</h3>
+            <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em]">{route.route_code || `RT-${String(route.id || '').substring(0, 6).toUpperCase()}`}</h3>
           </div>
           <button onClick={onClose} className="rounded-xl bg-white/10 p-2 text-white/80 transition-colors hover:bg-white/16 hover:text-white">
             <X size={18} strokeWidth={2.2} />
@@ -37,11 +37,11 @@ function RouteInfoPanel({ route, onClose, onEdit, onDelete, onAssign }) {
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4">
                 <p className="text-[0.62rem] uppercase tracking-[0.18em] text-surface-500">Progreso</p>
-                <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">{route.progress || 65}%</p>
+                <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">{realProgress || route.progress || 0}%</p>
               </div>
               <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4">
                 <p className="text-[0.62rem] uppercase tracking-[0.18em] text-surface-500">Restante</p>
-                <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">{route.remaining_distance || '45.2'} km</p>
+                <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">{realRemainingDistance || route.remaining_distance || '--'} km</p>
               </div>
             </div>
 
@@ -85,13 +85,25 @@ function RouteInfoPanel({ route, onClose, onEdit, onDelete, onAssign }) {
         </div>
 
         <div className="flex gap-2 pt-1">
-          <Button variant="primary" size="sm" className="flex-1" onClick={() => window.open(`/logistics/routes/${route.id}/map`, '_self')}>
+          {(hasRole(['driver', 'admin', 'logistics_operator'])) && (
+            <Button 
+              variant="primary" 
+              size="sm" 
+              className={`flex-1 shadow-lg ${(['completed', 'finalizada', 'completada'].includes(route.status)) ? 'bg-surface-200 text-surface-400 border-surface-300 cursor-not-allowed shadow-none' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200'}`} 
+              onClick={() => {
+                if (!(['completed', 'finalizada', 'completada'].includes(route.status))) {
+                  window.open('/tracking/driver', '_self');
+                }
+              }}
+              disabled={['completed', 'finalizada', 'completada'].includes(route.status)}
+            >
+              <Truck size={15} strokeWidth={2.2} />
+              {(['completed', 'finalizada', 'completada'].includes(route.status)) ? 'Viaje Finalizado' : 'Iniciar Viaje'}
+            </Button>
+          )}
+          <Button variant="secondary" size="sm" className="flex-1" onClick={() => window.open(`/logistics/routes/${route.id}/map`, '_self')}>
             <Route size={15} strokeWidth={2.2} />
             Ver mapa
-          </Button>
-          <Button variant="secondary" size="sm" className="flex-1" onClick={() => window.open(`tel:${route.driver_phone || ''}`, '_self')}>
-            <Phone size={15} strokeWidth={2.2} />
-            Contactar
           </Button>
         </div>
 

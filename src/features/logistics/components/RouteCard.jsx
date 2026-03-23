@@ -8,9 +8,16 @@ function RouteCard({ route, isSelected = false, onClick, onEdit, onDelete }) {
   const { hasRole } = useRole();
   const statusConfig = {
     active: { label: 'En progreso', variant: 'info' },
+    en_progreso: { label: 'En progreso', variant: 'success' },
     pending: { label: 'Pendiente', variant: 'warning' },
-    completed: { label: 'Completada', variant: 'success' },
+    pendiente: { label: 'Pendiente', variant: 'warning' },
+    planeada: { label: 'Planeada', variant: 'warning' },
+    planned: { label: 'Planeada', variant: 'warning' },
+    completed: { label: 'Completada', variant: 'neutral' },
+    completada: { label: 'Completada', variant: 'neutral' },
+    finalizada: { label: 'Finalizada', variant: 'neutral' },
     delayed: { label: 'Retrasada', variant: 'danger' },
+    retrasada: { label: 'Retrasada', variant: 'danger' },
     schedule: { label: 'Cronograma', variant: 'primary' },
   };
 
@@ -37,7 +44,7 @@ function RouteCard({ route, isSelected = false, onClick, onEdit, onDelete }) {
       onClick={onClick}
     >
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <span className="text-sm font-bold tracking-[0.02em] text-surface-900">{route.route_code || `RT-${route.id?.substring(0, 6).toUpperCase()}`}</span>
+        <span className="text-sm font-bold tracking-[0.02em] text-surface-900">{route.route_code || `RT-${String(route.id || '').substring(0, 6).toUpperCase()}`}</span>
         <Badge variant={status.variant} dot>{status.label}</Badge>
       </div>
 

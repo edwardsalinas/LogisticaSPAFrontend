@@ -25,6 +25,7 @@ const apiService = {
   getActiveTrip: () => api.get('/tracking/trip/active'),
   logTripEvent: (tripId, data) => api.post(`/tracking/trip/${tripId}/event`, data),
   checkGeofence: (data) => api.post('/tracking/check-geofence', data),
+  getRouteTracking: (routeId) => api.get(`/tracking/route/${routeId}`),
 
   // Schedules (Cronogramas)
   getSchedules: (params) => api.get('/fleet/schedules', { params }),
@@ -39,6 +40,9 @@ const apiService = {
   patch: api.patch,
   delete: api.delete,
   get: api.get,
+  async deliverPackage(id) {
+    return api.patch(`/logistics/packages/${id}/deliver`);
+  },
 };
 
 export default apiService;
