@@ -1,4 +1,4 @@
-﻿export const heroImages = {
+export const heroImages = {
   dashboard: {
     url: 'https://images.unsplash.com/photo-1494412651409-8963ce7935a7?auto=format&fit=crop&w=1600&q=80',
     alt: 'Centro logistico con actividad operativa y flujo de distribucion',
@@ -34,5 +34,9 @@
   packageDetail: {
     url: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1600&q=80',
     alt: 'Detalle logistico de un paquete en proceso de entrega',
+  },
+  login: {
+    url: 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1600&q=80',
+    alt: 'Centro logistico moderno con actividad nocturna',
   },
 };

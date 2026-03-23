@@ -1,6 +1,6 @@
 import { MapPinned } from 'lucide-react';
 
-export default function LiveMapSummary() {
+export default function LiveMapSummary({ stats }) {
   return (
     <article className="relative overflow-hidden rounded-[1.8rem] border border-[#0a2745] bg-[linear-gradient(160deg,#06111f_0%,#0d2847_55%,#123a63_100%)] p-6 text-white shadow-[0_28px_80px_-48px_rgba(2,36,72,0.75)]">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.22),transparent_36%)]" />
@@ -18,15 +18,15 @@ export default function LiveMapSummary() {
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-2xl border border-white/8 bg-white/6 p-3">
               <p className="text-[0.62rem] uppercase tracking-[0.18em] text-slate-300">En ruta</p>
-              <p className="mt-2 font-display text-2xl font-semibold">18</p>
+              <p className="mt-2 font-display text-2xl font-semibold">{stats?.packagesInTransit || 0}</p>
             </div>
             <div className="rounded-2xl border border-white/8 bg-white/6 p-3">
               <p className="text-[0.62rem] uppercase tracking-[0.18em] text-slate-300">Pendientes</p>
-              <p className="mt-2 font-display text-2xl font-semibold">7</p>
+              <p className="mt-2 font-display text-2xl font-semibold">{stats?.packagesPending || 0}</p>
             </div>
             <div className="rounded-2xl border border-white/8 bg-white/6 p-3">
               <p className="text-[0.62rem] uppercase tracking-[0.18em] text-slate-300">Criticas</p>
-              <p className="mt-2 font-display text-2xl font-semibold">2</p>
+              <p className="mt-2 font-display text-2xl font-semibold">{stats?.packagesDelayed || 0}</p>
             </div>
           </div>
           <div className="mt-5 grid gap-3">

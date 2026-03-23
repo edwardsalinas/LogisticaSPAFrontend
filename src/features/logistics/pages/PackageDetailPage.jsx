@@ -1,4 +1,4 @@
-﻿import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Clock3,
@@ -120,8 +120,32 @@ function PackageDetailPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-4">
-        <InfoCard title="Remitente" icon={UserRound} eyebrow="Actor origen"><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.sender?.name || pkg.origen}</p><p className="text-surface-600">{pkg.sender?.address || 'Direccion no registrada'}</p><p className="text-surface-500">{pkg.sender?.contact || '-'}</p></div></InfoCard>
-        <InfoCard title="Destinatario" icon={ShieldCheck} eyebrow="Actor destino"><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.receiver?.name || pkg.destino}</p><p className="text-surface-600">{pkg.receiver?.address || 'Direccion no registrada'}</p><p className="text-surface-500">{pkg.receiver?.contact || '-'}</p></div></InfoCard>
+        <InfoCard title="Remitente" icon={UserRound} eyebrow="Actor origen">
+          <div className="space-y-2 text-sm">
+            <p className="font-semibold text-surface-900">
+              {pkg.sender?.full_name || pkg.sender_name || 'Invitado'}
+            </p>
+            {pkg.sender?.email && <p className="text-surface-500 text-xs">{pkg.sender.email}</p>}
+            <p className="text-surface-600">
+              {pkg.sender_phone || 'Sin teléfono registrado'}
+            </p>
+            {pkg.sender_id && <Badge variant="info" className="mt-1">Usuario Registrado</Badge>}
+          </div>
+        </InfoCard>
+
+        <InfoCard title="Destinatario" icon={ShieldCheck} eyebrow="Actor destino">
+          <div className="space-y-2 text-sm">
+            <p className="font-semibold text-surface-900">
+              {pkg.recipient_name || 'No especificado'}
+            </p>
+            <p className="text-surface-600">
+              {pkg.recipient_phone || 'Sin teléfono'}
+            </p>
+            <p className="text-surface-500 italic">
+              {pkg.recipient_email || 'Sin email'}
+            </p>
+          </div>
+        </InfoCard>
         <InfoCard title="Especificaciones" icon={Package} eyebrow="Ficha tecnica"><div className="grid grid-cols-2 gap-3 text-sm"><div><p className="text-[0.62rem] uppercase tracking-[0.16em] text-surface-500">Peso</p><p className="mt-1 font-semibold text-surface-900">{pkg.peso || 0} kg</p></div><div><p className="text-[0.62rem] uppercase tracking-[0.16em] text-surface-500">Dimensiones</p><p className="mt-1 font-semibold text-surface-900">{pkg.dimensions?.length || 60}x{pkg.dimensions?.width || 40}x{pkg.dimensions?.height || 40} cm</p></div><div><p className="text-[0.62rem] uppercase tracking-[0.16em] text-surface-500">Contenido</p><p className="mt-1 font-semibold text-surface-900">{pkg.content_type || pkg.description || 'General'}</p></div><div><p className="text-[0.62rem] uppercase tracking-[0.16em] text-surface-500">Prioridad</p><div className="mt-1"><Badge variant={priorityVariant}>{pkg.priority || 'Estandar'}</Badge></div></div></div></InfoCard>
         <InfoCard title="Entrega" icon={Clock3} eyebrow="Resumen"><div className="space-y-3"><div><p className="text-[0.62rem] uppercase tracking-[0.16em] text-surface-500">Fecha estimada</p><p className="mt-1 text-sm font-semibold text-surface-900">{pkg.estimated_delivery || 'No disponible'}</p></div><div><div className="mb-1 flex items-center justify-between"><p className="text-[0.62rem] uppercase tracking-[0.16em] text-surface-500">Progreso</p><p className="text-xs font-semibold text-surface-900">{pkg.progress || 65}%</p></div><ProgressBar value={pkg.progress || 65} size="md" variant="primary" /></div><div><Badge variant={status.variant} dot>{status.label}</Badge></div></div></InfoCard>
       </section>

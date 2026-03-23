@@ -364,8 +364,12 @@ function RoutesPage() {
   }, [routes, clickTimeout, handleEdit]);
 
   const renderEventContent = useCallback((eventInfo) => {
+    const { event } = eventInfo;
+    const route = event.extendedProps.route || {};
+    const status = route.status || 'pending';
     const isEstimated = event.extendedProps.isEstimated;
-    const status = route.status;
+    const isMonthView = eventInfo.view.type === 'dayGridMonth';
+    const isPast = event.start < new Date();
 
     if (isMonthView) {
       return (

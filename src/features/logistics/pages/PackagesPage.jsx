@@ -17,10 +17,12 @@ const statusMap = {
   asignado: { label: 'Asignado', variant: 'info' },
   en_transito: { label: 'En tránsito', variant: 'info' },
   entregado: { label: 'Entregado', variant: 'success' },
+  completada: { label: 'Completada', variant: 'success' },
+  finalizada: { label: 'Finalizada', variant: 'success' },
 };
 
 function PackagesPage() {
-  const { hasRole } = useRole();
+  const { hasRole, isClient } = useRole();
   const [packages, setPackages] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -141,39 +143,54 @@ function PackagesPage() {
       );
     }
 
-    if (activeTab === 'delivered') {
-      return { historical: result.filter(p => p.status === 'entregado') };
-    }
-
-    const loose = result.filter(p => !p.route_id && p.status !== 'entregado');
-    const assigned = result.filter(p => p.route_id && p.status !== 'entregado');
-
+    // 1. Mapear todas las rutas
     const shipmentsMap = {};
-    const dayStart = new Date(selectedDate);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(selectedDate);
-    dayEnd.setHours(23, 59, 59, 999);
-
-    routes.filter(r => {
-      if (r.status === 'completada') return false;
-      if (!r.departure_time) return true; // Si no tiene fecha, mostrar siempre? O filtrar?
-      const d = new Date(r.departure_time);
-      return d >= dayStart && d <= dayEnd;
-    }).forEach(r => {
+    routes.forEach(r => {
       shipmentsMap[r.id] = { route: r, packages: [] };
     });
 
-    assigned.forEach(pkg => {
+    // 2. Distribuir paquetes asignados
+    result.filter(p => p.route_id).forEach(pkg => {
       if (shipmentsMap[pkg.route_id]) {
         shipmentsMap[pkg.route_id].packages.push(pkg);
       }
     });
 
+    // 3. Carga suelta (Solo pendiente de entrega)
+    const loose = result.filter(p => !p.route_id && p.status !== 'entregado');
+
+    if (activeTab === 'delivered') {
+      // Historial: Rutas finalizadas o con paquetes entregados
+      const historicalShipments = Object.values(shipmentsMap)
+        .filter(ship => {
+          if (isClient && ship.packages.length === 0) return false;
+          const isFinished = ['completada', 'finalizada', 'completed', 'entregado'].includes(ship.route.status?.toLowerCase());
+          const hasDelivered = ship.packages.some(p => p.status === 'entregado');
+          return isFinished || hasDelivered;
+        })
+        .sort((a, b) => new Date(b.route.departure_time || 0) - new Date(a.route.departure_time || 0));
+
+      return { loose, shipments: historicalShipments };
+    }
+
+    // Tablero Operativo: Filtrado por Fecha (selectedDate)
+    const dayStart = new Date(selectedDate);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(selectedDate);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const activeShipments = Object.values(shipmentsMap).filter(ship => {
+      if (isClient && ship.packages.length === 0) return false;
+      if (!ship.route.departure_time) return true;
+      const d = new Date(ship.route.departure_time);
+      return d >= dayStart && d <= dayEnd;
+    });
+
     return {
       loose,
-      shipments: Object.values(shipmentsMap)
+      shipments: activeShipments
     };
-  }, [packages, routes, searchTerm, activeTab]);
+  }, [packages, routes, searchTerm, activeTab, selectedDate]);
 
   const baseColumns = [
     {
@@ -221,7 +238,9 @@ function PackagesPage() {
                 <Truck size={24} strokeWidth={2.5} />
               </div>
               <div>
-                <h2 className="font-display text-2xl font-black text-surface-950 tracking-tight">Panel de Despachos</h2>
+                <h2 className="font-display text-2xl font-black text-surface-950 tracking-tight">
+                   {activeTab === 'delivered' ? 'Historial de Despachos' : 'Panel de Despachos'}
+                </h2>
                
                {isRefreshing && (
                  <div className="mt-4 flex items-center gap-2 px-3 py-1 bg-primary-100/50 text-primary-700 text-[10px] font-black rounded-full w-fit animate-pulse">
@@ -233,49 +252,40 @@ function PackagesPage() {
           </div>
             
             <div className="flex items-center gap-3">
-               {/* SMART DATE STEPPER */}
-               <div className="flex items-center bg-white border border-surface-200 rounded-2xl p-1 shadow-sm mr-2 ring-1 ring-surface-100">
-                  <button onClick={() => stepDate(-1)} className="h-8 w-8 flex items-center justify-center rounded-xl hover:bg-surface-50 text-surface-400 hover:text-primary-600 transition-all">
-                     <ChevronRight size={18} className="rotate-180" />
-                  </button>
-                  
-                  <div className="px-4 py-1 flex flex-col items-center min-w-[140px]">
-                     <div className="flex items-center gap-2">
-                        <span className="text-sm font-black text-surface-950">
-                           {selectedDate.toLocaleDateString('es-BO', { day: '2-digit', month: 'long' })}
-                        </span>
-                        {selectedDate.toDateString() === new Date().toDateString() && (
-                           <Badge variant="info" className="py-0 px-1.5 h-4 !text-[8px]">HOY</Badge>
-                        )}
-                     </div>
-                     {/* Replace static text with "Volver a hoy" button only when NOT on today */}
-                     {selectedDate.toDateString() !== new Date().toDateString() ? (
-                        <button 
-                          onClick={resetToToday} 
-                          className="text-[9px] font-black text-primary-600 bg-primary-50 px-2 py-0.5 rounded-md hover:bg-primary-100 transition-all uppercase tracking-tighter"
-                        >
-                           Volver a hoy
-                        </button>
-                     ) : (
-                        <span className="text-[9px] font-black text-surface-300 uppercase tracking-tighter -mt-0.5">Vista Operativa</span>
-                     )}
-                  </div>
+               {/* SMART DATE STEPPER (Only for active tab) */}
+               {activeTab !== 'delivered' && (
+                 <div className="flex items-center bg-white border border-surface-200 rounded-2xl p-1 shadow-sm mr-2 ring-1 ring-surface-100">
+                    <button onClick={() => stepDate(-1)} className="h-8 w-8 flex items-center justify-center rounded-xl hover:bg-surface-50 text-surface-400 hover:text-primary-600 transition-all">
+                       <ChevronRight size={18} className="rotate-180" />
+                    </button>
+                    
+                    <div className="px-4 py-1 flex flex-col items-center min-w-[140px]">
+                       <div className="flex items-center gap-2">
+                          <span className="text-sm font-black text-surface-950">
+                             {selectedDate.toLocaleDateString('es-BO', { day: '2-digit', month: 'long' })}
+                          </span>
+                          {selectedDate.toDateString() === new Date().toDateString() && (
+                             <Badge variant="info" className="py-0 px-1.5 h-4 !text-[8px]">HOY</Badge>
+                          )}
+                       </div>
+                       {selectedDate.toDateString() !== new Date().toDateString() ? (
+                          <button onClick={resetToToday} className="text-[9px] font-black text-primary-600 bg-primary-50 px-2 py-0.5 rounded-md hover:bg-primary-100 transition-all uppercase tracking-tighter">
+                             Volver a hoy
+                          </button>
+                       ) : (
+                          <span className="text-[9px] font-black text-surface-300 uppercase tracking-tighter -mt-0.5">Vista Operativa</span>
+                       )}
+                    </div>
 
-                  <button onClick={() => stepDate(1)} className="h-8 w-8 flex items-center justify-center rounded-xl hover:bg-surface-50 text-surface-400 hover:text-primary-600 transition-all">
-                     <ChevronRight size={18} />
-                  </button>
-                  
-                  <div className="h-6 w-px bg-surface-100 mx-1" />
-                  
-                  <label className="h-8 w-8 flex items-center justify-center rounded-xl hover:bg-surface-50 text-surface-400 cursor-pointer relative">
-                     <Clock size={16} />
-                     <input 
-                        type="date" 
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                        onChange={(e) => setSelectedDate(new Date(e.target.value + 'T00:00:00'))}
-                     />
-                  </label>
-               </div>
+                    <button onClick={() => stepDate(1)} className="h-8 w-8 flex items-center justify-center rounded-xl hover:bg-surface-50 text-surface-400 hover:text-primary-600 transition-all">
+                       <ChevronRight size={18} />
+                    </button>
+                    <div className="h-6 w-px bg-surface-100 mx-1" />
+                    <label className="h-8 w-8 flex items-center justify-center rounded-xl hover:bg-surface-50 text-surface-400 cursor-pointer relative">
+                       <Clock size={16} /><input type="date" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => setSelectedDate(new Date(e.target.value + 'T00:00:00'))} />
+                    </label>
+                 </div>
+               )}
 
               <div className="relative group">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 group-focus-within:text-primary-500 transition-colors" />
@@ -288,124 +298,114 @@ function PackagesPage() {
                 />
               </div>
               <Button variant="secondary" size="md" onClick={() => setActiveTab(activeTab === 'delivered' ? 'all' : 'delivered')} className="h-10 px-5 rounded-xl font-bold gap-2">
-                {activeTab === 'delivered' ? <PackageCheck size={18}/> : <PackageSearch size={18}/>}
+                {activeTab === 'delivered' ? <Truck size={18}/> : <PackageSearch size={18}/>}
                 {activeTab === 'delivered' ? 'Operativos' : 'Histórico'}
               </Button>
             </div>
           </div>
 
-          {activeTab === 'delivered' ? (
-             <div className="rounded-[2rem] border border-surface-100 bg-white p-6 shadow-sm">
-                <DataTable 
-                  columns={baseColumns} 
-                  data={groupedData.historical || []} 
-                  loading={loading} 
-                  onRowClick={(row) => setSelectedPackage(row)} 
-                  emptyMessage="No hay historial de entregas." 
-                />
-             </div>
-          ) : (
-            <div className="rounded-[2.2rem] border border-surface-100 bg-white shadow-xl shadow-surface-200/20 overflow-hidden">
-               <table className="w-full border-collapse">
-                 <thead>
-                   <tr className="bg-surface-50/50 border-b border-surface-100">
-                     <th className="w-14 px-4 py-5"></th>
-                     <th className="px-4 py-5 text-left text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Viaje / Ruta</th>
-                     <th className="px-4 py-5 text-left text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest text-center">Fecha</th>
-                     <th className="px-4 py-5 text-left text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Responsable</th>
-                     <th className="px-4 py-5 text-center text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Estado</th>
-                     <th className="px-4 py-5 text-center text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Manifiesto</th>
-                     <th className="px-4 py-5 text-right text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest pr-10">Acciones</th>
-                   </tr>
-                 </thead>
-                 <tbody className="divide-y divide-surface-100">
-                   {groupedData.shipments?.length > 0 ? groupedData.shipments.map(ship => {
-                     const isExpanded = expandedShipments.has(ship.route.id);
-                     const route = ship.route;
-                      const isPast = route.departure_time && new Date(route.departure_time) < new Date().setHours(0,0,0,0);
-                     
-                     return (
-                       <React.Fragment key={route.id}>
-                         <tr className={`hover:bg-primary-50/40 transition-all cursor-pointer group ${isExpanded ? 'bg-primary-50/20' : ''} ${isPast ? 'opacity-50 saturate-50' : ''}`} onClick={() => toggleExpansion(route.id)}>
-                           <td className="px-4 py-5 text-center">
-                              <div className={`transition-all duration-300 transform ${isExpanded ? 'rotate-90 text-primary-600' : 'text-surface-300'}`}>
-                                 <ChevronRight size={20} strokeWidth={3} />
-                              </div>
-                           </td>
-                           <td className="px-4 py-5">
-                              <div className="flex flex-col">
-                                 <span className="font-bold text-surface-900 group-hover:text-primary-700 transition-colors">
-                                   {route.origin} → {route.destination}
-                                 </span>
-                                 <span className="text-[10px] font-mono font-black text-primary-500 tracking-tighter uppercase">
-                                   {route.route_code || route.id.substring(0, 8)}
-                                 </span>
-                              </div>
-                           </td>
-                           <td className="px-4 py-5 text-center">
-                              <div className="flex flex-col items-center">
-                                 <span className="font-bold text-surface-900 text-sm">
-                                   {route.departure_time ? new Date(route.departure_time).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit' }) : '--'}
-                                 </span>
-                                 <span className="text-[10px] font-black text-primary-500 uppercase tracking-tighter">
-                                   {route.departure_time ? new Date(route.departure_time).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }) : 'S/H'}
-                                 </span>
-                              </div>
-                           </td>
-                           <td className="px-4 py-5">
-                              <span className="text-sm text-surface-600 font-medium">{route.driver?.full_name || 'Sin conductor'}</span>
-                           </td>
-                           <td className="px-4 py-5 text-center">
-                              {(() => {
-                                const isDelayed = route.status === 'planeada' && route.departure_time && new Date(route.departure_time) < new Date();
-                                return (
-                                  <Badge variant={route.status === 'en_transito' ? 'info' : (isDelayed ? 'danger' : 'neutral')}>
-                                     {route.status === 'en_transito' ? 'Ruta' : (isDelayed ? 'Atrasado' : 'Standby')}
-                                  </Badge>
-                                );
-                              })()}
-                           </td>
-                           <td className="px-4 py-5 text-center text-sm font-bold text-surface-900">
-                              {ship.packages.length}
-                           </td>
-                           <td className="px-4 py-5 text-right pr-8">
-                              <Button variant="secondary" size="xs" className="h-8 px-4 rounded-xl text-[10px] font-black uppercase tracking-tight gap-1.5 border-primary-200 text-primary-700 bg-white hover:bg-primary-600 hover:text-white transition-all shadow-sm disabled:opacity-30 disabled:grayscale disabled:pointer-events-none" disabled={isPast} onClick={(e) => { e.stopPropagation(); handleOpenContextualForm(route); }}>
-                                 <PackagePlus size={14} strokeWidth={2.5} /> Cargar
-                              </Button>
-                           </td>
+          <div className="rounded-[2.2rem] border border-surface-100 bg-white shadow-xl shadow-surface-200/20 overflow-hidden">
+             <table className="w-full border-collapse">
+               <thead>
+                 <tr className="bg-surface-50/50 border-b border-surface-100">
+                   <th className="w-14 px-4 py-5"></th>
+                   <th className="px-4 py-5 text-left text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Viaje / Ruta</th>
+                   <th className="px-4 py-5 text-left text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest text-center">Fecha</th>
+                   <th className="px-4 py-5 text-left text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Responsable</th>
+                   <th className="px-4 py-5 text-center text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Estado</th>
+                   <th className="px-4 py-5 text-center text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Manifiesto</th>
+                   <th className="px-4 py-5 text-right text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest pr-10">Acciones</th>
+                 </tr>
+               </thead>
+               <tbody className="divide-y divide-surface-100">
+                 {groupedData.shipments?.length > 0 ? groupedData.shipments.map(ship => {
+                   const isExpanded = expandedShipments.has(ship.route.id);
+                   const route = ship.route;
+                   const isPast = route.departure_time && new Date(route.departure_time) < new Date().setHours(0,0,0,0);
+                   
+                   return (
+                     <React.Fragment key={route.id}>
+                       <tr className={`hover:bg-primary-50/40 transition-all cursor-pointer group ${isExpanded ? 'bg-primary-50/20' : ''} ${isPast && activeTab !== 'delivered' ? 'opacity-50 saturate-50' : ''}`} onClick={() => toggleExpansion(route.id)}>
+                         <td className="px-4 py-5 text-center">
+                            <div className={`transition-all duration-300 transform ${isExpanded ? 'rotate-90 text-primary-600' : 'text-surface-300'}`}>
+                               <ChevronRight size={20} strokeWidth={3} />
+                            </div>
+                         </td>
+                         <td className="px-4 py-5">
+                            <div className="flex flex-col">
+                               <span className="font-bold text-surface-900 group-hover:text-primary-700 transition-colors">
+                                 {route.origin} → {route.destination}
+                               </span>
+                               <span className="text-[10px] font-mono font-black text-primary-500 tracking-tighter uppercase">
+                                 {route.route_code || route.id.substring(0, 8)}
+                               </span>
+                            </div>
+                         </td>
+                         <td className="px-4 py-5 text-center">
+                            <div className="flex flex-col items-center">
+                               <span className="font-bold text-surface-900 text-sm">
+                                 {route.departure_time ? new Date(route.departure_time).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit' }) : '--'}
+                               </span>
+                               <span className="text-[10px] font-black text-primary-500 uppercase tracking-tighter">
+                                 {route.departure_time ? new Date(route.departure_time).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }) : 'S/H'}
+                               </span>
+                            </div>
+                         </td>
+                         <td className="px-4 py-5">
+                            <span className="text-sm text-surface-600 font-medium">{route.driver?.full_name || 'Sin conductor'}</span>
+                         </td>
+                         <td className="px-4 py-5 text-center">
+                            {(() => {
+                              const isDelayed = route.status === 'planeada' && route.departure_time && new Date(route.departure_time) < new Date();
+                              return (
+                                <Badge variant={['completada', 'finalizada', 'completed', 'entregado'].includes(route.status?.toLowerCase()) ? 'success' : (route.status === 'en_transito' ? 'info' : (isDelayed ? 'danger' : 'neutral'))}>
+                                   {['completada', 'finalizada', 'completed', 'entregado'].includes(route.status?.toLowerCase()) ? 'Finalizado' : (route.status === 'en_transito' ? 'En Ruta' : (isDelayed ? 'Atrasado' : 'Standby'))}
+                                </Badge>
+                              );
+                            })()}
+                         </td>
+                         <td className="px-4 py-5 text-center text-sm font-bold text-surface-900">
+                            {ship.packages.length}
+                         </td>
+                         <td className="px-4 py-5 text-right pr-8">
+                            <Button variant="secondary" size="xs" className="h-8 px-4 rounded-xl text-[10px] font-black uppercase tracking-tight gap-1.5 border-primary-200 text-primary-700 bg-white hover:bg-primary-600 hover:text-white transition-all shadow-sm disabled:opacity-30 disabled:grayscale disabled:pointer-events-none" disabled={(isPast && activeTab !== 'delivered') || ['completada', 'finalizada', 'completed', 'entregado'].includes(route.status?.toLowerCase())} onClick={(e) => { e.stopPropagation(); handleOpenContextualForm(route); }}>
+                               <PackagePlus size={14} strokeWidth={2.5} /> {['completada', 'finalizada', 'completed', 'entregado'].includes(route.status?.toLowerCase()) ? 'Cerrado' : 'Cargar'}
+                            </Button>
+                         </td>
+                       </tr>
+                       
+                       {isExpanded && (
+                         <tr className="bg-surface-50/50">
+                            <td colSpan="7" className="px-10 pb-8 pt-2 animate-in fade-in slide-in-from-top-4 duration-500">
+                               <div className="rounded-3xl border border-primary-100 bg-white shadow-[0_15px_40px_-20px_rgba(30,58,138,0.15)] overflow-hidden">
+                                  <DataTable 
+                                    columns={baseColumns} 
+                                    data={ship.packages} 
+                                    loading={loading} 
+                                    onRowClick={(row) => setSelectedPackage(row)}
+                                    emptyMessage="Este despacho no tiene carga vinculada."
+                                  />
+                               </div>
+                            </td>
                          </tr>
-                         
-                         {isExpanded && (
-                           <tr className="bg-surface-50/50">
-                              <td colSpan="7" className="px-10 pb-8 pt-2 animate-in fade-in slide-in-from-top-4 duration-500">
-                                 <div className="rounded-3xl border border-primary-100 bg-white shadow-[0_15px_40px_-20px_rgba(30,58,138,0.15)] overflow-hidden">
-                                    <DataTable 
-                                      columns={baseColumns} 
-                                      data={ship.packages} 
-                                      loading={loading} 
-                                      onRowClick={(row) => setSelectedPackage(row)}
-                                      emptyMessage="Este despacho aún no tiene carga asignada."
-                                    />
-                                 </div>
-                              </td>
-                           </tr>
-                         )}
-                       </React.Fragment>
-                     );
-                   }) : (
-                     <tr>
-                       <td colSpan="7" className="py-24 text-center">
-                          <div className="flex flex-col items-center opacity-25 grayscale">
-                            <Truck size={64} strokeWidth={1} />
-                            <p className="mt-4 font-display text-xl font-bold italic tracking-tight">Sin despachos activos</p>
-                          </div>
-                       </td>
-                     </tr>
-                   )}
-                 </tbody>
-               </table>
-            </div>
-          )}
+                       )}
+                     </React.Fragment>
+                   );
+                 }) : (
+                   <tr>
+                     <td colSpan="7" className="py-24 text-center">
+                        <div className="flex flex-col items-center opacity-25 grayscale">
+                          <Truck size={64} strokeWidth={1} />
+                          <p className="mt-4 font-display text-xl font-bold italic tracking-tight">
+                             {activeTab === 'delivered' ? 'Sin historial disponible' : 'Sin despachos activos para esta fecha'}
+                          </p>
+                        </div>
+                     </td>
+                   </tr>
+                 )}
+               </tbody>
+             </table>
+          </div>
         </div>
 
         {/* RIGHT: LOOSE CARGO PANEL (30%) */}

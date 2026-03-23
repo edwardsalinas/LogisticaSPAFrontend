@@ -18,6 +18,8 @@ const statusMap = {
   asignado: { label: 'Asignado', variant: 'info' },
   en_transito: { label: 'En tránsito', variant: 'info' },
   entregado: { label: 'Entregado', variant: 'success' },
+  completada: { label: 'Completada', variant: 'success' },
+  finalizada: { label: 'Finalizada', variant: 'success' },
 };
 
 function TrackingPage() {

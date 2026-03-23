@@ -6,7 +6,49 @@ const operationalAlerts = [
   { title: 'Flota disponible para reasignacion', detail: '6 unidades listas para nuevas ordenes en menos de 20 minutos.', icon: Truck, tone: 'text-sky-700 bg-sky-50 border-sky-100' },
 ];
 
-export default function AlertsPanel() {
+export default function AlertsPanel({ stats }) {
+  const alerts = [];
+
+  // Alerta de retrasos
+  if (stats?.packagesDelayed > 0) {
+    alerts.push({
+      title: `${stats.packagesDelayed} despachos con retraso`,
+      detail: 'Se recomienda revisar las rutas activas para identificar cuellos de botella.',
+      icon: AlertTriangle,
+      tone: 'text-amber-700 bg-amber-50 border-amber-100'
+    });
+  }
+
+  // Alerta de SLA
+  if (stats?.sla >= 95) {
+    alerts.push({
+      title: 'Cumplimiento de SLA saludable',
+      detail: `La plataforma mantiene un ${stats.sla}% de entregas a tiempo hoy.`,
+      icon: ShieldCheck,
+      tone: 'text-emerald-700 bg-emerald-50 border-emerald-100'
+    });
+  }
+
+  // Alerta de Flota
+  if (stats?.totalVehicles > 0) {
+    alerts.push({
+      title: 'Capacidad operativa disponible',
+      detail: `${stats.totalVehicles} unidades listas para nuevas asignaciones.`,
+      icon: Truck,
+      tone: 'text-sky-700 bg-sky-50 border-sky-100'
+    });
+  }
+
+  // Si no hay alertas específicas, mostrar un placeholder informativo
+  if (alerts.length === 0) {
+    alerts.push({
+      title: 'Operacion estable',
+      detail: 'No se detectan anomalias criticas en el flujo actual.',
+      icon: ShieldCheck,
+      tone: 'text-slate-700 bg-slate-50 border-slate-100'
+    });
+  }
+
   return (
     <article className="rounded-[1.8rem] border border-white/70 bg-white/85 p-6 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.32)] backdrop-blur-xl">
       <div className="flex items-center justify-between gap-4">
@@ -19,7 +61,7 @@ export default function AlertsPanel() {
         </div>
       </div>
       <div className="mt-5 space-y-3">
-        {operationalAlerts.map((item) => {
+        {alerts.map((item) => {
           const Icon = item.icon;
           return (
             <div key={item.title} className="flex gap-3 rounded-[1.2rem] border border-surface-100 bg-surface-50/80 p-4">

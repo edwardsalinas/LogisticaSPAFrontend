@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Boxes, Radar } from 'lucide-react';
 import { useAuth } from '../../../app/AuthContext';
 import Spinner from '../../../components/atoms/Spinner';
-
-const heroImage =
-  'https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1400&q=80';
+import { heroImages } from '../../../constants/heroImages';
+import apiService from '../../../services/apiService';
 
 function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -12,9 +12,33 @@ function LoginPage() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [stats, setStats] = useState({
+    efficiency: '---',
+    movements: '---',
+    activeUnits: '---'
+  });
 
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await apiService.getPublicStats();
+        if (response.success) {
+          const s = response.data;
+          setStats({
+            efficiency: `${s.efficiency}%`,
+            movements: s.totalPackages?.toLocaleString() || '0',
+            activeUnits: s.activeUnits > 0 ? `${s.activeUnits}` : '24/7'
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching public stats:', error);
+      }
+    };
+    fetchStats();
+  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -36,25 +60,27 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen overflow-hidden bg-[#f4f7fb] text-surface-900">
+    <div className="min-h-screen overflow-hidden bg-[#f4f7fb] text-surface-900 relative">
       <main className="grid min-h-screen grid-cols-1 md:grid-cols-2">
         <section className="relative hidden overflow-hidden md:block">
           <img
-            src={heroImage}
-            alt="Centro logistico moderno"
-            className="absolute inset-0 h-full w-full object-cover"
+            src={heroImages.login.url}
+            alt={heroImages.login.alt}
+            className="absolute inset-0 h-full w-full object-cover grayscale-[0.2] brightness-[0.7]"
           />
-          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(2,36,72,0.92)_0%,rgba(30,58,95,0.72)_100%)]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#022448]/95 via-[#022448]/85 to-transparent" />
           <div className="relative z-10 flex h-full flex-col justify-between p-10 lg:p-16">
-            <div className="inline-flex w-fit items-center gap-3 rounded-full border border-white/15 bg-white/8 px-4 py-2 backdrop-blur-md">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-400 text-sm font-bold tracking-[0.2em] text-[#022448]">
-                LS
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white">LogisticaSPA</p>
-                <p className="text-[0.62rem] uppercase tracking-[0.24em] text-sky-100/60">
-                  Precision Global Logistics
-                </p>
+            <div className="flex items-center justify-between">
+              <div className="inline-flex w-fit items-center gap-3 rounded-full border border-white/15 bg-white/8 px-4 py-2 backdrop-blur-md">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-400 text-sm font-bold tracking-[0.2em] text-[#022448]">
+                  LS
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">LogisticaSPA</p>
+                  <p className="text-[0.62rem] uppercase tracking-[0.24em] text-sky-100/60">
+                    Precision Global Logistics
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -69,24 +95,35 @@ function LoginPage() {
                 Flota, rutas, entregas y trazabilidad en una sola capa de control
                 visual, clara y confiable.
               </p>
-              <div className="mt-8 h-1 w-24 rounded-full bg-sky-300" />
+
+              <div className="mt-8 flex flex-wrap gap-4">
+                <button
+                  onClick={() => navigate('/public-tracking')}
+                  className="group inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-bold tracking-tight text-white backdrop-blur-md transition-all hover:bg-white/20 hover:-translate-y-0.5"
+                >
+                  <Radar size={18} className="text-sky-300" />
+                  Rastrear mi paquete
+                </button>
+              </div>
+
+              <div className="mt-10 h-1 w-24 rounded-full bg-sky-300" />
             </div>
 
             <div className="grid max-w-lg grid-cols-3 gap-4">
               <div className="rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur-sm">
-                <p className="text-2xl font-bold text-white">98.2%</p>
+                <p className="text-2xl font-bold text-white">{stats.efficiency}</p>
                 <p className="mt-1 text-[0.65rem] uppercase tracking-[0.16em] text-sky-100/70">
                   Entregas a tiempo
                 </p>
               </div>
               <div className="rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur-sm">
-                <p className="text-2xl font-bold text-white">1,284</p>
+                <p className="text-2xl font-bold text-white">{stats.movements}</p>
                 <p className="mt-1 text-[0.65rem] uppercase tracking-[0.16em] text-sky-100/70">
                   Movimientos hoy
                 </p>
               </div>
               <div className="rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur-sm">
-                <p className="text-2xl font-bold text-white">24/7</p>
+                <p className="text-2xl font-bold text-white">{stats.activeUnits}</p>
                 <p className="mt-1 text-[0.65rem] uppercase tracking-[0.16em] text-sky-100/70">
                   Visibilidad
                 </p>
@@ -95,7 +132,8 @@ function LoginPage() {
           </div>
         </section>
 
-        <section className="flex items-center justify-center bg-[#eef3f9] px-6 py-10 sm:px-8 lg:px-16">
+        <section className="flex items-center justify-center bg-[#eef3f9] px-6 py-10 sm:px-8 lg:px-16 relative">
+
           <div className="w-full max-w-[30rem] rounded-[2rem] border border-white/70 bg-white p-8 shadow-[0_28px_80px_-40px_rgba(15,23,42,0.28)] sm:p-10">
             <div className="mb-10 flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#0b4ea2_0%,#137fec_100%)] text-sm font-bold tracking-[0.18em] text-white shadow-[0_16px_34px_-20px_rgba(19,127,236,0.8)]">
@@ -205,10 +243,10 @@ function LoginPage() {
             </form>
 
             <div className="mt-8 border-t border-surface-100 pt-6 text-center">
-              <p className="text-sm text-surface-500">No tienes acceso todavia?</p>
+              <p className="text-[0.65rem] uppercase tracking-widest text-surface-400 font-bold mb-2">No tienes acceso todavía?</p>
               <button
                 type="button"
-                className="mt-3 text-sm font-bold uppercase tracking-[0.12em] text-primary-600 transition-colors hover:text-primary-800"
+                className="text-sm font-bold uppercase tracking-[0.12em] text-primary-600 transition-colors hover:text-primary-800"
               >
                 Solicitar acceso
               </button>

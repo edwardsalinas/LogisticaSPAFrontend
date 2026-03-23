@@ -3,13 +3,7 @@ import Avatar from '../../../components/atoms/Avatar';
 import Badge from '../../../components/atoms/Badge';
 import ProgressBar from '../../../components/atoms/ProgressBar';
 
-const MOCK_SHIPMENTS = [
-  { id: '#LOG-7842', destination: 'La Paz -> Oruro', operator: { name: 'Juan Perez', initials: 'JP' }, status: 'in_transit', progress: 65, eta: '14:30' },
-  { id: '#LOG-7843', destination: 'Santa Cruz -> Cochabamba', operator: { name: 'Maria Lopez', initials: 'ML' }, status: 'delivered', progress: 100, eta: 'Entregado' },
-  { id: '#LOG-7844', destination: 'Sucre -> Potosi', operator: { name: 'Carlos Ruiz', initials: 'CR' }, status: 'pending', progress: 15, eta: '17:10' },
-  { id: '#LOG-7845', destination: 'Tarija -> Santa Cruz', operator: { name: 'Ana Flores', initials: 'AF' }, status: 'in_transit', progress: 45, eta: '15:05' },
-  { id: '#LOG-7846', destination: 'Oruro -> La Paz', operator: { name: 'Luis Garcia', initials: 'LG' }, status: 'delayed', progress: 30, eta: '16:40' },
-];
+import { usePackages } from '../../../hooks/queries/usePackages';
 
 const STATUS_MAP = {
   pending: { label: 'Pendiente', variant: 'warning' },
@@ -19,6 +13,20 @@ const STATUS_MAP = {
 };
 
 export default function PrioritizedShipments() {
+  const { data: rawPackages = [], isLoading } = usePackages();
+
+  const packages = (rawPackages.data || rawPackages)
+    .slice(0, 5)
+    .map(pkg => ({
+      id: pkg.id.split('-')[0].toUpperCase(), // Short ID for UI
+      destination: `${pkg.origen} -> ${pkg.destino}`,
+      operator: { name: 'Unidad Logistica', initials: 'UL' },
+      status: pkg.status || 'pending',
+      progress: pkg.status === 'delivered' ? 100 : pkg.status === 'in_transit' ? 50 : 10,
+      eta: pkg.status === 'delivered' ? 'Entregado' : '---'
+    }));
+
+  if (isLoading) return <div className="p-8 text-center">Cargando despachos...</div>;
   return (
     <article className="overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/85 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.32)] backdrop-blur-xl">
       <div className="flex flex-col gap-4 border-b border-surface-100 px-6 py-6 sm:flex-row sm:items-end sm:justify-between">
@@ -43,7 +51,7 @@ export default function PrioritizedShipments() {
             </tr>
           </thead>
           <tbody>
-            {MOCK_SHIPMENTS.map((shipment) => {
+            {packages.map((shipment) => {
               const statusConfig = STATUS_MAP[shipment.status] || { label: shipment.status, variant: 'neutral' };
               const progressTone = shipment.progress === 100 ? 'success' : shipment.progress >= 50 ? 'primary' : 'warning';
               

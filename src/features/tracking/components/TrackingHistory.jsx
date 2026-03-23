@@ -26,6 +26,22 @@ function TrackingHistory({ packageId, className }) {
     fetchLogs();
   }, [packageId]);
 
+  const statusMap = {
+    'in_transit': 'En tránsito (Actualización de ubicación)',
+    'en_transito': 'En tránsito',
+    'delivered': 'Entregado',
+    'entregado': 'Entregado',
+    'pending': 'Pendiente',
+    'asignado': 'Asignado a ruta',
+  };
+
+  const getStatusLabel = (status) => {
+    if (!status) return 'Estado desconocido';
+    // Si ya es un mensaje largo (como "Llegó a..."), lo dejamos tal cual
+    if (status.includes(':') || status.includes('Llegó') || status.length > 20) return status;
+    return statusMap[status.toLowerCase()] || status;
+  };
+
   if (loading) {
     return <SectionLoader eyebrow="Cargando historial" title="Preparando eventos de trazabilidad" description="Estamos recuperando los ultimos movimientos registrados para este paquete." className="min-h-[24rem]" />;
   }
@@ -50,7 +66,7 @@ function TrackingHistory({ packageId, className }) {
               <div className="flex-1 rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-surface-900">{log.status}</p>
+                    <p className="text-sm font-semibold text-surface-900">{getStatusLabel(log.status)}</p>
                     <p className="mt-1 flex items-center gap-1.5 text-xs text-surface-500"><MapPinned size={13} strokeWidth={2.2} /> {log.lat}, {log.lng}</p>
                   </div>
                   <span className="flex items-center gap-1.5 text-xs text-surface-400"><Clock3 size={13} strokeWidth={2.2} /> {new Date(log.timestamp).toLocaleString('es-BO')}</span>

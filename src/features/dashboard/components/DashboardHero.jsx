@@ -43,7 +43,7 @@ export default function DashboardHero({ stats }) {
               <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-sky-300/20 blur-2xl transition-all duration-500 group-hover:bg-sky-300/40"></div>
               <p className="text-[0.6rem] font-bold uppercase tracking-[0.2em] text-sky-200">Rendimiento</p>
               <div className="mt-2 flex items-center gap-2 text-3xl font-bold tracking-[-0.04em]">
-                <span className="font-display">+14%</span><ArrowUpRight size={20} className="text-sky-300" strokeWidth={2.4} />
+                <span className="font-display">{stats?.performance || '+0%'}</span><ArrowUpRight size={20} className="text-sky-300" strokeWidth={2.4} />
               </div>
               <p className="mt-1 text-xs text-sky-200/70">frente al corte</p>
             </div>
@@ -58,8 +58,8 @@ export default function DashboardHero({ stats }) {
                     <PackageCheck size={16} strokeWidth={2.4} />
                   </div>
                   <div>
-                    <p className="text-[0.45rem] font-bold uppercase tracking-[0.18em] text-white/70">Entreg hoy</p>
-                    <p className="mt-0.5 font-display text-lg font-bold tracking-[-0.04em]">{stats?.totalPackages || 0}</p>
+                    <p className="text-[0.45rem] font-bold uppercase tracking-[0.18em] text-white/70">Carga Hoy</p>
+                    <p className="mt-0.5 font-display text-lg font-bold tracking-[-0.04em]">{stats?.packagesToday || 0}</p>
                   </div>
                 </div>
               </div>
@@ -83,7 +83,7 @@ export default function DashboardHero({ stats }) {
                   </div>
                   <div>
                     <p className="text-[0.45rem] font-bold uppercase tracking-[0.18em] text-white/70">Distancia</p>
-                    <p className="mt-0.5 font-display text-lg font-bold tracking-[-0.04em]">8,4k km</p>
+                    <p className="mt-0.5 font-display text-lg font-bold tracking-[-0.04em]">{stats?.totalDistance?.toLocaleString() || 0}k</p>
                   </div>
                 </div>
               </div>
@@ -95,7 +95,7 @@ export default function DashboardHero({ stats }) {
                   </div>
                   <div>
                     <p className="text-[0.45rem] font-bold uppercase tracking-[0.18em] text-white/70">SLA Gbl</p>
-                    <p className="mt-0.5 font-display text-lg font-bold tracking-[-0.04em]">98%</p>
+                    <p className="mt-0.5 font-display text-lg font-bold tracking-[-0.04em]">{stats?.sla || 0}%</p>
                   </div>
                 </div>
               </div>

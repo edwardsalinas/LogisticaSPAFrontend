@@ -137,9 +137,10 @@ function DriverDashboardPage() {
   // --- DATOS DERIVADOS MEMOIZADOS ---
   const isActive = !!activeTrip;
   const activeRouteData = activeRouteDetails || routes.find(r => String(r.id) === String(selectedRouteId));
+  const routeStatus = (activeRouteData?.status || '').toLowerCase();
   const isFinished = useMemo(() => 
-    ['completed', 'finalizada', 'completada'].includes(activeRouteData?.status),
-  [activeRouteData?.status]);
+    ['completed', 'finalizada', 'completada', 'entregado', 'terminada'].includes(routeStatus),
+  [routeStatus]);
 
   const realProgress = useMemo(() => {
     if (!isActive || !activeRouteData) return 0;

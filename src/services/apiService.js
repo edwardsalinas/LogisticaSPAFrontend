@@ -26,6 +26,7 @@ const apiService = {
   logTripEvent: (tripId, data) => api.post(`/tracking/trip/${tripId}/event`, data),
   checkGeofence: (data) => api.post('/tracking/check-geofence', data),
   getRouteTracking: (routeId) => api.get(`/tracking/route/${routeId}`),
+  getPublicTracking: (code) => api.get(`/tracking/public/${code}`),
 
   // Schedules (Cronogramas)
   getSchedules: (params) => api.get('/fleet/schedules', { params }),
@@ -34,6 +35,10 @@ const apiService = {
   updateSchedule: (id, data) => api.put(`/fleet/schedules/${id}`, data),
   deleteSchedule: (id) => api.delete(`/fleet/schedules/${id}`),
   generateRoutesFromSchedules: (daysAhead = 7) => api.post('/fleet/schedules/generate', { days_ahead: daysAhead }),
+
+  // Statistics
+  getPublicStats: () => api.get('/statistics/public'),
+  getDashboardStats: () => api.get('/statistics/dashboard'),
 
   post: api.post,
   put: api.put,

@@ -17,6 +17,7 @@ const FleetPage = lazy(() => import('../features/fleet/pages/FleetPage'));
 const AiChatPage = lazy(() => import('../features/ai-chat/pages/AiChatPage'));
 const AnalyticsPage = lazy(() => import('../features/analytics/pages/AnalyticsPage'));
 const LoginPage = lazy(() => import('../features/auth/pages/LoginPage'));
+const PublicTrackingPage = lazy(() => import('../features/tracking/pages/PublicTrackingPage'));
 const DriverDashboardPage = lazy(() => import('../features/tracking/pages/DriverDashboardPage'));
 
 function PageLoader() {
@@ -64,6 +65,7 @@ function AppRouter() {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/public-tracking" element={<PublicTrackingPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
             <Route path="/" element={<RootRoute />} />
@@ -75,7 +77,7 @@ function AppRouter() {
             {/* Rutas administrativas y operativas */}
             <Route path="/logistics/routes" element={<RoleRoute roles={['admin', 'logistics_operator']}><RoutesPage /></RoleRoute>} />
             <Route path="/logistics/routes/:routeId/map" element={<RoleRoute roles={['admin', 'logistics_operator']}><RouteMapPage /></RoleRoute>} />
-            <Route path="/tracking" element={<RoleRoute roles={['admin', 'logistics_operator']}><TrackingPage /></RoleRoute>} />
+            <Route path="/tracking" element={<RoleRoute roles={['admin', 'logistics_operator', 'client']}><TrackingPage /></RoleRoute>} />
             <Route path="/tracking/:packageId/map" element={<RoleRoute roles={['admin', 'logistics_operator', 'client']}><PackageMapPage /></RoleRoute>} />
             <Route path="/fleet" element={<RoleRoute roles={['admin']}><FleetPage /></RoleRoute>} />
             <Route path="/ai-chat" element={<RoleRoute roles={['admin']}><AiChatPage /></RoleRoute>} />
