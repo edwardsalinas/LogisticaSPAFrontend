@@ -11,6 +11,14 @@ import clsx from 'clsx';
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const DAY_FULL  = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
+// Ayudante para datetime-local (YYYY-MM-DDTHH:mm en hora local)
+const toLocalISO = (date) => {
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '';
+  const tzOffset = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
+};
+
 function RouteForm({ onSuccess, onCancel, initialData = null }) {
   const [form, setForm] = useState({
     predefined_route_id: initialData?.predefined_route_id || '',
@@ -18,7 +26,7 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
     destination: initialData?.destination || '',
     driver_id: initialData?.driver_id || '',
     vehicle_id: initialData?.vehicle_id || '',
-    departure_time: initialData?.departure_time ? new Date(initialData.departure_time).toISOString().slice(0, 16) : '',
+    departure_time: initialData?.departure_time ? toLocalISO(initialData.departure_time) : '',
     checkpoints: initialData?.checkpoints || [],
     origin_lat: initialData?.origin_lat || null,
     origin_lng: initialData?.origin_lng || null,
@@ -315,7 +323,7 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
               label="Fecha y Hora de Salida" 
               name="departure_time" 
               value={form.departure_time} 
-              min={new Date().toISOString().slice(0, 16)}
+              min={toLocalISO(new Date())}
               onChange={(e) => setForm(prev => ({ ...prev, departure_time: e.target.value }))} 
               required 
             />
@@ -371,7 +379,7 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
           label="Fecha y Hora de Salida" 
           name="departure_time" 
           value={form.departure_time} 
-          min={new Date().toISOString().slice(0, 16)}
+          min={toLocalISO(new Date())}
           onChange={(e) => setForm(prev => ({ ...prev, departure_time: e.target.value }))} 
           required 
         />
