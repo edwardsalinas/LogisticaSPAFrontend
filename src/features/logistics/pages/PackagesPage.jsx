@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Boxes, MapPinned, PackageCheck, Search, Truck, Link, PackagePlus, ChevronRight, ChevronDown, Package, Clock } from 'lucide-react';
+import { Boxes, MapPinned, PackageCheck, PackageSearch, Search, Truck, Link, PackagePlus, ChevronRight, ChevronDown, Package, Clock } from 'lucide-react';
 import api from '../../../services/api';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
@@ -32,6 +32,17 @@ function PackagesPage() {
   const [activeTab, setActiveTab] = useState('all'); // Handles 'all' vs 'delivered' (Historical)
   const [contextualRoute, setContextualRoute] = useState(null);
   const [expandedShipments, setExpandedShipments] = useState(new Set());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const resetToToday = () => setSelectedDate(new Date());
+  
+  const stepDate = (days) => {
+    setSelectedDate(prev => {
+      const next = new Date(prev);
+      next.setDate(next.getDate() + days);
+      return next;
+    });
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -53,7 +64,7 @@ function PackagesPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [selectedDate]);
 
   const handleCreateSuccess = () => {
     setShowForm(false);
@@ -104,7 +115,17 @@ function PackagesPage() {
     const assigned = result.filter(p => p.route_id && p.status !== 'entregado');
 
     const shipmentsMap = {};
-    routes.filter(r => r.status !== 'completada').forEach(r => {
+    const dayStart = new Date(selectedDate);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(selectedDate);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    routes.filter(r => {
+      if (r.status === 'completada') return false;
+      if (!r.departure_time) return true; // Si no tiene fecha, mostrar siempre? O filtrar?
+      const d = new Date(r.departure_time);
+      return d >= dayStart && d <= dayEnd;
+    }).forEach(r => {
       shipmentsMap[r.id] = { route: r, packages: [] };
     });
 
@@ -172,19 +193,63 @@ function PackagesPage() {
             </div>
             
             <div className="flex items-center gap-3">
+               {/* SMART DATE STEPPER */}
+               <div className="flex items-center bg-white border border-surface-200 rounded-2xl p-1 shadow-sm mr-2 ring-1 ring-surface-100">
+                  <button onClick={() => stepDate(-1)} className="h-8 w-8 flex items-center justify-center rounded-xl hover:bg-surface-50 text-surface-400 hover:text-primary-600 transition-all">
+                     <ChevronRight size={18} className="rotate-180" />
+                  </button>
+                  
+                  <div className="px-4 py-1 flex flex-col items-center min-w-[140px]">
+                     <div className="flex items-center gap-2">
+                        <span className="text-sm font-black text-surface-950">
+                           {selectedDate.toLocaleDateString('es-BO', { day: '2-digit', month: 'long' })}
+                        </span>
+                        {selectedDate.toDateString() === new Date().toDateString() && (
+                           <Badge variant="info" className="py-0 px-1.5 h-4 !text-[8px]">HOY</Badge>
+                        )}
+                     </div>
+                     {/* Replace static text with "Volver a hoy" button only when NOT on today */}
+                     {selectedDate.toDateString() !== new Date().toDateString() ? (
+                        <button 
+                          onClick={resetToToday} 
+                          className="text-[9px] font-black text-primary-600 bg-primary-50 px-2 py-0.5 rounded-md hover:bg-primary-100 transition-all uppercase tracking-tighter"
+                        >
+                           Volver a hoy
+                        </button>
+                     ) : (
+                        <span className="text-[9px] font-black text-surface-300 uppercase tracking-tighter -mt-0.5">Vista Operativa</span>
+                     )}
+                  </div>
+
+                  <button onClick={() => stepDate(1)} className="h-8 w-8 flex items-center justify-center rounded-xl hover:bg-surface-50 text-surface-400 hover:text-primary-600 transition-all">
+                     <ChevronRight size={18} />
+                  </button>
+                  
+                  <div className="h-6 w-px bg-surface-100 mx-1" />
+                  
+                  <label className="h-8 w-8 flex items-center justify-center rounded-xl hover:bg-surface-50 text-surface-400 cursor-pointer relative">
+                     <Clock size={16} />
+                     <input 
+                        type="date" 
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={(e) => setSelectedDate(new Date(e.target.value + 'T00:00:00'))}
+                     />
+                  </label>
+               </div>
+
               <div className="relative group">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 group-focus-within:text-primary-500 transition-colors" />
                 <input 
                   type="text" 
                   placeholder="Buscar viaje o ruta..." 
-                  className="pl-9 pr-4 py-2 bg-white border border-surface-200 rounded-xl text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all outline-none w-48 sm:w-72"
+                  className="pl-9 pr-4 py-2 bg-white border border-surface-200 rounded-xl text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all outline-none w-44 lg:w-48"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               <Button variant="secondary" size="md" onClick={() => setActiveTab(activeTab === 'delivered' ? 'all' : 'delivered')} className="h-10 px-5 rounded-xl font-bold gap-2">
-                {activeTab === 'delivered' ? <PackageCheck size={18}/> : <Clock size={18}/>}
-                {activeTab === 'delivered' ? 'Ver Operativos' : 'Ver Histórico'}
+                {activeTab === 'delivered' ? <PackageCheck size={18}/> : <PackageSearch size={18}/>}
+                {activeTab === 'delivered' ? 'Operativos' : 'Histórico'}
               </Button>
             </div>
           </div>
@@ -206,6 +271,7 @@ function PackagesPage() {
                    <tr className="bg-surface-50/50 border-b border-surface-100">
                      <th className="w-14 px-4 py-5"></th>
                      <th className="px-4 py-5 text-left text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Viaje / Ruta</th>
+                     <th className="px-4 py-5 text-left text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest text-center">Fecha</th>
                      <th className="px-4 py-5 text-left text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Responsable</th>
                      <th className="px-4 py-5 text-center text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Estado</th>
                      <th className="px-4 py-5 text-center text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Manifiesto</th>
@@ -235,6 +301,16 @@ function PackagesPage() {
                                  </span>
                               </div>
                            </td>
+                           <td className="px-4 py-5 text-center">
+                              <div className="flex flex-col items-center">
+                                 <span className="font-bold text-surface-900 text-sm">
+                                   {route.departure_time ? new Date(route.departure_time).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit' }) : '--'}
+                                 </span>
+                                 <span className="text-[10px] font-black text-primary-500 uppercase tracking-tighter">
+                                   {route.departure_time ? new Date(route.departure_time).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }) : 'S/H'}
+                                 </span>
+                              </div>
+                           </td>
                            <td className="px-4 py-5">
                               <span className="text-sm text-surface-600 font-medium">{route.driver?.full_name || 'Sin conductor'}</span>
                            </td>
@@ -255,7 +331,7 @@ function PackagesPage() {
                          
                          {isExpanded && (
                            <tr className="bg-surface-50/50">
-                              <td colSpan="6" className="px-10 pb-8 pt-2 animate-in fade-in slide-in-from-top-4 duration-500">
+                              <td colSpan="7" className="px-10 pb-8 pt-2 animate-in fade-in slide-in-from-top-4 duration-500">
                                  <div className="rounded-3xl border border-primary-100 bg-white shadow-[0_15px_40px_-20px_rgba(30,58,138,0.15)] overflow-hidden">
                                     <DataTable 
                                       columns={baseColumns} 
@@ -272,7 +348,7 @@ function PackagesPage() {
                      );
                    }) : (
                      <tr>
-                       <td colSpan="6" className="py-24 text-center">
+                       <td colSpan="7" className="py-24 text-center">
                           <div className="flex flex-col items-center opacity-25 grayscale">
                             <Truck size={64} strokeWidth={1} />
                             <p className="mt-4 font-display text-xl font-bold italic tracking-tight">Sin despachos activos</p>
