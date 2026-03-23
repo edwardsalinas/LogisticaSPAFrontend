@@ -36,19 +36,6 @@ export default function SchedulePanel() {
     }
   };
 
-  const handleGenerate = async () => {
-    setGenerating(true);
-    setGenResult(null);
-    try {
-      const res = await apiService.generateRoutesFromSchedules(7);
-      setGenResult(res.data?.data);
-    } catch (err) {
-      alert('Error al generar rutas: ' + (err.response?.data?.message || err.message));
-    } finally {
-      setGenerating(false);
-    }
-  };
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -57,20 +44,10 @@ export default function SchedulePanel() {
             <CalendarRange size={22} className="text-primary-600" /> Cronogramas Semanales
           </h3>
           <p className="text-sm text-surface-500 mt-1">
-            Crea cronogramas desde el botón "Crear Ruta" → Programación Semanal. Luego proyéctalos aquí.
+            Gestiona aquí los cronogramas recurrentes. El sistema genera automáticamente los despachos para los próximos 30 días.
           </p>
         </div>
-        <Button variant="secondary" onClick={handleGenerate} disabled={generating} className="flex items-center gap-2">
-          {generating ? <Loader2 className="animate-spin" size={16} /> : <Zap size={16} />}
-          {generating ? 'Generando...' : 'Proyectar Semana'}
-        </Button>
       </div>
-
-      {genResult && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-sm text-emerald-800 font-medium">
-          ✅ Proyección completada: <strong>{genResult.created}</strong> rutas creadas, <strong>{genResult.skipped}</strong> omitidas. Período: próximos {genResult.daysAhead} días.
-        </div>
-      )}
 
       {loading ? (
         <div className="text-center py-8 text-surface-400">Cargando cronogramas...</div>

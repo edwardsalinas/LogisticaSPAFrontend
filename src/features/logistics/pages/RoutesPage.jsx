@@ -114,20 +114,6 @@ function RoutesPage() {
     fetchRoutes();
   }, []);
 
-  const handleGenerateRoutes = async () => {
-    try {
-      setLoading(true);
-      const res = await apiService.generateRoutesFromSchedules(7);
-      const count = res.data?.generatedCount || 0;
-      alert(`Se han generado ${count} despachos para la próxima semana.`);
-      fetchRoutes();
-    } catch (err) {
-      console.error('Error generando despachos:', err);
-      alert('Error al proyectar los cronogramas.');
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     if (!selectedRoute?.id) {
       setExtendedSelectedRoute(null);
@@ -378,9 +364,6 @@ function RoutesPage() {
                   <button onClick={() => setViewMode('calendar')} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all ${viewMode === 'calendar' ? 'bg-white shadow-sm text-primary-700' : 'text-surface-500 hover:text-surface-700'}`}><Calendar size={13} strokeWidth={2.5}/> Calendario</button>
                   <button onClick={() => setViewMode('list')} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-primary-700' : 'text-surface-500 hover:text-surface-700'}`}><List size={13} strokeWidth={2.5}/> Lista</button>
                 </div>
-                <Button variant="secondary" size="md" className="flex-1 sm:flex-none whitespace-nowrap px-4 h-9 text-xs" onClick={handleGenerateRoutes}>
-                  <CalendarRange size={16} strokeWidth={2.5} className="mr-1.5" /> Proyectar Semana
-                </Button>
                 <Button size="md" className="flex-1 sm:flex-none whitespace-nowrap px-5 h-9 text-xs" onClick={() => { setEditingRoute(null); setShowForm(true); }}>
                   <Plus size={16} strokeWidth={3} className="mr-1.5" /> Nuevo
                 </Button>
