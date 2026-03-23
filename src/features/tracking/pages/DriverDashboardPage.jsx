@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
-import { Truck, Navigation, Play, Square, Activity, MapPin, Search, Calendar as CalendarIcon, Package } from 'lucide-react';
+import { Truck, Navigation, Play, Square, Activity, MapPin, Search, Calendar as CalendarIcon, Package, Clock } from 'lucide-react';
 import { Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import FullCalendar from '@fullcalendar/react';
@@ -204,51 +204,55 @@ function DriverDashboardPage() {
     
     if (isMonthView) {
       return (
-        <div className={`w-full overflow-hidden flex items-center gap-1.5 px-1.5 py-0.5 rounded-md ${isPast && routeStatus === 'planeada' ? 'opacity-60' : ''}`} style={isEstimated ? { maskImage: 'linear-gradient(to right, black 80%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, black 80%, transparent 100%)' } : {}}>
-          <span className="font-bold text-[9px] text-white/90 whitespace-nowrap">{eventInfo.timeText}</span>
-          <span className="text-[10px] font-semibold text-white truncate">{event.title.split('|')[0].trim()}</span>
-          {(['active', 'en_transito'].includes(routeStatus)) && <Truck size={10} className="animate-pulse text-white ml-auto shrink-0" />}
+        <div className={`w-full overflow-hidden flex items-center gap-1 px-1 py-0.5 rounded-md ${isPast && routeStatus === 'planeada' ? 'opacity-60' : ''}`} style={isEstimated ? { maskImage: 'linear-gradient(to right, black 80%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, black 80%, transparent 100%)' } : {}}>
+          <span className="font-bold text-[8px] text-white/90 whitespace-nowrap">{eventInfo.timeText.split(' - ')[0]}</span>
+          <span className="text-[9px] font-semibold text-white truncate max-w-[60px]">{event.title.split('|')[0].trim()}</span>
+          {(['active', 'en_transito'].includes(routeStatus)) && <Truck size={8} className="animate-pulse text-white ml-auto shrink-0" />}
         </div>
       );
     }
 
     return (
       <div 
-        className={`p-2 flex flex-col h-full overflow-hidden leading-tight rounded-md border-l-4 border-white/20 transition-all ${isPast && routeStatus === 'planeada' ? 'opacity-60 grayscale-[0.3]' : 'hover:scale-[1.02] shadow-sm'}`}
+        className={`p-1.5 flex flex-col h-full overflow-hidden leading-tight rounded-md border-l-4 border-white/20 transition-all ${isPast && routeStatus === 'planeada' ? 'opacity-60 grayscale-[0.3]' : 'hover:scale-[1.02] shadow-sm'}`}
         style={isEstimated ? { maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)' } : {}}
       >
-        <div className="flex justify-between items-center mb-1.5">
-          <div className="flex items-center gap-1.5">
+        <div className="flex justify-between items-center mb-1">
+          <div className="flex items-center gap-1 min-w-0">
             {(['active', 'en_transito'].includes(routeStatus)) ? (
-              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400/30">
-                <Truck size={10} className="animate-pulse text-white" />
-              </div>
+              <Truck size={10} className="animate-pulse text-white shrink-0" />
             ) : (
-              <span className="font-black text-[10px] text-white/90 tracking-tight uppercase">Salida: {eventInfo.timeText.split('-')[0]}</span>
+              <Clock size={10} className="text-white/60 shrink-0" />
             )}
+            <span className="font-black text-[9px] text-white/90 truncate tracking-tight">
+              {eventInfo.timeText.split(' - ')[0]}
+            </span>
           </div>
           {['completed', 'finalizada', 'completada'].includes(routeStatus) && (
-            <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+            <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)] shrink-0" />
           )}
         </div>
         
-        <p className="text-[11px] font-black text-white leading-none truncate mb-1">
-          {event.title.split('|')[0].trim()}
-        </p>
-        
-        <p className="text-[9px] font-bold text-white/70 truncate uppercase tracking-wider mb-2">
-          {event.title.split('|')[1]?.trim() || '---'}
-        </p>
+        <div className="min-w-0 flex-1 flex flex-col justify-center">
+          <p className="text-[10px] font-black text-white leading-tight truncate">
+            {event.title.split('|')[0].trim()}
+          </p>
+          <p className="text-[8px] font-bold text-white/50 truncate uppercase tracking-tighter mt-0.5">
+            {event.title.split('|')[1]?.trim() || '---'}
+          </p>
+        </div>
 
-        <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/10 pt-1.5">
-          <span className="text-[8px] font-black text-white/50 uppercase tracking-widest">
-            {isEstimated ? 'Estimado' : 'Real'}
+        <div className="mt-1 flex items-center justify-between gap-1 border-t border-white/10 pt-1 shrink-0">
+          <span className="text-[7px] font-black text-white/30 uppercase tracking-tighter">
+            {isEstimated ? 'EST.' : 'REAL'}
           </span>
-          {['completed', 'finalizada', 'completada'].includes(routeStatus) ? (
-             <span className="text-[9px] font-black text-emerald-300">Llegada: {new Date(route.arrival_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-          ) : (
-             <span className="text-[9px] font-black text-white/90">ETA: {eventInfo.timeText.split('-')[1]}</span>
-          )}
+          <div className="flex items-center gap-1 min-w-0">
+            <span className="text-[9px] font-black text-white/90 truncate">
+               {['completed', 'finalizada', 'completada'].includes(routeStatus) 
+                 ? `✓ ${new Date(route.arrival_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                 : `→ ${eventInfo.timeText.split(' - ')[1] || ''}`}
+            </span>
+          </div>
         </div>
       </div>
     );
