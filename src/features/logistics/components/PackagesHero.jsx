@@ -18,9 +18,6 @@ export default function PackagesHero({ totalPackages, deliveredCount, transitCou
           <h1 className="mt-5 max-w-3xl font-display text-[clamp(2.1rem,5vw,4rem)] font-semibold tracking-[-0.06em] text-white">
             Inventario de paquetes con lectura clara de flujo y trazabilidad.
           </h1>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">
-            Concentramos registro, consulta y detalle operativo en una sola vista para que el equipo encuentre rapido lo que necesita.
-          </p>
         </div>
         <div className="flex flex-col gap-3 lg:gap-4">
           <div className="rounded-[1.7rem] border border-white/15 bg-white/5 p-3 sm:p-4 backdrop-blur-xl shadow-2xl">

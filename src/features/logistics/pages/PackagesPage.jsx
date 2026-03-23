@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Boxes, MapPinned, PackageCheck, PackageSearch, Search, Truck, Link, PackagePlus, ChevronRight, ChevronDown, Package, Clock } from 'lucide-react';
+import { Boxes, MapPinned, PackageCheck, PackageSearch, Search, Truck, Link, PackagePlus, ChevronRight, ChevronDown, Package, Clock, Plus, Filter, Calendar as CalendarIcon, RefreshCw } from 'lucide-react';
 import api from '../../../services/api';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
@@ -33,6 +33,7 @@ function PackagesPage() {
   const [contextualRoute, setContextualRoute] = useState(null);
   const [expandedShipments, setExpandedShipments] = useState(new Set());
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const resetToToday = () => setSelectedDate(new Date());
   
@@ -44,8 +45,10 @@ function PackagesPage() {
     });
   };
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (silent = false) => {
+    if (silent) setIsRefreshing(true);
+    else setLoading(true);
+
     try {
       const [pkgRes, routeRes] = await Promise.all([
         api.get('/logistics/packages'),
@@ -55,15 +58,28 @@ function PackagesPage() {
       setRoutes(routeRes.data || []);
     } catch (err) {
       console.error('Error cargando datos:', err);
-      setPackages([]);
-      setRoutes([]);
+      // No reseteamos a vacio si es un refresh para no perder el estado anterior
+      if (!silent) {
+        setPackages([]);
+        setRoutes([]);
+      }
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
+  // Carga inicial (Full Skeleton)
   useEffect(() => {
-    fetchData();
+    fetchData(false);
+  }, []);
+
+  // Cambio de fecha (Background Refresh)
+  useEffect(() => {
+    // Evitamos el primer trigger innecesario ya que el fetchData(false) ya se ejecuta al montar
+    if (!loading) {
+       fetchData(true);
+    }
   }, [selectedDate]);
 
   const handleCreateSuccess = () => {
@@ -92,10 +108,28 @@ function PackagesPage() {
     });
   };
 
-  const totalPackages = packages.length;
-  const delivered = packages.filter((p) => p.status === 'entregado').length;
-  const transitCount = packages.filter((p) => p.status === 'en_transito' || p.status === 'asignado').length;
-  const pendingCount = packages.filter((p) => p.status === 'pendiente').length;
+  const filteredPackages = useMemo(() => {
+    const dayStart = new Date(selectedDate);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(selectedDate);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    return packages.filter(p => {
+      // Si tiene ruta, filtramos por la fecha de la ruta
+      if (p.route_id && p.transport_routes) {
+        const depTime = new Date(p.transport_routes.departure_time);
+        return depTime >= dayStart && depTime <= dayEnd;
+      }
+      // Si es carga suelta, filtramos por fecha de creación
+      const createdAt = new Date(p.created_at);
+      return createdAt >= dayStart && createdAt <= dayEnd;
+    });
+  }, [packages, selectedDate]);
+
+  const totalPackages = filteredPackages.length;
+  const delivered = filteredPackages.filter((p) => p.status === 'entregado').length;
+  const transitCount = filteredPackages.filter((p) => p.status === 'en_transito' || p.status === 'asignado').length;
+  const pendingCount = filteredPackages.filter((p) => p.status === 'pendiente').length;
 
   const groupedData = useMemo(() => {
     let result = packages;
@@ -188,9 +222,15 @@ function PackagesPage() {
               </div>
               <div>
                 <h2 className="font-display text-2xl font-black text-surface-950 tracking-tight">Panel de Despachos</h2>
-                <p className="text-xs text-surface-500 font-medium">Gestiona carga asignada y rutas en tránsito</p>
-              </div>
+               
+               {isRefreshing && (
+                 <div className="mt-4 flex items-center gap-2 px-3 py-1 bg-primary-100/50 text-primary-700 text-[10px] font-black rounded-full w-fit animate-pulse">
+                   <Clock size={12} />
+                   ACTUALIZANDO DATOS...
+                 </div>
+               )}
             </div>
+          </div>
             
             <div className="flex items-center gap-3">
                {/* SMART DATE STEPPER */}
