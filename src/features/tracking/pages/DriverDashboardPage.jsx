@@ -84,9 +84,9 @@ function DriverDashboardPage() {
 
     const end = new Date(start.getTime() + (120 * 60000)); // 2h por defecto
     
-    let bgColor = r.schedule_id ? '#8b5cf6' : '#3b82f6';
-    if (r.status === 'active' || r.status === 'en_transito') bgColor = '#10b981';
-    if (r.status === 'completed' || r.status === 'finalizada') bgColor = '#64748b';
+    let bgColor = '#3b82f6'; // Blue (Planned)
+    if (r.status === 'active' || r.status === 'en_transito') bgColor = '#10b981'; // Green (Active)
+    if (['completed', 'finalizada'].includes(r.status)) bgColor = '#18181b'; // Zinc-900 (Finished)
 
     return {
       id: String(r.id),
@@ -185,21 +185,29 @@ function DriverDashboardPage() {
     intervalRef.current = null;
   }, []);
 
+  const isStoppingRef = useRef(false);
+
   const handleStopTrip = useCallback(async () => {
+    if (isStoppingRef.current) return;
+    isStoppingRef.current = true;
     setToggling(true);
     try {
       await apiService.stopTrip();
       stopGpsTracking();
-      // Refrescar datos para que el estado pase a 'completed' y se vea el recorrido
+      // Forzar actualización local inmediata mientras se re-descarga todo
+      setRoutes(prev => prev.map(r => String(r.id) === String(selectedRouteId) ? { ...r, status: 'completed' } : r));
       await fetchData();
       setCurrentPosition(null);
       setCompletedCheckpointIds([]);
     } catch (err) {
-      alert(err.message || 'Error al finalizar viaje');
+      console.error('Error al finalizar viaje:', err);
+      // Solo alertar si no es un error de "ya estaba cerrado" que devolvimos como éxito
+      if (err.message) alert(err.message);
     } finally {
       setToggling(false);
+      isStoppingRef.current = false;
     }
-  }, [stopGpsTracking, fetchData]);
+  }, [stopGpsTracking, fetchData, selectedRouteId]);
 
   const handleStartTrip = useCallback(async () => {
     if (!selectedRouteId) {
@@ -457,10 +465,12 @@ function DriverDashboardPage() {
             >
               {activeRouteData && (
                 <>
-                  {/* Ruta Completa (Tenue) */}
-                  <RoutePath route={activeRouteData} color="#64748b" weight={3} fitBounds={!isActive} />
+                  {/* Ruta Planificada (Sutil pero clara) */}
+                  {activeRouteData && (
+                    <RoutePath route={activeRouteData} color="#94a3b8" weight={5} opacity={0.55} fitBounds={!isActive} />
+                  )}
                   
-                  {/* Ruta Completada (Solid Green) */}
+                  {/* Ruta Ejecutada/Completada (SOLID Green) */}
                   {(isActive || ['completed', 'finalizada'].includes(activeRouteData?.status)) && (
                     <RoutePath 
                       route={{
@@ -474,6 +484,7 @@ function DriverDashboardPage() {
                             )
                       }} 
                       isCompleted={true}
+                      weight={6}
                       fitBounds={false}
                     />
                   )}
@@ -511,9 +522,21 @@ function DriverDashboardPage() {
                 </>
               )}
 
-              {currentPosition && (
-                <Marker position={[currentPosition.lat, currentPosition.lng]} icon={vehicleIcon}>
-                  <Popup>Tu ubicación actual (Transmitiendo...)</Popup>
+              {/* Posición del Vehículo (Actual o Final) */}
+              {(currentPosition || (['completed', 'finalizada'].includes(activeRouteData?.status) && activeRouteData?.dest_lat)) && (
+                <Marker 
+                  position={
+                    ['completed', 'finalizada'].includes(activeRouteData?.status) && activeRouteData?.dest_lat
+                      ? [activeRouteData.dest_lat, activeRouteData.dest_lng]
+                      : [currentPosition.lat, currentPosition.lng]
+                  } 
+                  icon={vehicleIcon}
+                >
+                  <Popup>
+                    {['completed', 'finalizada'].includes(activeRouteData?.status) 
+                      ? 'Viaje Finalizado en Destino' 
+                      : 'Tu ubicación actual (Transmitiendo...)'}
+                  </Popup>
                 </Marker>
               )}
             </BaseMap>
