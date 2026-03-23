@@ -637,29 +637,35 @@ function DriverDashboardPage() {
               )}
             </BaseMap>
             
-            {/* Stats Overlays Minimalistas (Texto Oscuro para mapas claros) */}
-            <div className="absolute top-6 left-6 right-6 z-[1000] flex flex-row items-center justify-start gap-10 pointer-events-none">
+            {/* Stats Overlays Minimalistas - Refinado para consistencia con el Sistema de Diseño */}
+            <div className="absolute top-6 left-6 right-6 z-[1000] flex flex-row items-center justify-start gap-12 pointer-events-none drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]">
               <div className="flex items-center gap-3">
-                <Activity size={20} className="text-blue-600" strokeWidth={3} />
+                <div className="h-9 w-9 rounded-xl bg-primary-100/40 backdrop-blur-sm flex items-center justify-center text-primary-600">
+                  <Activity size={18} strokeWidth={2.5} />
+                </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-surface-500 uppercase tracking-wider leading-none">Pings</span>
-                  <span className="text-xl font-display font-black text-surface-900 leading-none mt-1">{eventsSent}</span>
+                  <span className="text-[9px] font-bold text-surface-500 uppercase tracking-[0.15em] leading-none">GPS SIGS</span>
+                  <span className="text-xl font-display font-extrabold text-surface-900 tracking-tight leading-none mt-1">{eventsSent}</span>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
-                <Navigation size={20} className="text-violet-600" strokeWidth={3} />
+                <div className="h-9 w-9 rounded-xl bg-violet-100/40 backdrop-blur-sm flex items-center justify-center text-violet-600">
+                  <Navigation size={18} strokeWidth={2.5} />
+                </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-surface-500 uppercase tracking-wider leading-none">Ruta</span>
-                  <span className="text-xl font-display font-black text-surface-900 leading-none mt-1 truncate max-w-[150px]">{activeRouteData ? activeRouteData.route_code : '---'}</span>
+                  <span className="text-[9px] font-bold text-surface-500 uppercase tracking-[0.15em] leading-none">Ruta Activa</span>
+                  <span className="text-xl font-display font-extrabold text-surface-900 tracking-tight leading-none mt-1 truncate max-w-[160px]">{activeRouteData ? activeRouteData.route_code : '---'}</span>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
-                <MapPin size={20} className={isActive ? 'text-emerald-600' : 'text-amber-600'} strokeWidth={3} />
+                <div className={`h-9 w-9 rounded-xl backdrop-blur-sm flex items-center justify-center ${isActive ? 'bg-emerald-100/40 text-emerald-600' : 'bg-amber-100/40 text-amber-600'}`}>
+                  <MapPin size={18} strokeWidth={2.5} />
+                </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-surface-500 uppercase tracking-wider leading-none">Inicio</span>
-                  <span className="text-xl font-display font-black text-surface-900 leading-none mt-1">
+                  <span className="text-[9px] font-bold text-surface-500 uppercase tracking-[0.15em] leading-none">Arranque</span>
+                  <span className="text-xl font-display font-extrabold text-surface-900 tracking-tight leading-none mt-1">
                     {isActive && activeTrip?.started_at ? new Date(activeTrip.started_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--'}
                   </span>
                 </div>

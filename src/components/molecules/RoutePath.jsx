@@ -49,8 +49,8 @@ function RoutePath({ route, checkpoints: propCheckpoints, color = '#137fec', wei
       waypoints,
       lineOptions: {
         styles: isCompleted 
-          ? [{ color: actualColor, weight: actualWeight, opacity: actualOpacity }]
-          : [{ color: actualColor, weight: actualWeight, opacity: actualOpacity, dashArray: '10, 15' }] // Punteado para pendiente
+          ? [{ color: '#94a3b8', weight: weight, opacity: 0.6 }] // Surface-400 (Soft Gray)
+          : [{ color: color, weight: weight + 1, opacity: 1, dashArray: '12, 12' }] // Primary Blue (Dashed)
       },
       show: false,
       addWaypoints: false,
