@@ -655,7 +655,9 @@ function DriverDashboardPage() {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[9px] font-bold text-surface-500 uppercase tracking-[0.15em] leading-none">Ruta Activa</span>
-                  <span className="text-xl font-display font-extrabold text-surface-900 tracking-tight leading-none mt-1 truncate max-w-[160px]">{activeRouteData ? activeRouteData.route_code : '---'}</span>
+                  <span className="text-xl font-display font-extrabold text-surface-900 tracking-tight leading-none mt-1 truncate max-w-[220px]">
+                    {activeRouteData ? `${activeRouteData.origin} - ${activeRouteData.destination}` : 'Sin Ruta'}
+                  </span>
                 </div>
               </div>
 
