@@ -232,12 +232,19 @@ function DriverDashboardPage() {
     if (!pos || !activeTrip) return;
 
     try {
-      await apiService.logTripEvent(activeTrip.id, {
+      const res = await apiService.logTripEvent(activeTrip.id, {
         lat: pos.latitude,
         lng: pos.longitude,
         status: 'in_transit'
       });
       setEventsSent((prev) => prev + 1);
+
+      // Si el backend detectó llegada, cerramos el viaje desde el cliente para asegurar el orden
+      const status = res.data?.status?.toLowerCase() || '';
+      if (status.includes('llegó') || status.includes('destino')) {
+        console.log('🚩 Llegada confirmada por el servidor. Finalizando viaje...');
+        handleStopTrip();
+      }
     } catch (err) {
       console.error('Error enviando posición:', err);
     }
@@ -255,13 +262,8 @@ function DriverDashboardPage() {
         setCurrentPosition({ lat: latitude, lng: longitude });
         lastPositionRef.current = position.coords;
 
-        if (activeRouteData?.dest_lat && activeRouteData?.dest_lng) {
-          const dist = getDistance(latitude, longitude, activeRouteData.dest_lat, activeRouteData.dest_lng);
-          if (dist < 150) {
-            console.log('🏁 Destino alcanzado (Auto-Stop):', dist.toFixed(1), 'm');
-            handleStopTrip();
-          }
-        }
+        // Nota: El Auto-Stop basado en distancia local ha sido removido 
+        // a favor de la confirmación síncrona del backend en sendPosition.
       },
       (error) => setGpsError(`Error GPS: ${error.message}`),
       { enableHighAccuracy: true }

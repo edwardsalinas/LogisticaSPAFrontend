@@ -112,11 +112,13 @@ function TrackingMap({ pkg, route, completedCheckpointIds = [] }) {
               />
             ))}
 
-            {/* ICONO DEL VEHÍCULO (Si está en tránsito, lo ponemos en el último checkpoint alcanzado o en origen) */}
-            {pkg?.status === 'in_transit' && (
+            {/* ICONO DEL VEHÍCULO (Persiste si está entregado) */}
+            {(pkg?.status === 'en_transito' || pkg?.status === 'entregado') && (
               <Marker 
                 position={
-                  completedCheckpoints.length > 0 
+                  pkg.status === 'entregado'
+                    ? [route.dest_lat, route.dest_lng]
+                    : completedCheckpoints.length > 0 
                     ? [completedCheckpoints[completedCheckpoints.length - 1].lat, completedCheckpoints[completedCheckpoints.length - 1].lng]
                     : [route.origin_lat, route.origin_lng]
                 } 

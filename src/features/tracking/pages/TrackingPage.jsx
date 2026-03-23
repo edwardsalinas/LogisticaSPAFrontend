@@ -14,10 +14,10 @@ import TrackingMap from '../components/TrackingMap';
 import useRole from '../../../app/useRole';
 
 const statusMap = {
-  pending: { label: 'Pendiente', variant: 'warning' },
-  assigned: { label: 'Asignado', variant: 'info' },
-  in_transit: { label: 'En transito', variant: 'info' },
-  delivered: { label: 'Entregado', variant: 'success' },
+  pendiente: { label: 'Pendiente', variant: 'warning' },
+  asignado: { label: 'Asignado', variant: 'info' },
+  en_transito: { label: 'En tránsito', variant: 'info' },
+  entregado: { label: 'Entregado', variant: 'success' },
 };
 
 function TrackingPage() {
@@ -63,7 +63,10 @@ function TrackingPage() {
           
           // Detectar checkpoints alcanzados desde los logs
           const reached = logsRes.data
-            ?.filter(log => log.status.toLowerCase().includes('llegada') || log.status.toLowerCase().includes('checkpoint'))
+            ?.filter(log => {
+               const s = log.status.toLowerCase();
+               return s.includes('llegada') || s.includes('llegó') || s.includes('checkpoint') || s.includes('inició') || s.includes('partida');
+            })
             .map(log => log.data?.checkpoint_id)
             .filter(Boolean) || [];
           setCompletedCheckpointIds(reached);
@@ -102,7 +105,7 @@ function TrackingPage() {
   }, [packages, searchTerm]);
 
   const selectedPackage = packages.find((pkg) => pkg.id === selectedPackageId);
-  const activeCount = packages.filter((pkg) => pkg.status === 'in_transit' || pkg.status === 'assigned').length;
+  const activeCount = packages.filter((pkg) => pkg.status === 'en_transito' || pkg.status === 'asignado').length;
 
   return (
     <div className="relative h-[calc(100vh-120px)] w-full overflow-hidden rounded-[2.5rem] border border-surface-100 bg-surface-50 shadow-2xl">

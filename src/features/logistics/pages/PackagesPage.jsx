@@ -322,10 +322,11 @@ function PackagesPage() {
                    {groupedData.shipments?.length > 0 ? groupedData.shipments.map(ship => {
                      const isExpanded = expandedShipments.has(ship.route.id);
                      const route = ship.route;
+                      const isPast = route.departure_time && new Date(route.departure_time) < new Date().setHours(0,0,0,0);
                      
                      return (
                        <React.Fragment key={route.id}>
-                         <tr className={`hover:bg-primary-50/40 transition-all cursor-pointer group ${isExpanded ? 'bg-primary-50/20' : ''}`} onClick={() => toggleExpansion(route.id)}>
+                         <tr className={`hover:bg-primary-50/40 transition-all cursor-pointer group ${isExpanded ? 'bg-primary-50/20' : ''} ${isPast ? 'opacity-50 saturate-50' : ''}`} onClick={() => toggleExpansion(route.id)}>
                            <td className="px-4 py-5 text-center">
                               <div className={`transition-all duration-300 transform ${isExpanded ? 'rotate-90 text-primary-600' : 'text-surface-300'}`}>
                                  <ChevronRight size={20} strokeWidth={3} />
@@ -355,15 +356,20 @@ function PackagesPage() {
                               <span className="text-sm text-surface-600 font-medium">{route.driver?.full_name || 'Sin conductor'}</span>
                            </td>
                            <td className="px-4 py-5 text-center">
-                              <Badge variant={route.status === 'en_transito' ? 'info' : 'neutral'}>
-                                 {route.status === 'en_transito' ? 'Ruta' : 'Standby'}
-                              </Badge>
+                              {(() => {
+                                const isDelayed = route.status === 'planeada' && route.departure_time && new Date(route.departure_time) < new Date();
+                                return (
+                                  <Badge variant={route.status === 'en_transito' ? 'info' : (isDelayed ? 'danger' : 'neutral')}>
+                                     {route.status === 'en_transito' ? 'Ruta' : (isDelayed ? 'Atrasado' : 'Standby')}
+                                  </Badge>
+                                );
+                              })()}
                            </td>
                            <td className="px-4 py-5 text-center text-sm font-bold text-surface-900">
                               {ship.packages.length}
                            </td>
                            <td className="px-4 py-5 text-right pr-8">
-                              <Button variant="secondary" size="xs" className="h-8 px-4 rounded-xl text-[10px] font-black uppercase tracking-tight gap-1.5 border-primary-200 text-primary-700 bg-white hover:bg-primary-600 hover:text-white transition-all shadow-sm" onClick={(e) => { e.stopPropagation(); handleOpenContextualForm(route); }}>
+                              <Button variant="secondary" size="xs" className="h-8 px-4 rounded-xl text-[10px] font-black uppercase tracking-tight gap-1.5 border-primary-200 text-primary-700 bg-white hover:bg-primary-600 hover:text-white transition-all shadow-sm disabled:opacity-30 disabled:grayscale disabled:pointer-events-none" disabled={isPast} onClick={(e) => { e.stopPropagation(); handleOpenContextualForm(route); }}>
                                  <PackagePlus size={14} strokeWidth={2.5} /> Cargar
                               </Button>
                            </td>

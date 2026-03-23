@@ -310,7 +310,15 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
           </div>
 
           {tripType === 'single' ? (
-            <Input type="datetime-local" label="Fecha y Hora de Salida" name="departure_time" value={form.departure_time} onChange={(e) => setForm(prev => ({ ...prev, departure_time: e.target.value }))} required />
+            <Input 
+              type="datetime-local" 
+              label="Fecha y Hora de Salida" 
+              name="departure_time" 
+              value={form.departure_time} 
+              min={new Date().toISOString().slice(0, 16)}
+              onChange={(e) => setForm(prev => ({ ...prev, departure_time: e.target.value }))} 
+              required 
+            />
           ) : (
             <div className="space-y-4">
               <div>
@@ -358,7 +366,15 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
       )}
 
       {initialData?.id && (
-        <Input type="datetime-local" label="Fecha y Hora de Salida" name="departure_time" value={form.departure_time} onChange={(e) => setForm(prev => ({ ...prev, departure_time: e.target.value }))} required />
+        <Input 
+          type="datetime-local" 
+          label="Fecha y Hora de Salida" 
+          name="departure_time" 
+          value={form.departure_time} 
+          min={new Date().toISOString().slice(0, 16)}
+          onChange={(e) => setForm(prev => ({ ...prev, departure_time: e.target.value }))} 
+          required 
+        />
       )}
 
       {error && <p className="text-red-500 text-sm">{error}</p>}

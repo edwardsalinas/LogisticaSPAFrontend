@@ -28,11 +28,16 @@ function LiveTracker({ packageId, routeId }) {
         setPosition(newPosition);
         setHistory(logs);
 
-        // OPTIMIZACIÓN: Si el paquete ya está entregado, detener el intervalo
+        // OPTIMIZACIÓN: Si el paquete ya está entregado, detener el intervalo (con delay para UX)
         const statusLower = latestLog.status.toLowerCase();
         if (statusLower.includes('entregado') || statusLower.includes('delivered')) {
-          console.log('[LiveTracker] Paquete entregado. Deteniendo seguimiento activo.');
-          clearInterval(intervalId);
+          console.log('[LiveTracker] Paquete entregado. Programando detencion de seguimiento.');
+          setTimeout(() => {
+            if (isMounted) {
+              console.log('[LiveTracker] Deteniendo seguimiento activo.');
+              clearInterval(intervalId);
+            }
+          }, 5000);
         }
 
         if (routeId) {
