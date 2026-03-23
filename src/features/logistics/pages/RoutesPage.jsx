@@ -45,7 +45,7 @@ const RoutesCalendar = memo(({ events, onEventClick, renderEventContent }) => (
     eventContent={renderEventContent}
     height="100%"
     slotMinTime="05:00:00"
-    slotMaxTime="23:00:00"
+    slotMaxTime="24:00:00"
     allDaySlot={false}
     locale="es"
     buttonText={{ today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día' }}

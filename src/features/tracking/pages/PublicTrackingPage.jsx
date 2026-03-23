@@ -5,11 +5,21 @@ import apiService from '../../../services/apiService';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
 
-const statusMap = {
+const statusMapValue = {
   pendiente: { label: 'Pendiente', variant: 'warning' },
   asignado: { label: 'Asignado', variant: 'info' },
+  in_transit: { label: 'En tránsito', variant: 'info' },
   en_transito: { label: 'En tránsito', variant: 'info' },
   entregado: { label: 'Entregado', variant: 'success' },
+  delivered: { label: 'Entregado', variant: 'success' },
+};
+
+const getHistoryLabel = (status) => {
+  if (!status) return 'Estado desconocido';
+  const cleanStatus = status.trim().toLowerCase();
+  if (cleanStatus.includes(':') || cleanStatus.includes('Llegó') || cleanStatus.length > 20) return status;
+  const mapped = statusMapValue[cleanStatus];
+  return mapped ? mapped.label : status;
 };
 
 function PublicTrackingPage() {
@@ -135,7 +145,7 @@ function PublicTrackingPage() {
                   <div className="space-y-1">
                      <p className="text-[0.65rem] uppercase tracking-[0.3em] text-primary-400 font-black">Estado del Envío</p>
                      <div className="flex items-center gap-4">
-                        <h2 className="text-3xl font-black text-white capitalize">{statusMap[trackingData.package.status]?.label || trackingData.package.status}</h2>
+                        <h2 className="text-3xl font-black text-white">{statusMapValue[trackingData.package.status.trim().toLowerCase()]?.label || trackingData.package.status}</h2>
                         <div className="h-2 w-2 rounded-full bg-success-500 animate-pulse shadow-[0_0_12px_rgba(34,197,94,0.5)]" />
                      </div>
                   </div>
@@ -189,8 +199,8 @@ function PublicTrackingPage() {
                           </div>
                           <div className="flex-1 bg-white/5 border border-white/5 rounded-2.5xl p-5 hover:border-white/10 transition-all group">
                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                <p className="text-base font-bold text-white group-hover:text-primary-400 transition-colors leading-tight capitalize">
-                                   {log.status}
+                                <p className="text-base font-bold text-white group-hover:text-primary-400 transition-colors leading-tight">
+                                   {getHistoryLabel(log.status.trim())}
                                 </p>
                                 <div className="flex items-center gap-2 text-slate-500 text-xs font-mono">
                                    <Clock size={12} />

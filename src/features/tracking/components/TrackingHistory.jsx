@@ -27,19 +27,21 @@ function TrackingHistory({ packageId, className }) {
   }, [packageId]);
 
   const statusMap = {
-    'in_transit': 'En tránsito (Actualización de ubicación)',
+    'in_transit': 'En tránsito (Ubicación)',
     'en_transito': 'En tránsito',
     'delivered': 'Entregado',
     'entregado': 'Entregado',
     'pending': 'Pendiente',
+    'pendiente': 'Pendiente',
     'asignado': 'Asignado a ruta',
   };
 
   const getStatusLabel = (status) => {
     if (!status) return 'Estado desconocido';
-    // Si ya es un mensaje largo (como "Llegó a..."), lo dejamos tal cual
-    if (status.includes(':') || status.includes('Llegó') || status.length > 20) return status;
-    return statusMap[status.toLowerCase()] || status;
+    const clean = status.trim().toLowerCase();
+    // Si ya es un mensaje largo (enviado desde backend con detalles), lo dejamos tal cual
+    if (clean.includes(':') || clean.includes('llegó') || clean.length > 25) return status;
+    return statusMap[clean] || status;
   };
 
   if (loading) {

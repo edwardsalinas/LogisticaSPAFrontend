@@ -1,4 +1,4 @@
-import { Clock3, MapPinned, Phone, Route, X, Edit2, Trash2, PackageCheck, Truck } from 'lucide-react';
+import { Clock3, MapPinned, Phone, Route, X, Edit2, Trash2, PackageCheck, Truck, ArrowRight } from 'lucide-react';
 import Button from '../../../components/atoms/Button';
 import useRole from '../../../app/useRole';
 

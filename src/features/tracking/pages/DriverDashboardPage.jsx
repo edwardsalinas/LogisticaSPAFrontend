@@ -75,7 +75,7 @@ const DashboardCalendar = memo(({ events, onEventClick, renderEventContent }) =>
     allDaySlot={false}
     locale="es"
     slotMinTime="06:00:00"
-    slotMaxTime="22:00:00"
+    slotMaxTime="24:00:00"
     dayMaxEvents={true}
     buttonText={{ today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día' }}
   />
@@ -384,6 +384,9 @@ function DriverDashboardPage() {
         status: 'in_transit'
       });
       setEventsSent((prev) => prev + 1);
+      
+      // Forzar actualización de estadísticas (pings, etc)
+      queryClient.invalidateQueries({ queryKey: ['activeTrip'] });
 
       const status = res.data?.status?.toLowerCase() || '';
       if (status.includes('llegó') || status.includes('destino')) {

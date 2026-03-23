@@ -1,4 +1,4 @@
-﻿import { Clock3, MapPinned, Package, ShieldCheck } from 'lucide-react';
+import { Clock3, MapPinned, Package, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Badge from '../../../components/atoms/Badge';
 import Skeleton from '../../../components/atoms/Skeleton';
@@ -8,15 +8,24 @@ import api from '../../../services/api';
 const statusSteps = [
   { key: 'pending', label: 'Recibido en almacen', description: 'Procesado y listo para salida' },
   { key: 'assigned', label: 'Asignado a ruta', description: 'Paquete asignado a una ruta de transporte' },
-  { key: 'in_transit', label: 'En transito', description: 'Desplazamiento hacia el siguiente nodo logistico' },
-  { key: 'delivered', label: 'Entregado', description: 'Confirmacion de entrega realizada' },
+  { key: 'in_transit', label: 'En tránsito', description: 'Desplazamiento hacia el siguiente nodo logístico' },
+  { key: 'delivered', label: 'Entregado', description: 'Confirmación de entrega realizada' },
 ];
 
 const statusMeta = {
   pending: { label: 'Pendiente', variant: 'warning' },
   assigned: { label: 'Asignado', variant: 'info' },
-  in_transit: { label: 'En transito', variant: 'info' },
+  in_transit: { label: 'En tránsito', variant: 'info' },
+  en_transito: { label: 'En tránsito', variant: 'info' },
   delivered: { label: 'Entregado', variant: 'success' },
+  entregado: { label: 'Entregado', variant: 'success' },
+};
+
+const getStatusLabel = (status) => {
+  if (!status) return 'Estado desconocido';
+  const clean = status.trim().toLowerCase();
+  if (clean.includes(':') || clean.includes('llegó') || clean.length > 20) return status;
+  return statusMeta[clean]?.label || status;
 };
 
 function PackageDetail({ pkg }) {
@@ -101,7 +110,7 @@ function PackageDetail({ pkg }) {
               <div key={idx} className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4 transition-colors hover:bg-white">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-surface-900">{log.status}</p>
+                    <p className="text-sm font-semibold text-surface-900">{getStatusLabel(log.status)}</p>
                     <p className="mt-1 flex items-center gap-1.5 text-xs text-surface-500"><MapPinned size={13} strokeWidth={2.2} /> {log.lat}, {log.lng}</p>
                   </div>
                   <span className="flex items-center gap-1.5 text-xs text-surface-400"><Clock3 size={13} strokeWidth={2.2} /> {new Date(log.timestamp).toLocaleString('es-BO')}</span>
