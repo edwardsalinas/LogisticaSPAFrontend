@@ -16,7 +16,8 @@ function RouteInfoPanel({ route, onClose, onEdit, onDelete, onAssign, realProgre
     else scheduleFreq = 'Sin días asignados';
   }
 
-  return    <div className="route-info-panel absolute right-4 top-4 z-[1000] w-[21.5rem] overflow-hidden rounded-[2rem] shadow-2xl bg-white/95 backdrop-blur-md border border-white/60">
+  return (
+    <div className="route-info-panel absolute right-4 top-4 z-[1000] w-[21.5rem] overflow-hidden rounded-[2rem] shadow-2xl bg-white/95 backdrop-blur-md border border-white/60">
       <div className="bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_100%)] p-6 text-white relative">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.15),transparent_40%)]" />
         <div className="relative mb-4 flex items-center justify-between gap-3">

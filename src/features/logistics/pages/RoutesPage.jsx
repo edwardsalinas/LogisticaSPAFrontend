@@ -289,11 +289,28 @@ function RoutesPage() {
 
   const calendarEvents = useMemo(() => typeFilteredRoutes.filter(r => r.type === 'route' && r.departure_time).map(r => {
     const start = new Date(r.departure_time);
-    const end = new Date(start.getTime() + ((r.eta_minutes || 120) * 60000));
+    if (isNaN(start.getTime())) return null;
     
-    let bgColor = r.schedule_id ? '#8b5cf6' : '#3b82f6'; // Morado para recurrentes, Azul para únicos
-    if (r.status === 'active' || r.status === 'en_transito') bgColor = '#059669'; // Verde
-    if (r.status === 'completed' || r.status === 'finalizada' || r.status === 'completada') bgColor = '#475569'; // Gris
+    const status = r.status;
+    const isCompleted = ['completed', 'finalizada', 'completada'].includes(status);
+    const isActiveStatus = ['active', 'en_transito'].includes(status);
+    
+    let end;
+    let isEstimated = false;
+
+    if (isCompleted) {
+      end = r.arrival_time ? new Date(r.arrival_time) : new Date(start.getTime() + (120 * 60000));
+    } else if (isActiveStatus) {
+      end = new Date();
+      if (end < start) end = new Date(start.getTime() + (30 * 60000));
+    } else {
+      end = new Date(start.getTime() + ((r.eta_minutes || 120) * 60000));
+      isEstimated = true;
+    }
+    
+    let bgColor = r.schedule_id ? '#8b5cf6' : '#3b82f6';
+    if (isActiveStatus) bgColor = '#059669';
+    if (isCompleted) bgColor = '#475569';
 
     return {
       id: String(r.id),
@@ -303,9 +320,9 @@ function RoutesPage() {
       backgroundColor: bgColor,
       borderColor: 'transparent',
       display: 'block',
-      extendedProps: { route: r }
+      extendedProps: { route: r, isEstimated }
     };
-  }), [typeFilteredRoutes]);
+  }).filter(Boolean), [typeFilteredRoutes]);
 
   // --- METRICAS REALES ---
   const isFinished = useMemo(() => ['completed', 'finalizada', 'completada'].includes(extendedSelectedRoute?.status), [extendedSelectedRoute]);
@@ -347,15 +364,12 @@ function RoutesPage() {
   }, [routes, clickTimeout, handleEdit]);
 
   const renderEventContent = useCallback((eventInfo) => {
-    const event = eventInfo.event;
-    const isPast = new Date(event.start) < new Date();
-    const isMonthView = eventInfo.view.type === 'dayGridMonth';
-    const route = event.extendedProps.route;
+    const isEstimated = event.extendedProps.isEstimated;
     const status = route.status;
 
     if (isMonthView) {
       return (
-        <div className={`w-full overflow-hidden flex items-center gap-1.5 px-1.5 py-0.5 rounded-md ${isPast && status === 'planeada' ? 'opacity-60' : ''}`}>
+        <div className={`w-full overflow-hidden flex items-center gap-1.5 px-1.5 py-0.5 rounded-md ${isPast && status === 'planeada' ? 'opacity-60' : ''}`} style={isEstimated ? { maskImage: 'linear-gradient(to right, black 80%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, black 80%, transparent 100%)' } : {}}>
           <span className="font-bold text-[9px] text-white/90 whitespace-nowrap">{eventInfo.timeText}</span>
           <span className="text-[10px] font-semibold text-white truncate">{event.title.split('|')[0].trim()}</span>
           {(status === 'active' || status === 'en_transito') && <Truck size={10} className="animate-pulse text-white ml-auto shrink-0" />}
@@ -364,28 +378,50 @@ function RoutesPage() {
     }
 
     return (
-      <div className={`p-1.5 flex flex-col h-full overflow-hidden leading-tight rounded-md border-l-4 border-white/20 transition-all ${isPast && status === 'planeada' ? 'opacity-60 grayscale-[0.3]' : 'hover:scale-[1.02] shadow-sm'}`}>
-        <div className="flex justify-between items-center mb-1">
+      <div 
+        className={`p-2 flex flex-col h-full overflow-hidden leading-tight rounded-md border-l-4 border-white/20 transition-all ${isPast && status === 'planeada' ? 'opacity-60 grayscale-[0.3]' : 'hover:scale-[1.02] shadow-sm'}`}
+        style={isEstimated ? { maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)' } : {}}
+      >
+        <div className="flex justify-between items-center mb-1.5">
           <div className="flex items-center gap-1.5">
-            <span className="font-black text-[10px] text-white/90 tracking-tight">{eventInfo.timeText}</span>
-            {route.schedule_id && (
-              <div className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white/20" title="Recurrente">
-                <Clock3 size={8} className="text-white" />
+             {(['active', 'en_transito'].includes(status)) ? (
+              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400/30">
+                <Truck size={10} className="animate-pulse text-white" />
               </div>
+            ) : (
+                <span className="font-black text-[10px] text-white/90 tracking-tight uppercase">Salida: {eventInfo.timeText.split('-')[0]}</span>
             )}
-            {(status === 'active' || status === 'en_transito') && (
-              <Truck size={10} className="animate-pulse text-white shrink-0" />
+            {route.schedule_id && (
+              <Clock3 size={10} className="text-white/60" title="Recurrente" />
             )}
           </div>
           {['completed', 'finalizada', 'completada'].includes(status) && (
             <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
           )}
         </div>
-        <p className="text-[11px] font-bold text-white leading-tight truncate">{event.title.split('|')[0].trim()}</p>
-        <p className="text-[9px] font-medium text-white/70 truncate mt-1 uppercase tracking-wider">{route.driver_name || 'Sin conductor'}</p>
+        
+        <p className="text-[11px] font-black text-white leading-none truncate mb-1">
+          {event.title.split('|')[0].trim()}
+        </p>
+        
+        <p className="text-[9px] font-bold text-white/70 truncate mt-1 uppercase tracking-wider mb-2">
+            {route.driver_name || 'Sin conductor'}
+        </p>
+
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/10 pt-1.5">
+          <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">
+            {isEstimated ? 'Estimado' : 'Real'}
+          </span>
+          {['completed', 'finalizada', 'completada'].includes(status) ? (
+             <span className="text-[9px] font-black text-emerald-300">Llegada: {new Date(route.arrival_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          ) : (
+             <span className="text-[9px] font-black text-white/90">ETA: {eventInfo.timeText.split('-')[1]}</span>
+          )}
+        </div>
+
         {status === 'active' && route.progress > 0 && (
-          <div className="mt-auto h-0.5 w-full bg-white/20 rounded-full overflow-hidden">
-            <div className="h-full bg-white" style={{ width: `${route.progress}%` }} />
+          <div className="mt-1 h-0.5 w-full bg-white/10 rounded-full overflow-hidden">
+            <div className="h-full bg-emerald-400/60" style={{ width: `${route.progress}%` }} />
           </div>
         )}
       </div>

@@ -155,11 +155,31 @@ function DriverDashboardPage() {
     return routes.filter(r => r.departure_time).map(r => {
       const start = new Date(r.departure_time);
       if (isNaN(start.getTime())) return null;
-      const end = new Date(start.getTime() + (120 * 60000));
+      
+      const status = r.status;
+      const isCompleted = ['completed', 'finalizada', 'completada'].includes(status);
+      const isActiveStatus = ['active', 'en_transito'].includes(status);
+      
+      let end;
+      let isEstimated = false;
+
+      if (isCompleted) {
+        // Si finalizó y tenemos hora de llegada real, usarla. Si no, estimar 2h.
+        end = r.arrival_time ? new Date(r.arrival_time) : new Date(start.getTime() + (120 * 60000));
+      } else if (isActiveStatus) {
+        // Viaje en curso: se extiende hasta "ahora" para mostrar progreso real.
+        end = new Date();
+        // Si "ahora" es antes de la salida (raro pero posible), sumar 30m para visibilidad
+        if (end < start) end = new Date(start.getTime() + (30 * 60000));
+      } else {
+        // Pendiente: es una estimación.
+        end = new Date(start.getTime() + ((r.eta_minutes || 120) * 60000));
+        isEstimated = true;
+      }
       
       let bgColor = '#3b82f6';
-      if (r.status === 'active' || r.status === 'en_transito') bgColor = '#10b981';
-      if (['completed', 'finalizada', 'completada'].includes(r.status)) bgColor = '#18181b';
+      if (isActiveStatus) bgColor = '#10b981';
+      if (isCompleted) bgColor = '#18181b';
 
       return {
         id: String(r.id),
@@ -169,7 +189,7 @@ function DriverDashboardPage() {
         backgroundColor: bgColor,
         borderColor: 'transparent',
         display: 'block',
-        extendedProps: { route: r }
+        extendedProps: { route: r, isEstimated }
       };
     }).filter(Boolean);
   }, [routes]);
@@ -179,9 +199,12 @@ function DriverDashboardPage() {
     const isMonthView = eventInfo.view.type === 'dayGridMonth';
     const routeStatus = event.extendedProps.route?.status;
 
+    const isEstimated = event.extendedProps.isEstimated;
+    const route = event.extendedProps.route;
+    
     if (isMonthView) {
       return (
-        <div className={`w-full overflow-hidden flex items-center gap-1.5 px-1.5 py-0.5 rounded-md ${isPast && routeStatus === 'planeada' ? 'opacity-60' : ''}`}>
+        <div className={`w-full overflow-hidden flex items-center gap-1.5 px-1.5 py-0.5 rounded-md ${isPast && routeStatus === 'planeada' ? 'opacity-60' : ''}`} style={isEstimated ? { maskImage: 'linear-gradient(to right, black 80%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, black 80%, transparent 100%)' } : {}}>
           <span className="font-bold text-[9px] text-white/90 whitespace-nowrap">{eventInfo.timeText}</span>
           <span className="text-[10px] font-semibold text-white truncate">{event.title.split('|')[0].trim()}</span>
           {(['active', 'en_transito'].includes(routeStatus)) && <Truck size={10} className="animate-pulse text-white ml-auto shrink-0" />}
@@ -190,22 +213,43 @@ function DriverDashboardPage() {
     }
 
     return (
-      <div className={`p-1.5 flex flex-col h-full overflow-hidden leading-tight rounded-md border-l-4 border-white/20 transition-all ${isPast && routeStatus === 'planeada' ? 'opacity-60 grayscale-[0.3]' : 'hover:scale-[1.02] shadow-sm'}`}>
-        <div className="flex justify-between items-center mb-1">
+      <div 
+        className={`p-2 flex flex-col h-full overflow-hidden leading-tight rounded-md border-l-4 border-white/20 transition-all ${isPast && routeStatus === 'planeada' ? 'opacity-60 grayscale-[0.3]' : 'hover:scale-[1.02] shadow-sm'}`}
+        style={isEstimated ? { maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)' } : {}}
+      >
+        <div className="flex justify-between items-center mb-1.5">
           <div className="flex items-center gap-1.5">
-            <span className="font-black text-[10px] text-white/90 tracking-tight">{eventInfo.timeText}</span>
-            {(['active', 'en_transito'].includes(routeStatus)) && (
-              <div className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white/10">
-                <Truck size={8} className="animate-pulse text-white" />
+            {(['active', 'en_transito'].includes(routeStatus)) ? (
+              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400/30">
+                <Truck size={10} className="animate-pulse text-white" />
               </div>
+            ) : (
+              <span className="font-black text-[10px] text-white/90 tracking-tight uppercase">Salida: {eventInfo.timeText.split('-')[0]}</span>
             )}
           </div>
           {['completed', 'finalizada', 'completada'].includes(routeStatus) && (
             <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
           )}
         </div>
-        <p className="text-[11px] font-bold text-white leading-none truncate">{event.title.split('|')[0].trim()}</p>
-        <p className="text-[9px] font-medium text-white/70 truncate mt-1 uppercase tracking-wider">{event.title.split('|')[1]?.trim() || '---'}</p>
+        
+        <p className="text-[11px] font-black text-white leading-none truncate mb-1">
+          {event.title.split('|')[0].trim()}
+        </p>
+        
+        <p className="text-[9px] font-bold text-white/70 truncate uppercase tracking-wider mb-2">
+          {event.title.split('|')[1]?.trim() || '---'}
+        </p>
+
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/10 pt-1.5">
+          <span className="text-[8px] font-black text-white/50 uppercase tracking-widest">
+            {isEstimated ? 'Estimado' : 'Real'}
+          </span>
+          {['completed', 'finalizada', 'completada'].includes(routeStatus) ? (
+             <span className="text-[9px] font-black text-emerald-300">Llegada: {new Date(route.arrival_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          ) : (
+             <span className="text-[9px] font-black text-white/90">ETA: {eventInfo.timeText.split('-')[1]}</span>
+          )}
+        </div>
       </div>
     );
   }, []);
