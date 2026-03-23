@@ -3,9 +3,12 @@ import { useEffect, useState } from 'react';
 import EmptyState from '../../../components/molecules/EmptyState';
 import SectionLoader from '../../../components/molecules/SectionLoader';
 import apiService from '../../../services/apiService';
-function TrackingHistory({ packageId }) {
+function TrackingHistory({ packageId, className }) {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const defaultStyles = "rounded-[1.8rem] border border-white/70 bg-white/88 p-6 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl";
+  const containerStyles = className || defaultStyles;
 
   useEffect(() => {
     const fetchLogs = async () => {
@@ -28,7 +31,7 @@ function TrackingHistory({ packageId }) {
   }
 
   return (
-    <div className="rounded-[1.8rem] border border-white/70 bg-white/88 p-6 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
+    <div className={containerStyles}>
       <div className="mb-5 flex items-center gap-3">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700"><PackageSearch size={18} strokeWidth={2.2} /></div>
         <div>
