@@ -9,8 +9,8 @@ import 'leaflet-routing-machine';
 function RoutePath({ route, checkpoints: propCheckpoints, color = '#137fec', weight = 4, isCompleted = false, fitBounds = true }) {
   const map = useMap();
   const actualColor = isCompleted ? '#10b981' : color;
-  const actualWeight = isCompleted ? weight : Math.max(2, weight - 1); // un poco más delgada la pendiente si se quiere, o igual.
-  const actualOpacity = isCompleted ? 0.9 : 0.4; // Más opaca la completada, más tenue la pendiente.
+  const actualWeight = isCompleted ? (weight + 1) : weight; 
+  const actualOpacity = isCompleted ? 0.95 : 0.75; // Mucho más visible
 
   useEffect(() => {
     const cps = route?.checkpoints || propCheckpoints || [];
