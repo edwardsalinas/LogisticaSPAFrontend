@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
-import { Truck, Navigation, Play, Square, Activity, MapPin, Search, Calendar as CalendarIcon, Package, Clock } from 'lucide-react';
+import { Truck, Navigation, Play, Square, Activity, MapPin, Search, Calendar as CalendarIcon, Package, Clock, Route } from 'lucide-react';
 import { Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import FullCalendar from '@fullcalendar/react';
@@ -529,17 +529,6 @@ function DriverDashboardPage() {
                         )}
                       </div>
                     </div>
-
-                    <div className="mt-5 grid grid-cols-2 gap-4">
-                      <div className="relative pl-4 border-l-2 border-primary-500/30">
-                        <p className="text-[9px] font-black text-surface-400 uppercase tracking-widest leading-none">Origen</p>
-                        <p className="mt-1.5 text-xs font-bold text-surface-800 truncate">{(activeRouteData || activeTrip?.route)?.origin || '---'}</p>
-                      </div>
-                      <div className="relative pl-4 border-l-2 border-emerald-500/30">
-                        <p className="text-[9px] font-black text-surface-400 uppercase tracking-widest leading-none">Destino</p>
-                        <p className="mt-1.5 text-xs font-bold text-surface-800 truncate">{(activeRouteData || activeTrip?.route)?.destination || '---'}</p>
-                      </div>
-                    </div>
                   </div>
 
                   <div className="p-5 space-y-6">
@@ -650,6 +639,47 @@ function DriverDashboardPage() {
               isFinished={isFinished}
               eventsSent={eventsSent}
             />
+
+            {(activeRouteData || selectedRouteId) && (
+              <div className="absolute top-5 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-6 pointer-events-auto bg-white/90 backdrop-blur-sm px-5 py-2 rounded-xl border border-surface-200 shadow-lg shadow-surface-900/5">
+                <div className="flex items-center gap-2.5 pr-6 border-r border-surface-100">
+                  <div className={`h-2.5 w-2.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-primary-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]'}`} />
+                  <p className="text-[11px] font-black text-surface-900 uppercase tracking-wider">
+                    {(activeRouteData || activeTrip?.route)?.route_code || '---'}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <Activity size={12} className="text-surface-400" />
+                    <div className="flex flex-col">
+                      <span className="text-[7.5px] font-black text-surface-400 uppercase tracking-tighter leading-none mb-0.5">Pings</span>
+                      <span className="text-[11px] font-black text-surface-900">{activeRouteData?.ping_count || 0}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Clock size={12} className="text-surface-400" />
+                    <div className="flex flex-col">
+                      <span className="text-[7.5px] font-black text-surface-400 uppercase tracking-tighter leading-none mb-0.5">Inicio</span>
+                      <span className="text-[11px] font-black text-surface-900">
+                        {activeRouteData?.start_time ? new Date(activeRouteData.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 ml-1">
+                    <MapPin size={12} className="text-emerald-500" />
+                    <div className="flex flex-col">
+                       <span className="text-[7.5px] font-black text-surface-400 uppercase tracking-tighter leading-none mb-0.5">Destino</span>
+                       <span className="text-[11px] font-black text-surface-900 truncate max-w-[150px]">
+                         {(activeRouteData || activeTrip?.route)?.destination || '---'}
+                       </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {!isActive && !selectedRouteId && !currentPosition && (
               <div className="absolute inset-0 flex items-center justify-center bg-surface-900/15 backdrop-blur-sm z-[1000] rounded-[1.6rem] pointer-events-none m-3">
