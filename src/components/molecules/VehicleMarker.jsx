@@ -51,8 +51,16 @@ function VehicleMarker({ position, title = 'Vehiculo', subtitle, onClick, isFini
         <div className="min-w-[180px] p-1">
           <h3 className="text-sm font-semibold text-surface-900">{title}</h3>
           {subtitle && <p className="mt-1 text-xs text-surface-500">{subtitle}</p>}
-          <p className="mt-3 text-xs text-surface-500">Lat: {position[0].toFixed(6)}</p>
-          <p className="text-xs text-surface-500">Lng: {position[1].toFixed(6)}</p>
+          <div className="mt-3 flex gap-4">
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-surface-400 font-bold">Latitud</p>
+              <p className="text-xs font-mono text-surface-700">{(Array.isArray(position) ? position[0] : position.lat)?.toFixed(6)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-surface-400 font-bold">Longitud</p>
+              <p className="text-xs font-mono text-surface-700">{(Array.isArray(position) ? position[1] : position.lng)?.toFixed(6)}</p>
+            </div>
+          </div>
           {isFinished && <p className="mt-2 text-[10px] font-bold text-emerald-600 uppercase">Viaje Finalizado</p>}
         </div>
       </Popup>

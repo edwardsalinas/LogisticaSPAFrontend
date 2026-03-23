@@ -1,10 +1,12 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback, memo } from 'react';
 import { toast } from 'sonner';
 import { MapPinned, Route, Search, Truck, Calendar, List, User, MapPin, Flag, Layers, ChevronDown, Plus, Filter, X, CalendarRange } from 'lucide-react';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
 import SearchInput from '../../../components/atoms/SearchInput';
@@ -28,23 +30,108 @@ import useRole from '../../../app/useRole';
 import StatCard from '../../../components/molecules/StatCard';
 import HistoryPath from '../../../components/molecules/HistoryPath';
 import { haversineDistance, calculateTripProgress } from '../../../utils/geoUtils';
+
 const MOCK_ROUTES = [
   { id: 'route-001', route_code: 'RT-001', origin: 'La Paz', destination: 'Oruro', driver_name: 'Juan Perez', vehicle_brand: 'Volvo', plate_number: 'INT-1234', status: 'active', progress: 65, next_checkpoint: 'Centro Logistico El Alto', eta: '14:30', eta_minutes: 25, remaining_distance: 45.2, driver_phone: '+591 70012345', checkpoints: [{ id: 'cp-001', name: 'Terminal La Paz', lat: -16.5, lng: -68.1193, sequence_order: 1 }, { id: 'cp-002', name: 'Checkpoint El Alto', lat: -16.51, lng: -68.15, sequence_order: 2 }, { id: 'cp-003', name: 'Puesto Viacha', lat: -16.65, lng: -68.31, sequence_order: 3 }, { id: 'cp-004', name: 'Terminal Oruro', lat: -17.9833, lng: -67.15, sequence_order: 4 }], vehicle_position: { lat: -16.58, lng: -68.25 } },
-  { id: 'route-002', route_code: 'RT-002', origin: 'Santa Cruz', destination: 'Cochabamba', driver_name: 'Maria Lopez', vehicle_brand: 'Mercedes', plate_number: 'ABC-5678', status: 'delayed', progress: 45, next_checkpoint: 'Sacaba', eta: '16:00', eta_minutes: 90, remaining_distance: 78.5, driver_phone: '+591 70054321', checkpoints: [{ id: 'cp-005', name: 'Terminal Santa Cruz', lat: -17.7833, lng: -63.1821, sequence_order: 1 }, { id: 'cp-006', name: 'Colomi', lat: -17.4167, lng: -66.2833, sequence_order: 2 }, { id: 'cp-007', name: 'Terminal Cochabamba', lat: -17.3895, lng: -66.1568, sequence_order: 3 }], vehicle_position: { lat: -17.55, lng: -65.8 } },
-  { id: 'route-003', route_code: 'RT-003', origin: 'Sucre', destination: 'Potosi', driver_name: 'Carlos Ruiz', vehicle_brand: 'Ford', plate_number: 'XYW-9012', status: 'pending', progress: 0, next_checkpoint: 'Por asignar', eta: '--', eta_minutes: 0, remaining_distance: 0, driver_phone: '+591 70098765', checkpoints: [], vehicle_position: null },
 ];
+
+const RoutesCalendar = memo(({ events, onEventClick, renderEventContent }) => (
+  <FullCalendar
+    plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
+    initialView="timeGridWeek"
+    headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' }}
+    events={events}
+    eventClick={onEventClick}
+    eventContent={renderEventContent}
+    height="100%"
+    slotMinTime="05:00:00"
+    slotMaxTime="23:00:00"
+    allDaySlot={false}
+    locale="es"
+    buttonText={{ today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día' }}
+  />
+));
+
+const RoutesMap = memo(({ 
+  extendedSelectedRoute, 
+  trackingLogs, 
+  realProgress, 
+  realRemainingDistance 
+}) => {
+  if (!extendedSelectedRoute) return null;
+
+  return (
+    <>
+      <div className="absolute inset-0">
+        <BaseMap center={[extendedSelectedRoute.vehicle_position?.lat || extendedSelectedRoute.origin_lat || -16.5, extendedSelectedRoute.vehicle_position?.lng || extendedSelectedRoute.origin_lng || -68.15]} zoom={9} className="h-full w-full">
+          <RoutePath route={extendedSelectedRoute} isCompleted={['completed', 'finalizada', 'completada'].includes(extendedSelectedRoute.status)} />
+          <HistoryPath logs={trackingLogs} />
+          
+          {extendedSelectedRoute?.origin_lat && extendedSelectedRoute?.origin_lng && (
+            <OriginDestMarker type="origin" position={[extendedSelectedRoute.origin_lat, extendedSelectedRoute.origin_lng]} title={extendedSelectedRoute.origin} subtitle="Punto de partida" />
+          )}
+          {extendedSelectedRoute?.dest_lat && extendedSelectedRoute?.dest_lng && (
+            <OriginDestMarker type="dest" position={[extendedSelectedRoute.dest_lat, extendedSelectedRoute.dest_lng]} title={extendedSelectedRoute.destination} subtitle="Meta final" />
+          )}
+
+          {extendedSelectedRoute.checkpoints?.map((cp) => <CheckpointMarker key={cp.id} checkpoint={cp} />)}
+          
+          {(() => {
+            const hasLogs = trackingLogs && trackingLogs.length > 0;
+            const lastLog = hasLogs ? trackingLogs[trackingLogs.length - 1] : null;
+            const isFinished = ['completed', 'finalizada', 'completada'].includes(extendedSelectedRoute.status);
+            
+            let pos = null;
+            if (hasLogs) pos = [lastLog.lat, lastLog.lng];
+            else if (isFinished && extendedSelectedRoute.dest_lat) pos = [extendedSelectedRoute.dest_lat, extendedSelectedRoute.dest_lng];
+            else if (extendedSelectedRoute.vehicle_position) pos = [extendedSelectedRoute.vehicle_position.lat, extendedSelectedRoute.vehicle_position.lng];
+
+            if (!pos) return null;
+
+            return (
+              <VehicleMarker 
+                position={pos} 
+                title={extendedSelectedRoute.route_code} 
+                subtitle={`${extendedSelectedRoute.driver_name} - ${extendedSelectedRoute.plate_number}`} 
+                isFinished={isFinished}
+              />
+            );
+          })()}
+        </BaseMap>
+      </div>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-[#0a1c34]/70 to-transparent" />
+      <div className="relative z-10 flex h-full flex-col">
+        <div className="flex items-start justify-between p-6 text-white">
+          <div className="drop-shadow-sm">
+            <p className="text-[0.64rem] uppercase tracking-[0.24em] text-sky-100/70">{extendedSelectedRoute.type === 'schedule' ? 'Cronograma' : 'Despacho'} seleccionado</p>
+            <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em]">{extendedSelectedRoute.origin} - {extendedSelectedRoute.destination}</h2>
+            <p className="mt-2 text-sm text-white/72">{extendedSelectedRoute.route_code} - {extendedSelectedRoute.driver_name || 'Sin conductor'}</p>
+          </div>
+          <Badge variant={extendedSelectedRoute.status === 'active' || extendedSelectedRoute.status === 'en_transito' ? 'success' : extendedSelectedRoute.status === 'delayed' ? 'danger' : 'warning'} dot>{extendedSelectedRoute.status}</Badge>
+        </div>
+        <div className="pointer-events-none mt-auto flex flex-wrap items-end justify-between gap-4 p-6">
+          <div className="pointer-events-auto rounded-[1.5rem] border border-white/40 bg-white/80 p-4 shadow-xl backdrop-blur-xl">
+            <div className="flex gap-5">
+              <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">Progreso</p><p className="mt-2 text-lg font-bold text-primary-700">{realProgress}%</p></div>
+              <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">ETA</p><p className="mt-2 text-lg font-bold text-primary-700">{extendedSelectedRoute.eta || '--'}</p></div>
+              <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">Distancia</p><p className="mt-2 text-lg font-bold text-primary-700">{realRemainingDistance || '--'} km</p></div>
+            </div>
+          </div>
+          <div className="pointer-events-auto"><MapLegend /></div>
+        </div>
+      </div>
+    </>
+  );
+});
 
 function RoutesPage() {
   const { hasRole } = useRole();
-  const [routes, setRoutes] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingRoute, setEditingRoute] = useState(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assigningRoute, setAssigningRoute] = useState(null);
   const [selectedRoute, setSelectedRoute] = useState(null);
-  const [extendedSelectedRoute, setExtendedSelectedRoute] = useState(null);
-  const [trackingLogs, setTrackingLogs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('calendar');
   const [selectedDriverId, setSelectedDriverId] = useState('');
@@ -52,158 +139,75 @@ function RoutesPage() {
   const [selectedDestination, setSelectedDestination] = useState('');
   const [selectedTripType, setSelectedTripType] = useState('');
   const [clickTimeout, setClickTimeout] = useState(null);
-  const prevPackagesState = useRef({}); // {pkgId: status}
+  const prevPackagesState = useRef({});
 
-  const fetchRoutes = async (isBackground = false) => {
-    if (!isBackground) setLoading(true);
-    try {
-      const [routesRes, schedsRes] = await Promise.allSettled([
+  // --- REACT QUERY ---
+  const { data: routes = [], isLoading: loadingRoutes } = useQuery({
+    queryKey: ['adminRoutes'],
+    queryFn: async () => {
+      const [routesRes, schedsRes] = await Promise.all([
         apiService.getRoutes(),
         apiService.getSchedules()
       ]);
-
-      const extractData = (res) => {
-        if (res.status !== 'fulfilled') return [];
-        const val = res.value;
-        // Si ya es un array (unwrapped por interceptor)
-        if (Array.isArray(val)) return val;
-        // Si es el objeto { success, data: [...] }
-        if (Array.isArray(val?.data)) return val.data;
-        // Fallback
-        return [];
+      
+      const extract = (res) => {
+         if (!res) return [];
+         if (Array.isArray(res)) return res;
+         return res.data || [];
       };
 
-      const rawSchedules = extractData(schedsRes);
-      const allRealRoutes = extractData(routesRes);
+      const rawSchedules = extract(schedsRes);
+      const allRealRoutes = extract(routesRes);
 
-      const mappedRoutes = allRealRoutes.map(r => ({
-        ...r,
-        type: 'route',
-        driver_name: r.driver?.full_name || 'Sin asignar',
-        driver_id: r.driver_id || r.driver?.id || null,
-        vehicle_brand: r.vehicles?.brand || 'Vehículo',
-        plate_number: r.vehicles?.plate || '--',
-        progress: r.progress || 0,
-      }));
+      const mappedRoutes = allRealRoutes.map(r => ({ ...r, type: 'route', driver_name: r.driver?.full_name || 'Sin asignar', driver_id: r.driver_id || r.driver?.id || null, vehicle_brand: r.vehicles?.brand || 'Vehículo', plate_number: r.vehicles?.plate || '--', progress: r.progress || 0 }));
+      const mappedSchedules = rawSchedules.map(sch => ({ ...sch, type: 'schedule', route_code: sch.label || `SCH-${sch.id.slice(0, 5).toUpperCase()}`, status: sch.status || 'schedule', driver_name: sch.drivers?.full_name || sch.drivers?.email || 'Sin conductor', driver_id: sch.driver_id || sch.drivers?.id || null, vehicle_brand: sch.vehicles?.brand || 'Vehículo', plate_number: sch.vehicles?.plate || '--', progress: 0, eta: '--' }));
 
-      const mappedSchedules = rawSchedules.map(sch => ({
-        ...sch,
-        type: 'schedule',
-        route_code: sch.label || `SCH-${sch.id.slice(0, 5).toUpperCase()}`,
-        status: sch.status || 'schedule',
-        driver_name: sch.drivers?.full_name || sch.drivers?.email || 'Sin conductor',
-        driver_id: sch.driver_id || sch.drivers?.id || null,
-        vehicle_brand: sch.vehicles?.brand || 'Vehículo',
-        plate_number: sch.vehicles?.plate || '--',
-        progress: 0,
-        eta: '--',
-      }));
+      return [...mappedSchedules, ...mappedRoutes];
+    },
+    refetchInterval: 10000,
+    staleTime: 5000
+  });
 
-      const combined = [...mappedSchedules, ...mappedRoutes];
-
-      combined.forEach(route => {
-        if (route.packages) {
-          route.packages.forEach(pkg => {
-            const prevStatus = prevPackagesState.current[pkg.id];
-            if (prevStatus && prevStatus !== pkg.status && (pkg.status === 'delivered' || pkg.status === 'completada')) {
-              toast.success(`¡Paquete Entregado!`, {
-                description: `Código: ${pkg.tracking_code} en la ruta ${route.route_code}`,
-                duration: 5000,
-              });
-            }
-            prevPackagesState.current[pkg.id] = pkg.status;
-          });
-        }
-      });
-
-      setRoutes(combined.length > 0 ? combined : MOCK_ROUTES);
-      
-      // Actualizar extendedSelectedRoute si hay una ruta seleccionada
-      if (selectedRoute && selectedRoute.type !== 'schedule') {
-        const updated = combined.find(r => String(r.id) === String(selectedRoute.id));
-        if (updated) {
-          setSelectedRoute(updated);
-        }
+  const { data: routeDetails, isLoading: loadingDetails } = useQuery({
+    queryKey: ['routeDetails', selectedRoute?.id],
+    queryFn: async () => {
+      if (!selectedRoute?.id) return null;
+      if (selectedRoute.type === 'schedule') {
+        const res = await apiService.getSchedule(selectedRoute.id);
+        const schedData = res.data?.data || res.data;
+        return { ...schedData, type: 'schedule', route_code: schedData.label || `SCH-${schedData.id.slice(0, 5).toUpperCase()}`, status: 'schedule', driver_name: schedData.drivers?.full_name || 'Sin conductor', progress: 0 };
       }
+      const [routeRes, trackingRes] = await Promise.all([
+        apiService.getRoute(selectedRoute.id),
+        apiService.getRouteTracking(selectedRoute.id)
+      ]);
+      return { ...routeRes.data, trackingLogs: trackingRes.data || [] };
+    },
+    enabled: !!selectedRoute?.id,
+    staleTime: 10000
+  });
 
-      // Only set initial selectedRoute if none exists OR if the current one was deleted
-      const currentId = selectedRoute?.id;
-      const isStillPresent = combined.some(r => String(r.id) === String(currentId));
-      
-      if (!selectedRoute || !isStillPresent) {
-        setSelectedRoute(combined[0] || MOCK_ROUTES[0]);
-      }
-    } catch (err) {
-      console.error('Error cargando rutas:', err);
-      setRoutes(MOCK_ROUTES);
-      if (!selectedRoute) setSelectedRoute(MOCK_ROUTES[0]);
-    } finally {
-      if (!isBackground) setLoading(false);
-    }
-  };
+  const extendedSelectedRoute = useMemo(() => routeDetails || selectedRoute, [routeDetails, selectedRoute]);
+  const trackingLogs = useMemo(() => extendedSelectedRoute?.trackingLogs || [], [extendedSelectedRoute]);
 
+  // Notificaciones de entrega (Toasts)
   useEffect(() => {
-    fetchRoutes();
-    
-    // Polling cada 10 segundos
-    const interval = setInterval(() => {
-      // Solo refrescamos si no estamos en medio de una operación (loading inicial)
-      if (!loading) {
-        fetchRoutes(true); // Pasar un flag para no resetear el loading principal (opcional)
-      }
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (!selectedRoute?.id) {
-      setExtendedSelectedRoute(null);
-      return;
-    }
-    const fetchExtended = async () => {
-      try {
-        if (selectedRoute.type === 'schedule') {
-          // It's a schedule, grab from getSchedule endpoint
-          setTrackingLogs([]); // No logs for schedules
-          const res = await apiService.getSchedule(selectedRoute.id);
-          const schedData = res.data?.data || res.data;
-          if (schedData) {
-            setExtendedSelectedRoute({
-              ...schedData,
-              type: 'schedule',
-              route_code: schedData.label || `SCH-${schedData.id.slice(0, 5).toUpperCase()}`,
-              status: 'schedule',
-              driver_name: schedData.drivers?.full_name || schedData.drivers?.email || 'Sin conductor',
-              vehicle_brand: schedData.vehicles?.brand || 'Vehículo',
-              plate_number: schedData.vehicles?.plate || '--',
-              progress: 0,
-              eta: '--',
-            });
+    routes.forEach(route => {
+      if (route.packages) {
+        route.packages.forEach(pkg => {
+          const prevStatus = prevPackagesState.current[pkg.id];
+          if (prevStatus && prevStatus !== pkg.status && (pkg.status === 'delivered' || pkg.status === 'completada')) {
+            toast.success(`¡Paquete Entregado!`, { description: `Código: ${pkg.tracking_code} en la ruta ${route.route_code}`, duration: 5000 });
           }
-        } else {
-          // It's a real route
-          const [routeRes, trackingRes] = await Promise.all([
-            apiService.getRoute(selectedRoute.id),
-            apiService.getRouteTracking(selectedRoute.id)
-          ]);
-
-          const routeData = routeRes.data?.data || routeRes.data;
-          if (routeData) setExtendedSelectedRoute(routeData);
-
-          const logs = trackingRes.data?.data || trackingRes.data || [];
-          setTrackingLogs(logs);
-        }
-      } catch (e) {
-        console.error('Failed to fetch extended data', e);
-        setExtendedSelectedRoute(selectedRoute);
-        setTrackingLogs([]);
+          prevPackagesState.current[pkg.id] = pkg.status;
+        });
       }
-    };
-    fetchExtended();
-  }, [selectedRoute?.id]);
+    });
+  }, [routes]);
 
-  const handleDelete = async (route) => {
+  const loading = loadingRoutes;
+
+  const handleDelete = useCallback(async (route) => {
     if (window.confirm(`¿Estás seguro de que deseas eliminar ${route.type === 'schedule' ? 'el cronograma' : 'la ruta'} ${route.route_code}?`)) {
       try {
         if (route.type === 'schedule') {
@@ -212,24 +216,20 @@ function RoutesPage() {
           await apiService.deleteRoute(route.id);
         }
         if (selectedRoute?.id === route.id) setSelectedRoute(null);
-        fetchRoutes();
+        queryClient.invalidateQueries({ queryKey: ['adminRoutes'] });
       } catch (err) {
         alert(err.message || 'Error al eliminar. Verifica si hay dependencias activas.');
       }
     }
-  };
+  }, [selectedRoute, queryClient]);
 
-  const handleEdit = async (route) => {
+  const handleEdit = useCallback(async (route) => {
     try {
       if (route.type === 'schedule') {
         const res = await apiService.getSchedule(route.id);
         setEditingRoute(res.data?.data || res.data || route);
       } else {
-        if (route.checkpoints) {
-          setEditingRoute(route);
-          setShowForm(true);
-          return;
-        }
+        // No need to check for checkpoints here, just fetch the route
         const res = await apiService.getRoute(route.id);
         const routeData = res.data?.data || res.data;
         setEditingRoute(routeData || route);
@@ -239,54 +239,55 @@ function RoutesPage() {
       setEditingRoute(route);
     }
     setShowForm(true);
-  };
+  }, []);
 
-  const handleAssign = (route) => {
+  const handleAssign = useCallback((route) => {
     setAssigningRoute(route);
     setShowAssignModal(true);
-  };
+  }, []);
 
-  const uniqueDrivers = Array.from(new Map(
+  const uniqueDrivers = useMemo(() => Array.from(new Map(
     routes.filter(r => r.driver_id).map(r => [r.driver_id, { id: r.driver_id, name: r.driver_name }])
-  ).values());
-  const uniqueOrigins = [...new Set(routes.filter(r => r.origin).map(r => r.origin))].sort();
-  const uniqueDestinations = [...new Set(routes.filter(r => r.destination).map(r => r.destination))].sort();
+  ).values()), [routes]);
+  const uniqueOrigins = useMemo(() => [...new Set(routes.filter(r => r.origin).map(r => r.origin))].sort(), [routes]);
+  const uniqueDestinations = useMemo(() => [...new Set(routes.filter(r => r.destination).map(r => r.destination))].sort(), [routes]);
 
-  const driverFilteredRoutes = selectedDriverId 
+  const driverFilteredRoutes = useMemo(() => selectedDriverId 
     ? routes.filter(r => String(r.driver_id) === String(selectedDriverId))
-    : routes;
+    : routes, [routes, selectedDriverId]);
 
-  const locationFilteredRoutes = driverFilteredRoutes.filter(r => {
+  const locationFilteredRoutes = useMemo(() => driverFilteredRoutes.filter(r => {
     if (selectedOrigin && r.origin !== selectedOrigin) return false;
     if (selectedDestination && r.destination !== selectedDestination) return false;
     return true;
-  });
+  }), [driverFilteredRoutes, selectedOrigin, selectedDestination]);
 
-  const typeFilteredRoutes = locationFilteredRoutes.filter(r => {
+  const typeFilteredRoutes = useMemo(() => locationFilteredRoutes.filter(r => {
     if (selectedTripType === 'single') return !r.schedule_id && r.type !== 'schedule';
     if (selectedTripType === 'schedule') return !!r.schedule_id || r.type === 'schedule';
     return true;
-  });
+  }), [locationFilteredRoutes, selectedTripType]);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
   
-  const listRoutes = typeFilteredRoutes.filter(r => {
+  const listRoutes = useMemo(() => typeFilteredRoutes.filter(r => {
     if (r.type === 'schedule') return true;
     if (r.schedule_id && (r.status === 'planeada' || r.status === 'pending')) {
       if (!r.scheduled_date || r.scheduled_date > todayStr) return false;
     }
     return true;
-  });
+  }), [typeFilteredRoutes, todayStr]);
 
-  const filteredListRoutes = listRoutes.filter((route) => {
+  const filteredListRoutes = useMemo(() => listRoutes.filter((route) => {
     const s = searchTerm.toLowerCase();
     const code = (route.route_code || "").toLowerCase();
     const driver = (route.driver_name || "").toLowerCase();
     const origin = (route.origin || "").toLowerCase();
     const dest = (route.destination || "").toLowerCase();
     return code.includes(s) || driver.includes(s) || origin.includes(s) || dest.includes(s);
-  });
-  const calendarEvents = typeFilteredRoutes.filter(r => r.type === 'route' && r.departure_time).map(r => {
+  }), [listRoutes, searchTerm]);
+
+  const calendarEvents = useMemo(() => typeFilteredRoutes.filter(r => r.type === 'route' && r.departure_time).map(r => {
     const start = new Date(r.departure_time);
     const end = new Date(start.getTime() + ((r.eta_minutes || 120) * 60000));
     
@@ -304,29 +305,30 @@ function RoutesPage() {
       display: 'block',
       extendedProps: { route: r }
     };
-  });
+  }), [typeFilteredRoutes]);
 
   // --- METRICAS REALES ---
-  const lastLog = trackingLogs && trackingLogs.length > 0 ? trackingLogs[trackingLogs.length - 1] : null;
-  const isFinished = extendedSelectedRoute?.status === 'completed' || extendedSelectedRoute?.status === 'finalizada' || extendedSelectedRoute?.status === 'completada';
+  const isFinished = useMemo(() => ['completed', 'finalizada', 'completada'].includes(extendedSelectedRoute?.status), [extendedSelectedRoute]);
   
-  const realRemainingDistance = (extendedSelectedRoute?.status === 'active' || extendedSelectedRoute?.status === 'en_transito') && lastLog && extendedSelectedRoute?.dest_lat
-    ? (haversineDistance(lastLog.lat, lastLog.lng, extendedSelectedRoute.dest_lat, extendedSelectedRoute.dest_lng) / 1000).toFixed(1)
-    : (isFinished ? '0.0' : null);
+  const realRemainingDistance = useMemo(() => (extendedSelectedRoute?.status === 'active' || extendedSelectedRoute?.status === 'en_transito') && trackingLogs.length > 0 && extendedSelectedRoute?.dest_lat
+    ? (haversineDistance(trackingLogs[trackingLogs.length - 1].lat, trackingLogs[trackingLogs.length - 1].lng, extendedSelectedRoute.dest_lat, extendedSelectedRoute.dest_lng) / 1000).toFixed(1)
+    : (isFinished ? '0.0' : null), [extendedSelectedRoute, trackingLogs, isFinished]);
 
-  const realProgress = extendedSelectedRoute ? calculateTripProgress(
+  const realProgress = useMemo(() => extendedSelectedRoute ? calculateTripProgress(
     extendedSelectedRoute.checkpoints?.length || 0,
     (extendedSelectedRoute.events?.filter(e => e.type === 'checkpoint_reached') || []).length,
     extendedSelectedRoute.packages?.length || 0,
     (extendedSelectedRoute.packages?.filter(p => p.status === 'delivered' || p.status === 'completada') || []).length
-  ) : 0;
+  ) : 0, [extendedSelectedRoute]);
 
-  const active = typeFilteredRoutes.filter((r) => r.type === 'route' && (r.status === 'active' || r.status === 'en_transito')).length;
-  const pending = listRoutes.filter((r) => r.type === 'route' && (r.status === 'pending' || r.status === 'planeada' || r.status === 'planned')).length;
-  const completed = typeFilteredRoutes.filter((r) => r.type === 'route' && (r.status === 'completed' || r.status === 'finalizada' || r.status === 'completada')).length;
+  const stats = useMemo(() => ({
+    active: typeFilteredRoutes.filter((r) => r.type === 'route' && (r.status === 'active' || r.status === 'en_transito')).length,
+    pending: listRoutes.filter((r) => r.type === 'route' && (r.status === 'pending' || r.status === 'planeada' || r.status === 'planned')).length,
+    completed: typeFilteredRoutes.filter((r) => r.type === 'route' && (r.status === 'completed' || r.status === 'finalizada' || r.status === 'completada')).length,
+  }), [typeFilteredRoutes, listRoutes]);
 
-  const handleEventClick = (info) => {
-    const found = routes.find(r => r.id === info.event.extendedProps.route.id);
+  const handleEventClick = useCallback((info) => {
+    const found = routes.find(r => String(r.id) === String(info.event.id));
     if (!found) return;
 
     if (clickTimeout) {
@@ -342,34 +344,53 @@ function RoutesPage() {
       }, 250);
       setClickTimeout(timeout);
     }
-  };
+  }, [routes, clickTimeout, handleEdit]);
 
-  const renderEventContent = (eventInfo) => {
+  const renderEventContent = useCallback((eventInfo) => {
     const event = eventInfo.event;
     const isPast = new Date(event.start) < new Date();
     const isMonthView = eventInfo.view.type === 'dayGridMonth';
+    const route = event.extendedProps.route;
+    const status = route.status;
 
     if (isMonthView) {
       return (
-        <div className={`w-full overflow-hidden flex items-center gap-1 px-1 ${isPast && event.extendedProps.route.status === 'planeada' ? 'opacity-70' : ''}`}>
+        <div className={`w-full overflow-hidden flex items-center gap-1.5 px-1.5 py-0.5 rounded-md ${isPast && status === 'planeada' ? 'opacity-60' : ''}`}>
           <span className="font-bold text-[9px] text-white/90 whitespace-nowrap">{eventInfo.timeText}</span>
-          <span className="text-[10px] sm:text-xs font-medium text-white truncate">{event.title.split('|')[0].trim()}</span>
-          {(event.extendedProps.route.status === 'active' || event.extendedProps.route.status === 'en_transito') && <Truck size={10} className="animate-pulse text-white ml-auto shrink-0" />}
+          <span className="text-[10px] font-semibold text-white truncate">{event.title.split('|')[0].trim()}</span>
+          {(status === 'active' || status === 'en_transito') && <Truck size={10} className="animate-pulse text-white ml-auto shrink-0" />}
         </div>
       );
     }
 
     return (
-      <div className={`p-1 flex flex-col h-full overflow-hidden leading-tight ${isPast && event.extendedProps.route.status === 'planeada' ? 'opacity-70' : ''}`}>
-        <div className="flex justify-between items-center mb-0.5">
-          <span className="font-bold text-[10px] sm:text-xs text-white/90">{eventInfo.timeText}</span>
-          {(event.extendedProps.route.status === 'active' || event.extendedProps.route.status === 'en_transito') && <Truck size={10} className="animate-pulse text-white" />}
+      <div className={`p-1.5 flex flex-col h-full overflow-hidden leading-tight rounded-md border-l-4 border-white/20 transition-all ${isPast && status === 'planeada' ? 'opacity-60 grayscale-[0.3]' : 'hover:scale-[1.02] shadow-sm'}`}>
+        <div className="flex justify-between items-center mb-1">
+          <div className="flex items-center gap-1.5">
+            <span className="font-black text-[10px] text-white/90 tracking-tight">{eventInfo.timeText}</span>
+            {route.schedule_id && (
+              <div className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white/20" title="Recurrente">
+                <Clock3 size={8} className="text-white" />
+              </div>
+            )}
+            {(status === 'active' || status === 'en_transito') && (
+              <Truck size={10} className="animate-pulse text-white shrink-0" />
+            )}
+          </div>
+          {['completed', 'finalizada', 'completada'].includes(status) && (
+            <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+          )}
         </div>
-        <p className="text-[10px] sm:text-xs font-medium text-white truncate">{event.title}</p>
-        <p className="text-[9px] text-white/80 truncate mt-0.5">{event.extendedProps.route.driver_name}</p>
+        <p className="text-[11px] font-bold text-white leading-tight truncate">{event.title.split('|')[0].trim()}</p>
+        <p className="text-[9px] font-medium text-white/70 truncate mt-1 uppercase tracking-wider">{route.driver_name || 'Sin conductor'}</p>
+        {status === 'active' && route.progress > 0 && (
+          <div className="mt-auto h-0.5 w-full bg-white/20 rounded-full overflow-hidden">
+            <div className="h-full bg-white" style={{ width: `${route.progress}%` }} />
+          </div>
+        )}
       </div>
     );
-  };
+  }, []);
 
   const FilterSelect = ({ icon: Icon, value, onChange, options, placeholder, className = "" }) => {
     const isActive = !!value;
@@ -416,7 +437,7 @@ function RoutesPage() {
       {loading ? (
         <Skeleton className="h-[220px] w-full" />
       ) : (
-        <RoutesHero active={active} pending={pending} completed={completed} />
+        <RoutesHero active={stats.active} pending={stats.pending} completed={stats.completed} />
       )}
 
       <section className="grid gap-6 xl:grid-cols-[minmax(22rem,40%)_minmax(0,1fr)]">
@@ -445,7 +466,6 @@ function RoutesPage() {
             </div>
 
             <div className="bg-surface-50/50 rounded-2xl border border-surface-100/80 px-3 py-2 flex items-center gap-3">
-              {/* Compact Search */}
               <div className="relative group shrink-0">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-surface-400 group-focus-within:text-primary-500 transition-colors">
                   <Search size={16} strokeWidth={2.5} />
@@ -461,7 +481,6 @@ function RoutesPage() {
 
               <div className="h-6 w-px bg-surface-200/60 hidden md:block" />
 
-              {/* Filters Flex Row - ensuring no wrap on desktop if possible, or tight grid */}
               <div className="grid grid-cols-2 lg:flex lg:items-center gap-2 flex-1">
                 <FilterSelect 
                   icon={User}
@@ -491,31 +510,17 @@ function RoutesPage() {
                   icon={Layers}
                   value={selectedTripType}
                   onChange={(e) => setSelectedTripType(e.target.value)}
-                  options={[
-                    { value: 'single', label: 'Único' },
-                    { value: 'schedule', label: 'Tipo' }
-                  ]}
+                  options={[{ value: 'single', label: 'Único' }, { value: 'schedule', label: 'Tipo' }]}
                   placeholder="Tipo"
                   className="w-full lg:w-[125px]"
                 />
 
                 {anyFilterActive && (
-                  <button 
-                    onClick={handleClearFilters}
-                    className="flex shrink-0 items-center justify-center h-9 w-9 text-surface-400 hover:text-danger-600 transition-all bg-white border border-surface-200 rounded-xl hover:bg-danger-50 shadow-sm"
-                    title="Limpiar"
-                  >
-                    <X size={14} strokeWidth={3} />
-                  </button>
+                  <button onClick={handleClearFilters} className="flex shrink-0 items-center justify-center h-9 w-9 text-surface-400 hover:text-danger-600 transition-all bg-white border border-surface-200 rounded-xl hover:bg-danger-50 shadow-sm" title="Limpiar"><X size={14} strokeWidth={3} /></button>
                 )}
               </div>
             </div>
           </div>
-
-
-
-
-
           <div className="p-4" style={{ height: 'calc(100vh - 18rem)' }}>
             {viewMode === 'calendar' ? (
               <div className="h-full bg-white rounded-2xl overflow-hidden shadow-sm border border-surface-100 text-xs sm:text-sm custom-calendar">
@@ -529,19 +534,10 @@ function RoutesPage() {
                   .custom-calendar .fc-v-event .fc-event-main { padding: 4px; }
                   .custom-calendar .fc-scrollgrid { border-radius: 1rem; overflow: hidden; border: none; }
                 `}</style>
-                <FullCalendar
-                  plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
-                  initialView="timeGridWeek"
-                  headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' }}
+                <RoutesCalendar 
                   events={calendarEvents}
-                  eventClick={handleEventClick}
-                  eventContent={renderEventContent}
-                  height="100%"
-                  slotMinTime="05:00:00"
-                  slotMaxTime="23:00:00"
-                  allDaySlot={false}
-                  locale="es"
-                  buttonText={{ today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día' }}
+                  onEventClick={handleEventClick}
+                  renderEventContent={renderEventContent}
                 />
               </div>
             ) : (
@@ -549,7 +545,17 @@ function RoutesPage() {
                 {loading ? (
                   Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-2xl" />)
                 ) : (
-                  filteredListRoutes.map((route) => <div key={route.id} className={`${selectedRoute?.id === route.id ? 'ring-2 ring-primary-200 ring-offset-2 ring-offset-white rounded-[1.35rem]' : ''}`}><RouteCard route={route} isSelected={selectedRoute?.id === route.id} onClick={() => setSelectedRoute(route)} onEdit={() => handleEdit(route)} onDelete={() => handleDelete(route)} /></div>)
+                  filteredListRoutes.map((route) => (
+                    <div key={route.id} className={`${selectedRoute?.id === route.id ? 'ring-2 ring-primary-200 ring-offset-2 ring-offset-white rounded-[1.35rem]' : ''}`}>
+                      <RouteCard 
+                        route={route} 
+                        isSelected={selectedRoute?.id === route.id} 
+                        onClick={() => setSelectedRoute(route)} 
+                        onEdit={() => handleEdit(route)} 
+                        onDelete={() => handleDelete(route)} 
+                      />
+                    </div>
+                  ))
                 )}
                 {!loading && filteredListRoutes.length === 0 && (
                   <EmptyState eyebrow="Sin coincidencias" title="No encontramos viajes con ese criterio" description="Prueba ajustando conductor, codigo o destino para volver a poblar la vista." className="min-h-[15rem] border-surface-100 bg-surface-50/70" />
@@ -562,78 +568,21 @@ function RoutesPage() {
         <div className="relative min-h-[42rem] overflow-hidden rounded-[1.8rem] border border-white/60 bg-[linear-gradient(180deg,#eaf0f7_0%,#dfe8f2_100%)] shadow-[0_24px_70px_-42px_rgba(15,23,42,0.24)]">
           {extendedSelectedRoute ? (
             <>
-              <div className="absolute inset-0">
-                <BaseMap center={[extendedSelectedRoute.vehicle_position?.lat || extendedSelectedRoute.origin_lat || -16.5, extendedSelectedRoute.vehicle_position?.lng || extendedSelectedRoute.origin_lng || -68.15]} zoom={9} className="h-full w-full">
-                  {extendedSelectedRoute && <RoutePath route={extendedSelectedRoute} isCompleted={['completed', 'finalizada', 'completada'].includes(extendedSelectedRoute.status)} />}
-                  <HistoryPath logs={trackingLogs} />
-                  
-                  {extendedSelectedRoute?.origin_lat && extendedSelectedRoute?.origin_lng && (
-                    <OriginDestMarker type="origin" position={[extendedSelectedRoute.origin_lat, extendedSelectedRoute.origin_lng]} title={extendedSelectedRoute.origin} subtitle="Punto de partida" />
-                  )}
-                  {extendedSelectedRoute?.dest_lat && extendedSelectedRoute?.dest_lng && (
-                    <OriginDestMarker type="dest" position={[extendedSelectedRoute.dest_lat, extendedSelectedRoute.dest_lng]} title={extendedSelectedRoute.destination} subtitle="Meta final" />
-                  )}
-
-                  {extendedSelectedRoute.checkpoints?.map((cp) => <CheckpointMarker key={cp.id} checkpoint={cp} />)}
-                  
-                  {/* Posición del vehículo (última posición GPS o destino si terminó) */}
-                  {(() => {
-                    const hasLogs = trackingLogs && trackingLogs.length > 0;
-                    const lastLog = hasLogs ? trackingLogs[trackingLogs.length - 1] : null;
-                    const isFinished = ['completed', 'finalizada', 'completada'].includes(extendedSelectedRoute.status);
-                    
-                    let pos = null;
-                    if (hasLogs) {
-                      pos = [lastLog.lat, lastLog.lng];
-                    } else if (isFinished && extendedSelectedRoute.dest_lat) {
-                      pos = [extendedSelectedRoute.dest_lat, extendedSelectedRoute.dest_lng];
-                    } else if (extendedSelectedRoute.vehicle_position) {
-                      pos = [extendedSelectedRoute.vehicle_position.lat, extendedSelectedRoute.vehicle_position.lng];
-                    }
-
-                    if (!pos) return null;
-
-                    return (
-                      <VehicleMarker 
-                        position={pos} 
-                        title={extendedSelectedRoute.route_code} 
-                        subtitle={`${extendedSelectedRoute.driver_name} - ${extendedSelectedRoute.plate_number}`} 
-                        isFinished={isFinished}
-                      />
-                    );
-                  })()}
-                </BaseMap>
-              </div>
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-[#0a1c34]/70 to-transparent" />
-              <div className="relative z-10 flex h-full flex-col">
-                <div className="flex items-start justify-between p-6 text-white">
-                  <div>
-                    <p className="text-[0.64rem] uppercase tracking-[0.24em] text-sky-100/70">{extendedSelectedRoute.type === 'schedule' ? 'Cronograma' : 'Despacho'} seleccionado</p>
-                    <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em]">{extendedSelectedRoute.origin} - {extendedSelectedRoute.destination}</h2>
-                    <p className="mt-2 text-sm text-white/72">{extendedSelectedRoute.route_code} - {extendedSelectedRoute.driver_name || 'Sin conductor'} - {extendedSelectedRoute.vehicle_brand || 'Vehículo'} {extendedSelectedRoute.plate_number || ''}</p>
-                  </div>
-                  <Badge variant={extendedSelectedRoute.status === 'active' ? 'success' : extendedSelectedRoute.status === 'delayed' ? 'danger' : 'warning'} dot>{extendedSelectedRoute.status}</Badge>
-                </div>
-                <div className="pointer-events-none mt-auto flex flex-wrap items-end justify-between gap-4 p-6">
-                  <div className="pointer-events-auto rounded-[1.5rem] border border-white/40 bg-white/80 p-4 shadow-xl backdrop-blur-xl">
-                    <div className="flex gap-5">
-                      <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">Progreso</p><p className="mt-2 text-lg font-bold text-primary-700">{realProgress || extendedSelectedRoute.progress || 0}%</p></div>
-                      <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">ETA</p><p className="mt-2 text-lg font-bold text-primary-700">{extendedSelectedRoute.eta || '--'}</p></div>
-                      <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">Distancia</p><p className="mt-2 text-lg font-bold text-primary-700">{realRemainingDistance || extendedSelectedRoute.remaining_distance || '--'} km</p></div>
-                    </div>
-                  </div>
-                  <div className="pointer-events-auto"><MapLegend /></div>
-                </div>
-                <RouteInfoPanel 
-                  route={extendedSelectedRoute} 
-                  onClose={() => setSelectedRoute(null)} 
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onAssign={handleAssign}
-                  realProgress={realProgress}
-                  realRemainingDistance={realRemainingDistance}
-                />
-              </div>
+              <RoutesMap 
+                extendedSelectedRoute={extendedSelectedRoute}
+                trackingLogs={trackingLogs}
+                realProgress={realProgress}
+                realRemainingDistance={realRemainingDistance}
+              />
+              <RouteInfoPanel 
+                route={extendedSelectedRoute} 
+                onClose={() => setSelectedRoute(null)} 
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onAssign={handleAssign}
+                realProgress={realProgress}
+                realRemainingDistance={realRemainingDistance}
+              />
             </>
           ) : (
             <EmptyState
@@ -649,7 +598,7 @@ function RoutesPage() {
       <Modal isOpen={showForm} onClose={() => { setShowForm(false); setEditingRoute(null); }} title={editingRoute ? 'Editar Viaje / Cronograma' : 'Configurar Nuevo Viaje o Cronograma'}>
         <RouteForm 
           initialData={editingRoute}
-          onSuccess={() => { setShowForm(false); setEditingRoute(null); fetchRoutes(); }} 
+          onSuccess={() => { setShowForm(false); setEditingRoute(null); queryClient.invalidateQueries({ queryKey: ['adminRoutes'] }); }} 
           onCancel={() => { setShowForm(false); setEditingRoute(null); }} 
         />
       </Modal>
@@ -657,7 +606,7 @@ function RoutesPage() {
       <Modal isOpen={showAssignModal} onClose={() => setShowAssignModal(false)} title="Asignar paquetes a ruta">
         <PackageAssignmentForm
           routeId={assigningRoute?.id}
-          onSuccess={() => { setShowAssignModal(false); setAssigningRoute(null); fetchRoutes(); }}
+          onSuccess={() => { setShowAssignModal(false); setAssigningRoute(null); queryClient.invalidateQueries({ queryKey: ['adminRoutes'] }); }}
           onCancel={() => setShowAssignModal(false)}
         />
       </Modal>

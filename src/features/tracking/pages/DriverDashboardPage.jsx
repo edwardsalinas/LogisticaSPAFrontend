@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { Truck, Navigation, Play, Square, Activity, MapPin, Search, Calendar as CalendarIcon, Package } from 'lucide-react';
 import { Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
@@ -6,6 +6,7 @@ import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
@@ -20,172 +21,209 @@ import { heroImages } from '../../../constants/heroImages';
 import apiService from '../../../services/apiService';
 import { haversineDistance, calculateTripProgress } from '../../../utils/geoUtils';
 
-const GPS_INTERVAL_MS = 30000; // Enviar posición cada 30 segundos
+const GPS_INTERVAL_MS = 30000;
 
-const vehicleIcon = L.divIcon({
-  className: 'custom-vehicle-marker',
-  html: `
-    <div style="
-      background: linear-gradient(135deg, #137fec 0%, #0d5bbd 100%);
-      border: 3px solid white;
-      border-radius: 50%;
-      width: 36px;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      box-shadow: 0 3px 14px rgba(19, 127, 236, 0.5);
-      animation: pulse 2s infinite;
-    ">
-      🚛
-    </div>
-  `,
-  iconSize: [36, 36],
-  iconAnchor: [18, 18],
+// Componente de Calendario Memoizado para evitar re-renders por GPS
+// Componente de Mapa Memoizado para aislar actualizaciones de GPS
+const DashboardMap = memo(({ 
+  currentPosition, 
+  activeRouteData, 
+  isActive, 
+  activeTrip, 
+  completedCheckpointIds, 
+  isFinished, 
+  eventsSent 
+}) => {
+  const center = currentPosition || (activeRouteData ? [activeRouteData.origin_lat || -16.5, activeRouteData.origin_lng || -68.15] : [-16.5, -68.15]);
+
+  return (
+    <BaseMap center={center} zoom={13} className="h-full w-full rounded-[1.6rem]">
+      {activeRouteData && <RoutePath route={activeRouteData} isCompleted={isFinished} />}
+      
+      {activeRouteData?.origin_lat && (
+        <OriginDestMarker type="origin" position={[activeRouteData.origin_lat, activeRouteData.origin_lng]} title={activeRouteData.origin} subtitle="Punto de partida" />
+      )}
+      {activeRouteData?.dest_lat && (
+        <OriginDestMarker type="dest" position={[activeRouteData.dest_lat, activeRouteData.dest_lng]} title={activeRouteData.destination} subtitle="Meta final" />
+      )}
+
+      {activeRouteData?.checkpoints?.map((cp) => (
+        <CheckpointMarker key={cp.id} checkpoint={cp} isCompleted={completedCheckpointIds.includes(cp.id)} />
+      ))}
+
+      {(currentPosition || (isFinished && activeRouteData?.dest_lat)) && (
+        <VehicleMarker 
+          position={isFinished ? [activeRouteData.dest_lat, activeRouteData.dest_lng] : currentPosition} 
+          title="Tu Ubicación" 
+          subtitle={activeRouteData?.plate_number || 'Vehículo'} 
+          isFinished={isFinished}
+        />
+      )}
+    </BaseMap>
+  );
 });
 
+const DashboardCalendar = memo(({ events, onEventClick, renderEventContent }) => (
+  <FullCalendar
+    plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
+    initialView="timeGridDay"
+    headerToolbar={{ left: 'prev,next', center: 'title', right: 'timeGridDay,timeGridWeek,dayGridMonth' }}
+    events={events}
+    eventClick={onEventClick}
+    eventContent={renderEventContent}
+    height="100%"
+    allDaySlot={false}
+    locale="es"
+    slotMinTime="06:00:00"
+    slotMaxTime="22:00:00"
+    dayMaxEvents={true}
+    buttonText={{ today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día' }}
+  />
+));
 
-/**
- * Dashboard del conductor con toggle de viaje adaptado a nueva UI.
- */
 function DriverDashboardPage() {
-  const [activeTrip, setActiveTrip] = useState(null);
-  const [routes, setRoutes] = useState([]);
+  const queryClient = useQueryClient();
   const [selectedRouteId, setSelectedRouteId] = useState('');
-  const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
   const [currentPosition, setCurrentPosition] = useState(null);
   const [gpsError, setGpsError] = useState(null);
   const [eventsSent, setEventsSent] = useState(0);
   const [completedCheckpointIds, setCompletedCheckpointIds] = useState([]);
-  const [activeRouteDetails, setActiveRouteDetails] = useState(null);
   const [deliveringPkgId, setDeliveringPkgId] = useState(null);
 
-  // --- DATOS DERIVADOS ---
+  // --- REACT QUERY ---
+  const { data: activeTrip, isLoading: loadingTrip } = useQuery({
+    queryKey: ['activeTrip'],
+    queryFn: async () => {
+      const res = await apiService.getActiveTrip();
+      return res?.data || null;
+    },
+    staleTime: 10000
+  });
+
+  const { data: routes = [], isLoading: loadingRoutes } = useQuery({
+    queryKey: ['driverRoutes'],
+    queryFn: async () => {
+      const res = await apiService.getRoutes();
+      return Array.isArray(res) ? res : (res?.data || []);
+    },
+    staleTime: 60000
+  });
+
+  const { data: activeRouteDetails, isLoading: loadingDetails } = useQuery({
+    queryKey: ['routeDetails', selectedRouteId],
+    queryFn: async () => {
+      if (!selectedRouteId) return null;
+      const res = await apiService.getRoute(selectedRouteId);
+      return res.data;
+    },
+    enabled: !!selectedRouteId,
+    staleTime: 30000
+  });
+
+  // Sincronizar selectedRouteId y checkpoints alcanzados cuando carga el trip activo
+  useEffect(() => {
+    if (activeTrip) {
+      setSelectedRouteId(activeTrip.route_id);
+      const reached = activeTrip.events
+        ?.filter(e => e.type === 'checkpoint_reached' || (e.data && e.data.checkpoint_id))
+        .map(e => e.checkpoint_id || e.data.checkpoint_id) || [];
+      setCompletedCheckpointIds(reached);
+    }
+  }, [activeTrip]);
+
+  const loading = loadingTrip || loadingRoutes;
+
+  // --- DATOS DERIVADOS MEMOIZADOS ---
   const isActive = !!activeTrip;
   const activeRouteData = activeRouteDetails || routes.find(r => String(r.id) === String(selectedRouteId));
-  const isFinished = ['completed', 'finalizada', 'completada'].includes(activeRouteData?.status);
+  const isFinished = useMemo(() => 
+    ['completed', 'finalizada', 'completada'].includes(activeRouteData?.status),
+  [activeRouteData?.status]);
 
-  const realProgress = isActive && activeRouteData ? calculateTripProgress(
-    activeRouteData.checkpoints?.length || 0,
-    completedCheckpointIds.length,
-    activeRouteData.packages?.length || 0,
-    (activeRouteData.packages?.filter(p => p.status === 'delivered' || p.status === 'completada') || []).length
-  ) : 0;
+  const realProgress = useMemo(() => {
+    if (!isActive || !activeRouteData) return 0;
+    return calculateTripProgress(
+      activeRouteData.checkpoints?.length || 0,
+      completedCheckpointIds.length,
+      activeRouteData.packages?.length || 0,
+      (activeRouteData.packages?.filter(p => p.status === 'delivered' || p.status === 'completada') || []).length
+    );
+  }, [isActive, activeRouteData, completedCheckpointIds]);
 
-  // Transformar rutas para el calendario
-  const calendarEvents = routes.filter(r => r.departure_time).map(r => {
-    const start = new Date(r.departure_time);
-    if (isNaN(start.getTime())) return null; // Saltar si fecha invalida
+  const calendarEvents = useMemo(() => {
+    return routes.filter(r => r.departure_time).map(r => {
+      const start = new Date(r.departure_time);
+      if (isNaN(start.getTime())) return null;
+      const end = new Date(start.getTime() + (120 * 60000));
+      
+      let bgColor = '#3b82f6';
+      if (r.status === 'active' || r.status === 'en_transito') bgColor = '#10b981';
+      if (['completed', 'finalizada', 'completada'].includes(r.status)) bgColor = '#18181b';
 
-    const end = new Date(start.getTime() + (120 * 60000)); // 2h por defecto
-    
-    let bgColor = '#3b82f6'; // Blue (Planned)
-    if (r.status === 'active' || r.status === 'en_transito') bgColor = '#10b981'; // Green (Active)
-    if (['completed', 'finalizada', 'completada'].includes(r.status)) bgColor = '#18181b'; // Zinc-900 (Finished)
-
-    return {
-      id: String(r.id),
-      title: `${r.route_code || 'S/C'} | ${r.origin || ''} - ${r.destination || ''}`,
-      start: r.departure_time,
-      end: end.toISOString(),
-      backgroundColor: bgColor,
-      borderColor: 'transparent',
-      display: 'block',
-      extendedProps: { route: r }
-    };
-  }).filter(Boolean);
-
-  const renderEventContent = (eventInfo) => {
+      return {
+        id: String(r.id),
+        title: `${r.route_code || 'S/C'} | ${r.origin || ''} - ${r.destination || ''}`,
+        start: r.departure_time,
+        end: end.toISOString(),
+        backgroundColor: bgColor,
+        borderColor: 'transparent',
+        display: 'block',
+        extendedProps: { route: r }
+      };
+    }).filter(Boolean);
+  }, [routes]);
+  const renderEventContent = useCallback((eventInfo) => {
     const { event } = eventInfo;
     const isPast = new Date(event.start) < new Date();
     const isMonthView = eventInfo.view.type === 'dayGridMonth';
+    const routeStatus = event.extendedProps.route?.status;
 
     if (isMonthView) {
       return (
-        <div className={`w-full overflow-hidden flex items-center gap-1 px-1 ${isPast && event.extendedProps.route?.status === 'laneada' ? 'opacity-70' : ''}`}>
+        <div className={`w-full overflow-hidden flex items-center gap-1.5 px-1.5 py-0.5 rounded-md ${isPast && routeStatus === 'planeada' ? 'opacity-60' : ''}`}>
           <span className="font-bold text-[9px] text-white/90 whitespace-nowrap">{eventInfo.timeText}</span>
-          <span className="text-[10px] font-medium text-white truncate">{event.title.split('|')[0].trim()}</span>
-          {(['active', 'en_transito'].includes(event.extendedProps.route?.status)) && <Truck size={10} className="animate-pulse text-white ml-auto shrink-0" />}
+          <span className="text-[10px] font-semibold text-white truncate">{event.title.split('|')[0].trim()}</span>
+          {(['active', 'en_transito'].includes(routeStatus)) && <Truck size={10} className="animate-pulse text-white ml-auto shrink-0" />}
         </div>
       );
     }
+
     return (
-      <div className={`p-1 flex flex-col h-full overflow-hidden leading-tight ${isPast && event.extendedProps.route?.status === 'laneada' ? 'opacity-70' : ''}`}>
-        <div className="flex justify-between items-center mb-0.5">
-          <span className="font-bold text-[10px] text-white/90">{eventInfo.timeText}</span>
-          {(['active', 'en_transito'].includes(event.extendedProps.route?.status)) && <Truck size={10} className="animate-pulse text-white" />}
+      <div className={`p-1.5 flex flex-col h-full overflow-hidden leading-tight rounded-md border-l-4 border-white/20 transition-all ${isPast && routeStatus === 'planeada' ? 'opacity-60 grayscale-[0.3]' : 'hover:scale-[1.02] shadow-sm'}`}>
+        <div className="flex justify-between items-center mb-1">
+          <div className="flex items-center gap-1.5">
+            <span className="font-black text-[10px] text-white/90 tracking-tight">{eventInfo.timeText}</span>
+            {(['active', 'en_transito'].includes(routeStatus)) && (
+              <div className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white/10">
+                <Truck size={8} className="animate-pulse text-white" />
+              </div>
+            )}
+          </div>
+          {['completed', 'finalizada', 'completada'].includes(routeStatus) && (
+            <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+          )}
         </div>
-        <p className="text-[10px] font-medium text-white truncate">{event.title.split('|')[0]}</p>
-        <p className="text-[9px] text-white/80 truncate mt-0.5">{event.title.split('|')[1]}</p>
+        <p className="text-[11px] font-bold text-white leading-none truncate">{event.title.split('|')[0].trim()}</p>
+        <p className="text-[9px] font-medium text-white/70 truncate mt-1 uppercase tracking-wider">{event.title.split('|')[1]?.trim() || '---'}</p>
       </div>
     );
-  };
+  }, []);
 
-  const handleEventClick = (info) => {
+  const handleEventClick = useCallback((info) => {
     setSelectedRouteId(info.event.id);
-  };
+  }, []);
   
   const watchIdRef = useRef(null);
   const intervalRef = useRef(null);
   const lastPositionRef = useRef(null);
 
-  const fetchData = useCallback(async () => {
-    try {
-      const [tripSettled, routesSettled] = await Promise.allSettled([
-        apiService.getActiveTrip(),
-        apiService.getRoutes() 
-      ]);
-      
-      if (tripSettled.status === 'fulfilled' && tripSettled.value?.data) {
-        const trip = tripSettled.value.data;
-        setActiveTrip(trip);
-        setSelectedRouteId(trip.route_id);
-        const reached = trip.events
-          ?.filter(e => e.type === 'checkpoint_reached' || (e.data && e.data.checkpoint_id))
-          .map(e => e.checkpoint_id || e.data.checkpoint_id) || [];
-        setCompletedCheckpointIds(reached);
-      } else {
-        setActiveTrip(null);
-      }
-      
-      const routesRes = routesSettled.status === 'fulfilled' ? routesSettled.value : [];
-      const routesData = Array.isArray(routesRes) ? routesRes : (routesRes?.data || []);
-      setRoutes(routesData);
-    } catch (err) {
-      console.error('Error cargando datos del driver:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  useEffect(() => {
-    if (!selectedRouteId) {
-      setActiveRouteDetails(null);
-      return;
-    }
-    const fetchDetails = async () => {
-      try {
-        const res = await apiService.getRoute(selectedRouteId);
-        setActiveRouteDetails(res.data);
-      } catch (err) {
-        console.error('Error fetching route details:', err);
-      }
-    };
-    fetchDetails();
-  }, [selectedRouteId]);
-
   const handleDeliverPackage = async (packageId) => {
     setDeliveringPkgId(packageId);
     try {
       await apiService.deliverPackage(packageId);
-      // Actualizar localmente
-      setActiveRouteDetails(prev => {
+      // Actualizar caché de React Query
+      queryClient.setQueryData(['routeDetails', selectedRouteId], prev => {
         if (!prev) return prev;
         return {
           ...prev,
@@ -194,6 +232,8 @@ function DriverDashboardPage() {
           )
         };
       });
+      // Notificar cambio de progreso al admin
+      queryClient.invalidateQueries({ queryKey: ['driverRoutes'] });
     } catch (err) {
       console.error('Error entregando paquete:', err);
     } finally {
@@ -227,7 +267,6 @@ function DriverDashboardPage() {
 
   const handleStopTrip = useCallback(async () => {
     if (isStoppingRef.current) return;
-    if (isStoppingRef.current) return;
     isStoppingRef.current = true;
     setToggling(true);
     
@@ -238,23 +277,19 @@ function DriverDashboardPage() {
       // 2. Notificar al servidor
       await apiService.stopTrip();
       
-      // 3. Limpiar estado local
-      setActiveTrip(null); 
+      // 3. Limpiar estado local y refrescar queries
       setCurrentPosition(null);
       setCompletedCheckpointIds([]);
-      setRoutes(prev => prev.map(r => String(r.id) === String(selectedRouteId) ? { ...r, status: 'completada' } : r));
-      if (activeRouteDetails) {
-        setActiveRouteDetails(prev => ({ ...prev, status: 'completada' }));
-      }
-      
-      // 4. Refrescar datos completos (Opcional pero recomendado)
-      await fetchData();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['activeTrip'] }),
+        queryClient.invalidateQueries({ queryKey: ['driverRoutes'] }),
+        queryClient.invalidateQueries({ queryKey: ['routeDetails', selectedRouteId] })
+      ]);
     } catch (err) {
       console.error('Error al finalizar viaje:', err);
       // Intentar limpiar igual si el error es que ya estaba cerrado
       if (err.status === 400 || (err.message && err.message.includes('ya ha sido completado'))) {
-        setActiveTrip(null);
-        await fetchData();
+        queryClient.invalidateQueries({ queryKey: ['activeTrip'] });
       } else {
         alert(err.message || 'Error al finalizar viaje');
       }
@@ -262,7 +297,7 @@ function DriverDashboardPage() {
       setToggling(false);
       isStoppingRef.current = false;
     }
-  }, [stopGpsTracking, fetchData, selectedRouteId]);
+  }, [stopGpsTracking, queryClient, selectedRouteId]);
 
   const handleStartTrip = useCallback(async () => {
     if (!selectedRouteId) {
@@ -271,22 +306,23 @@ function DriverDashboardPage() {
     }
     setToggling(true);
     try {
-      const res = await apiService.startTrip(selectedRouteId);
-      setActiveTrip(res.data);
+      await apiService.startTrip(selectedRouteId);
       setEventsSent(0);
       setCompletedCheckpointIds([]);
       
-      // Actualización local proactiva
-      setRoutes(prev => prev.map(r => String(r.id) === String(selectedRouteId) ? { ...r, status: 'en_transito' } : r));
-      if (activeRouteDetails) {
-        setActiveRouteDetails(prev => ({ ...prev, status: 'en_transito' }));
-      }
+      // Invalidar queries para refrescar estado global
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['activeTrip'] }),
+        queryClient.invalidateQueries({ queryKey: ['driverRoutes'] }),
+        queryClient.invalidateQueries({ queryKey: ['routeDetails', selectedRouteId] })
+      ]);
     } catch (err) {
       alert(err.message || 'Error al iniciar viaje');
     } finally {
+      setToggling(true);
       setToggling(false);
     }
-  }, [selectedRouteId]);
+  }, [selectedRouteId, queryClient]);
 
   const sendPosition = useCallback(async () => {
     const pos = lastPositionRef.current;
@@ -300,16 +336,14 @@ function DriverDashboardPage() {
       });
       setEventsSent((prev) => prev + 1);
 
-      // Si el backend detectó llegada, cerramos el viaje desde el cliente para asegurar el orden
       const status = res.data?.status?.toLowerCase() || '';
       if (status.includes('llegó') || status.includes('destino')) {
-        console.log('🚩 Llegada confirmada por el servidor. Finalizando viaje...');
         handleStopTrip();
       }
     } catch (err) {
       console.error('Error enviando posición:', err);
     }
-  }, [activeTrip]);
+  }, [activeTrip, handleStopTrip]);
 
   const startGpsTracking = useCallback(() => {
     if (!navigator.geolocation) {
@@ -322,16 +356,13 @@ function DriverDashboardPage() {
         const { latitude, longitude } = position.coords;
         setCurrentPosition({ lat: latitude, lng: longitude });
         lastPositionRef.current = position.coords;
-
-        // Nota: El Auto-Stop basado en distancia local ha sido removido 
-        // a favor de la confirmación síncrona del backend en sendPosition.
       },
       (error) => setGpsError(`Error GPS: ${error.message}`),
       { enableHighAccuracy: true }
     );
     watchIdRef.current = watchId;
     intervalRef.current = setInterval(sendPosition, GPS_INTERVAL_MS);
-  }, [sendPosition, activeRouteData, handleStopTrip]);
+  }, [sendPosition]);
 
   useEffect(() => {
     if (activeTrip) startGpsTracking();
@@ -393,20 +424,10 @@ function DriverDashboardPage() {
                 .custom-driver-calendar .fc-theme-standard td, .custom-driver-calendar .fc-theme-standard th { border-color: #f1f5f9; }
                 .custom-driver-calendar .fc-event { cursor: pointer; border: none; }
               `}</style>
-              <FullCalendar
-                plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
-                initialView="timeGridDay"
-                headerToolbar={{ left: 'prev,next', center: 'title', right: 'timeGridDay,timeGridWeek,dayGridMonth' }}
+              <DashboardCalendar 
                 events={calendarEvents}
-                eventClick={handleEventClick}
-                eventContent={renderEventContent}
-                height="100%"
-                allDaySlot={false}
-                locale="es"
-                slotMinTime="06:00:00"
-                slotMaxTime="22:00:00"
-                dayMaxEvents={true}
-                buttonText={{ today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día' }}
+                onEventClick={handleEventClick}
+                renderEventContent={renderEventContent}
               />
             </div>
             
@@ -422,46 +443,58 @@ function DriverDashboardPage() {
                   </div>
                 </div>
               ) : (
-                <div className="p-5 ring-1 ring-black/5">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${isActive ? 'bg-emerald-100 text-emerald-600' : 'bg-primary-100 text-primary-600'}`}>
-                        {isActive ? <Truck size={20} /> : <Navigation size={20} />}
+                <div className="p-0">
+                  <div className="p-5 border-b border-surface-100 bg-surface-50/50">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className={`h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${isActive ? 'bg-emerald-500 text-white shadow-emerald-200' : 'bg-primary-500 text-white shadow-primary-200'}`}>
+                          {isActive ? <Truck size={22} strokeWidth={2.5} /> : <Navigation size={22} strokeWidth={2.5} />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${isActive ? 'text-emerald-600' : 'text-primary-600'}`}>
+                            {isActive ? 'Misión en Curso' : 'Ruta Seleccionada'}
+                          </p>
+                          <p className="text-base font-black text-surface-900 truncate tracking-tight">
+                            {(activeRouteData || activeTrip?.route)?.route_code || '---'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold text-surface-400 uppercase tracking-tighter">
-                          {isActive ? 'Viaje en Curso' : 'Ruta Seleccionada'}
-                        </p>
-                        <p className="text-sm font-bold text-surface-800 truncate">
-                          {(activeRouteData || activeTrip?.route)?.route_code || '---'}
-                        </p>
+                      
+                      <div className="shrink-0">
+                        {isActive ? (
+                          <Button 
+                            variant="danger" 
+                            className="px-5 py-2.5 h-auto text-[11px] font-black uppercase tracking-widest gap-2 shadow-xl shadow-danger-100/50 border-none rounded-xl" 
+                            onClick={handleStopTrip} 
+                            disabled={toggling}
+                          >
+                            {toggling ? '...' : <><Square fill="currentColor" size={12} stroke="none" /> Finalizar</>}
+                          </Button>
+                        ) : (
+                          <Button 
+                            className={`${(isFinished || !selectedRouteId) ? 'bg-surface-200 text-surface-400 border-surface-200 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200/60 shadow-xl'} px-5 py-2.5 h-auto text-[11px] font-black uppercase tracking-widest gap-2 transition-all active:scale-95 border-none rounded-xl`} 
+                            onClick={handleStartTrip} 
+                            disabled={toggling || !selectedRouteId || isFinished}
+                          >
+                            {toggling ? '...' : isFinished ? 'Completado' : <><Play fill="currentColor" size={12} stroke="none" /> Iniciar</>}
+                          </Button>
+                        )}
                       </div>
                     </div>
-                    
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                      {isActive ? (
-                        <Button 
-                          size="sm" 
-                          variant="danger" 
-                          className="px-4 py-2 h-auto text-[11px] gap-2 shadow-lg shadow-danger-200" 
-                          onClick={handleStopTrip} 
-                          disabled={toggling}
-                        >
-                          {toggling ? '...' : <><Square fill="currentColor" size={12} /> Finalizar</>}
-                        </Button>
-                      ) : (
-                        <Button 
-                          size="sm" 
-                          className={`${(isFinished || !selectedRouteId) ? 'bg-surface-200 text-surface-400 border-surface-300 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200 shadow-lg'} px-4 py-2 h-auto text-[11px] gap-2 transition-all active:scale-95`} 
-                          onClick={handleStartTrip} 
-                          disabled={toggling || !selectedRouteId || isFinished}
-                        >
-                          {toggling ? '...' : isFinished ? 'Viaje Finalizado' : <><Play fill="currentColor" size={12} /> Iniciar Viaje</>}
-                        </Button>
-                      )}
+
+                    <div className="mt-5 grid grid-cols-2 gap-4">
+                      <div className="relative pl-4 border-l-2 border-primary-500/30">
+                        <p className="text-[9px] font-black text-surface-400 uppercase tracking-widest leading-none">Origen</p>
+                        <p className="mt-1.5 text-xs font-bold text-surface-800 truncate">{(activeRouteData || activeTrip?.route)?.origin || '---'}</p>
+                      </div>
+                      <div className="relative pl-4 border-l-2 border-emerald-500/30">
+                        <p className="text-[9px] font-black text-surface-400 uppercase tracking-widest leading-none">Destino</p>
+                        <p className="mt-1.5 text-xs font-bold text-surface-800 truncate">{(activeRouteData || activeTrip?.route)?.destination || '---'}</p>
+                      </div>
                     </div>
                   </div>
+
+                  <div className="p-5 space-y-6">
 
                   {isActive && (
                     <div className="pt-2">
@@ -479,27 +512,30 @@ function DriverDashboardPage() {
                   )}
 
                   {isActive && (activeRouteData?.checkpoints?.length > 0) && (
-                    <div className="pt-3 border-t border-surface-200/60">
-                      <p className="text-[10px] font-bold text-surface-400 uppercase tracking-widest mb-3">Progreso de Checkpoints</p>
-                      <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+                    <div className="pt-0">
+                      <p className="text-[10px] font-black text-surface-400 uppercase tracking-[0.2em] mb-3 px-1">Checkpoints de Control</p>
+                      <div className="space-y-2.5 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
                         {[...(activeRouteData?.checkpoints || [])]
                           .sort((a,b) => (a.sequence_order || 0) - (b.sequence_order || 0))
                           .map(cp => {
                             const isReached = completedCheckpointIds.includes(cp.id);
                             return (
-                              <div key={cp.id} className={`flex items-center justify-between p-2 rounded-lg border transition-all ${isReached ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-surface-100 hover:border-surface-200'}`}>
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <div className={`h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${isReached ? 'bg-emerald-500 text-white' : 'bg-surface-100 text-surface-500'}`}>
+                              <div key={cp.id} className={`group flex items-center justify-between p-2.5 rounded-2xl border transition-all duration-300 ${isReached ? 'bg-emerald-50/50 border-emerald-100/50' : 'bg-white border-surface-100 hover:border-surface-200 hover:shadow-md hover:shadow-surface-100/60'}`}>
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 transition-colors ${isReached ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-100' : 'bg-surface-100 text-surface-400'}`}>
                                     {isReached ? '✓' : cp.sequence_order}
                                   </div>
-                                  <span className={`text-[11px] font-medium truncate ${isReached ? 'text-emerald-800' : 'text-surface-600'}`}>{cp.name}</span>
+                                  <div className="min-w-0">
+                                    <span className={`text-[11px] font-bold block truncate leading-none ${isReached ? 'text-emerald-900' : 'text-surface-700'}`}>{cp.name}</span>
+                                    {isReached && <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mt-0.5 block">Alcanzado</span>}
+                                  </div>
                                 </div>
                                 {!isReached && (
                                   <button 
                                     onClick={() => handleCheckpointCheck(cp.id)}
-                                    className="text-[9px] font-bold text-primary-600 hover:text-primary-700 uppercase tracking-tighter px-2 py-1 rounded bg-primary-50 active:scale-95 transition-transform"
+                                    className="text-[9px] font-black text-primary-600 hover:text-white hover:bg-primary-600 uppercase tracking-widest px-3 py-1.5 rounded-lg bg-primary-50 active:scale-95 transition-all border border-primary-100/30"
                                   >
-                                    Check
+                                    Validar
                                   </button>
                                 )}
                               </div>
@@ -510,33 +546,38 @@ function DriverDashboardPage() {
                   )}
 
                   {isActive && (activeRouteData?.packages?.length > 0) && (
-                    <div className="pt-3 border-t border-surface-200/60">
-                      <p className="text-[10px] font-bold text-surface-400 uppercase tracking-widest mb-3">Paquetes a Entregar</p>
-                      <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+                    <div className="pt-2 border-t border-surface-100/80">
+                      <p className="text-[10px] font-black text-surface-400 uppercase tracking-[0.2em] mb-3 px-1">Carga a Entregar</p>
+                      <div className="space-y-2.5 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
                         {activeRouteData.packages.map(pkg => {
                           const isDelivered = pkg.status === 'delivered' || pkg.status === 'completada';
                           const isDelivering = deliveringPkgId === pkg.id;
                           return (
-                            <div key={pkg.id} className={`flex items-center justify-between p-2 rounded-lg border transition-all ${isDelivered ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-surface-100'}`}>
-                              <div className="flex items-center gap-2 min-w-0">
-                                <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 ${isDelivered ? 'bg-emerald-500 text-white' : 'bg-primary-50 text-primary-600'}`}>
-                                  <Package size={14} />
+                            <div key={pkg.id} className={`group flex items-center justify-between p-3 rounded-2xl border transition-all duration-300 ${isDelivered ? 'bg-slate-50 border-slate-200/50 grayscale-[0.4]' : 'bg-white border-surface-100 hover:border-surface-200 hover:shadow-md hover:shadow-surface-100/60'}`}>
+                              <div className="flex items-center gap-3.5 min-w-0">
+                                <div className={`h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 transition-all ${isDelivered ? 'bg-slate-200 text-slate-500' : 'bg-emerald-50 text-emerald-600 group-hover:scale-110'}`}>
+                                  <Package size={18} strokeWidth={2.5} />
                                 </div>
                                 <div className="min-w-0">
-                                  <p className={`text-[11px] font-bold truncate ${isDelivered ? 'text-emerald-800' : 'text-surface-800'}`}>{pkg.tracking_code}</p>
-                                  <p className="text-[9px] text-surface-400 truncate">{pkg.destino}</p>
+                                  <p className={`text-[12px] font-black tracking-tight ${isDelivered ? 'text-slate-500' : 'text-surface-900'}`}>{pkg.tracking_code}</p>
+                                  <p className="text-[10px] text-surface-400 truncate mt-0.5 leading-none">{pkg.destino}</p>
                                 </div>
                               </div>
-                              {!isDelivered && (
-                                <button 
-                                  onClick={() => handleDeliverPackage(pkg.id)}
-                                  disabled={isDelivering}
-                                  className="text-[9px] font-bold text-emerald-600 hover:text-emerald-700 uppercase tracking-tighter px-2.5 py-1.5 rounded-lg bg-emerald-50 active:scale-95 transition-all border border-emerald-100/50"
-                                >
-                                  {isDelivering ? '...' : 'Entregar'}
-                                </button>
-                              )}
-                              {isDelivered && <span className="text-[9px] font-bold text-emerald-600 uppercase pr-2">Entregado</span>}
+                              <div className="shrink-0 pl-2">
+                                {!isDelivered ? (
+                                  <button 
+                                    onClick={() => handleDeliverPackage(pkg.id)}
+                                    disabled={isDelivering}
+                                    className="text-[9px] font-black text-emerald-700 hover:text-white hover:bg-emerald-600 uppercase tracking-widest px-3.5 py-2 rounded-xl bg-emerald-50 active:scale-95 transition-all border border-emerald-100/50"
+                                  >
+                                    {isDelivering ? '...' : 'Entregar'}
+                                  </button>
+                                ) : (
+                                  <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-100/50 text-emerald-700 border border-emerald-100">
+                                    <span className="text-[9px] font-black uppercase tracking-wider">Éxito</span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           );
                         })}
@@ -552,128 +593,16 @@ function DriverDashboardPage() {
 
         <div className="xl:col-span-8">
           <div className="h-[65vh] min-h-[35rem] overflow-hidden rounded-[2rem] border border-white/60 bg-white p-3 shadow-2xl relative">
-            <BaseMap
-              center={
-                currentPosition?.lat && currentPosition?.lng 
-                  ? [currentPosition.lat, currentPosition.lng] 
-                  : activeRouteData?.origin_lat && activeRouteData?.origin_lng 
-                    ? [activeRouteData.origin_lat, activeRouteData.origin_lng] 
-                    : [-16.5, -68.15]
-              }
-              zoom={currentPosition || activeRouteData ? 13 : 7}
-              className="h-full w-full rounded-[1.6rem]"
-            >
-              {activeRouteData && (
-                <>
-                  {/* Ruta Planificada (Sutil pero clara) */}
-                  {activeRouteData && (
-                    <RoutePath route={activeRouteData} color="#94a3b8" weight={5} opacity={0.55} fitBounds={!isActive} />
-                  )}
-                  
-                  {/* Ruta Ejecutada/Completada (SOLID Slate) */}
-                  {(isActive || ['completed', 'finalizada', 'completada'].includes(activeRouteData?.status)) && (
-                    <RoutePath 
-                      route={{
-                        ...activeRouteData,
-                        checkpoints: ['completed', 'finalizada', 'completada'].includes(activeRouteData?.status)
-                          ? (activeRouteData?.checkpoints || [])
-                          : (activeRouteData?.checkpoints || []).filter(cp => 
-                              (cp.sequence_order || 0) <= Math.max(0, ...(activeRouteData?.checkpoints || [])
-                                .filter(c => completedCheckpointIds.includes(c.id))
-                                .map(c => c.sequence_order || 0))
-                            )
-                      }} 
-                      isCompleted={true}
-                      weight={6}
-                      fitBounds={false}
-                    />
-                  )}
-
-                  {/* Recorrido Real GPS (Línea Punteada) */}
-                  {(activeTrip?.events || activeRouteData?.trip?.events)?.length > 0 && (
-                    <Polyline 
-                      positions={(activeTrip?.events || activeRouteData?.trip?.events)
-                        .filter(e => e.status === 'in_transit' && e.lat && e.lng)
-                        .sort((a,b) => new Date(a.created_at) - new Date(b.created_at))
-                        .map(e => [e.lat, e.lng])
-                      }
-                      pathOptions={{
-                        color: '#6366f1',
-                        dashArray: '10, 15',
-                        weight: 4,
-                        opacity: 0.8
-                      }}
-                    />
-                  )}
-
-                  {activeRouteData.origin_lat && activeRouteData.origin_lng && (
-                    <OriginDestMarker type="origin" position={[activeRouteData.origin_lat, activeRouteData.origin_lng]} title="Punto de Inicio" subtitle={activeRouteData.origin} />
-                  )}
-                  {activeRouteData.dest_lat && activeRouteData.dest_lng && (
-                    <OriginDestMarker type="dest" position={[activeRouteData.dest_lat, activeRouteData.dest_lng]} title="Destino Final" subtitle={activeRouteData.destination} />
-                  )}
-                  {activeRouteData.checkpoints?.map(cp => (
-                    <CheckpointMarker 
-                      key={cp.id} 
-                      checkpoint={cp} 
-                      isCompleted={completedCheckpointIds.includes(cp.id) || ['completed', 'finalizada'].includes(activeRouteData?.status)}
-                    />
-                  ))}
-                </>
-              )}
-
-              {/* Posición del Vehículo (Actual o Final) */}
-              {(currentPosition || (isFinished && activeRouteData?.dest_lat)) && (
-                <VehicleMarker 
-                  position={
-                    isFinished && activeRouteData?.dest_lat
-                      ? [activeRouteData.dest_lat, activeRouteData.dest_lng]
-                      : [currentPosition.lat, currentPosition.lng]
-                  } 
-                  title={isFinished ? 'Viaje Finalizado' : 'Tu ubicación actual'}
-                  subtitle={isFinished ? 'Llegada a destino' : 'Transmitiendo GPS...'}
-                  isFinished={isFinished}
-                />
-              )}
-            </BaseMap>
+            <DashboardMap 
+              currentPosition={currentPosition}
+              activeRouteData={activeRouteData}
+              isActive={isActive}
+              activeTrip={activeTrip}
+              completedCheckpointIds={completedCheckpointIds}
+              isFinished={isFinished}
+              eventsSent={eventsSent}
+            />
             
-            {/* Stats Overlays Minimalistas - Refinado para consistencia con el Sistema de Diseño */}
-            <div className="absolute top-6 left-6 right-6 z-[1000] flex flex-row items-center justify-start gap-12 pointer-events-none drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]">
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-primary-100/40 backdrop-blur-sm flex items-center justify-center text-primary-600">
-                  <Activity size={18} strokeWidth={2.5} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[9px] font-bold text-surface-500 uppercase tracking-[0.15em] leading-none">GPS SIGS</span>
-                  <span className="text-xl font-display font-extrabold text-surface-900 tracking-tight leading-none mt-1">{eventsSent}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-violet-100/40 backdrop-blur-sm flex items-center justify-center text-violet-600">
-                  <Navigation size={18} strokeWidth={2.5} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[9px] font-bold text-surface-500 uppercase tracking-[0.15em] leading-none">Ruta Activa</span>
-                  <span className="text-xl font-display font-extrabold text-surface-900 tracking-tight leading-none mt-1 truncate max-w-[220px]">
-                    {activeRouteData ? `${activeRouteData.origin} - ${activeRouteData.destination}` : 'Sin Ruta'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className={`h-9 w-9 rounded-xl backdrop-blur-sm flex items-center justify-center ${isActive ? 'bg-emerald-100/40 text-emerald-600' : 'bg-amber-100/40 text-amber-600'}`}>
-                  <MapPin size={18} strokeWidth={2.5} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[9px] font-bold text-surface-500 uppercase tracking-[0.15em] leading-none">Arranque</span>
-                  <span className="text-xl font-display font-extrabold text-surface-900 tracking-tight leading-none mt-1">
-                    {isActive && activeTrip?.started_at ? new Date(activeTrip.started_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
             {!isActive && !selectedRouteId && !currentPosition && (
               <div className="absolute inset-0 flex items-center justify-center bg-surface-900/15 backdrop-blur-sm z-[1000] rounded-[1.6rem] pointer-events-none m-3">
                 <div className="bg-white/95 p-8 rounded-2xl shadow-2xl text-center border border-white/20 max-w-sm">
