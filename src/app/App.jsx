@@ -2,12 +2,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './AuthContext';
 import AppRouter from './router';
 
+import { Toaster } from 'sonner';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
       retry: 1,
-      staleTime: 5 * 60 * 1000,
+      // Reducimos staleTime para datos de tracking
+      staleTime: 30 * 1000, 
     },
   },
 });
@@ -15,6 +18,7 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <Toaster position="top-right" richColors closeButton />
       <AuthProvider>
         <AppRouter />
       </AuthProvider>

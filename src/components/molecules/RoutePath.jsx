@@ -8,9 +8,10 @@ import 'leaflet-routing-machine';
  */
 function RoutePath({ route, checkpoints: propCheckpoints, color = '#137fec', weight = 4, isCompleted = false, fitBounds = true }) {
   const map = useMap();
-  const actualColor = isCompleted ? '#10b981' : color;
-  const actualWeight = isCompleted ? (weight + 1) : weight; 
-  const actualOpacity = isCompleted ? 0.95 : 0.75; // Mucho más visible
+  const finishedStatuses = ['completed', 'finalizada', 'completada'];
+  const actualColor = isCompleted ? '#64748b' : color; // Slate Gray vs Blue
+  const actualWeight = isCompleted ? weight : (weight + 1); 
+  const actualOpacity = isCompleted ? 0.6 : 1; 
 
   useEffect(() => {
     const cps = route?.checkpoints || propCheckpoints || [];
@@ -47,7 +48,9 @@ function RoutePath({ route, checkpoints: propCheckpoints, color = '#137fec', wei
     const routingControl = L.Routing.control({
       waypoints,
       lineOptions: {
-        styles: [{ color: actualColor, weight: actualWeight, opacity: actualOpacity }]
+        styles: isCompleted 
+          ? [{ color: actualColor, weight: actualWeight, opacity: actualOpacity }]
+          : [{ color: actualColor, weight: actualWeight, opacity: actualOpacity, dashArray: '10, 15' }] // Punteado para pendiente
       },
       show: false,
       addWaypoints: false,

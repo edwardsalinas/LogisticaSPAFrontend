@@ -47,9 +47,9 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
           apiService.getVehicles(),
           apiService.getPredefinedRoutes()
         ]);
-        setDrivers(driversRes.data || []);
-        setVehicles(vehiclesRes.data || []);
-        setPredefinedRoutes(predefinedRes.data || []);
+        setDrivers(Array.isArray(driversRes) ? driversRes : (driversRes.data || []));
+        setVehicles(Array.isArray(vehiclesRes) ? vehiclesRes : (vehiclesRes.data || []));
+        setPredefinedRoutes(Array.isArray(predefinedRes) ? predefinedRes : (predefinedRes.data || []));
       } catch (err) {
         console.error('Error cargando datos:', err);
       } finally {
