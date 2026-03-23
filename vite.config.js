@@ -17,6 +17,9 @@ export default defineConfig({
   },
   // Optimización de dependencias para dev más rápido
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom', 'recharts', 'leaflet', 'react-leaflet'],
+    include: [
+      'react', 'react-dom', 'react-router-dom', 'recharts', 'leaflet', 'react-leaflet',
+      '@fullcalendar/react', '@fullcalendar/daygrid', '@fullcalendar/timegrid', '@fullcalendar/interaction'
+    ],
   },
 });

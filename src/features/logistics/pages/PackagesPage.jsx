@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Boxes, MapPinned, PackageCheck, Search, Truck, Link } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Boxes, MapPinned, PackageCheck, Search, Truck, Link, PackagePlus, ChevronRight, ChevronDown, Package, Clock } from 'lucide-react';
 import api from '../../../services/api';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
-import SearchInput from '../../../components/atoms/SearchInput';
 import Modal from '../../../components/molecules/Modal';
 import DataTable from '../../../components/organisms/DataTable';
 import Skeleton from '../../../components/atoms/Skeleton';
@@ -12,7 +11,6 @@ import PackageForm from '../components/PackageForm';
 import ShipmentAssignmentForm from '../components/ShipmentAssignmentForm';
 import useRole from '../../../app/useRole';
 import PackagesHero from '../components/PackagesHero';
-import Select from '../../../components/atoms/Select';
 
 const statusMap = {
   pendiente: { label: 'Pendiente', variant: 'warning' },
@@ -31,8 +29,9 @@ function PackagesPage() {
   const [assignPackage, setAssignPackage] = useState(null);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
-  const [filterRouteId, setFilterRouteId] = useState('');
+  const [activeTab, setActiveTab] = useState('all'); // Handles 'all' vs 'delivered' (Historical)
+  const [contextualRoute, setContextualRoute] = useState(null);
+  const [expandedShipments, setExpandedShipments] = useState(new Set());
 
   const fetchData = async () => {
     setLoading(true);
@@ -58,6 +57,7 @@ function PackagesPage() {
 
   const handleCreateSuccess = () => {
     setShowForm(false);
+    setContextualRoute(null);
     fetchData();
   };
 
@@ -67,17 +67,24 @@ function PackagesPage() {
     fetchData();
   };
 
+  const handleOpenContextualForm = (route) => {
+    setContextualRoute(route);
+    setShowForm(true);
+  };
+
+  const toggleExpansion = (id) => {
+    setExpandedShipments(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const totalPackages = packages.length;
   const delivered = packages.filter((p) => p.status === 'entregado').length;
   const transitCount = packages.filter((p) => p.status === 'en_transito' || p.status === 'asignado').length;
   const pendingCount = packages.filter((p) => p.status === 'pendiente').length;
-
-  const tabs = [
-    { id: 'all', label: 'Operativo', count: pendingCount + transitCount },
-    { id: 'loose', label: 'Carga Suelta', count: pendingCount },
-    { id: 'shipments', label: 'Despachos Activos', count: routes.filter(r => r.status !== 'completada').length },
-    { id: 'delivered', label: 'Histórico', count: delivered },
-  ];
 
   const groupedData = useMemo(() => {
     let result = packages;
@@ -89,10 +96,6 @@ function PackagesPage() {
       );
     }
 
-    if (filterRouteId) {
-      result = result.filter(p => p.route_id === filterRouteId);
-    }
-
     if (activeTab === 'delivered') {
       return { historical: result.filter(p => p.status === 'entregado') };
     }
@@ -100,38 +103,22 @@ function PackagesPage() {
     const loose = result.filter(p => !p.route_id && p.status !== 'entregado');
     const assigned = result.filter(p => p.route_id && p.status !== 'entregado');
 
-    if (activeTab === 'loose') return { loose };
-
     const shipmentsMap = {};
-    
-    // Asegurar que se muestren todos los despachos activos (aunque estén vacíos)
     routes.filter(r => r.status !== 'completada').forEach(r => {
       shipmentsMap[r.id] = { route: r, packages: [] };
     });
 
     assigned.forEach(pkg => {
-      if (!shipmentsMap[pkg.route_id]) {
-        const route = routes.find(r => r.id === pkg.route_id);
-        shipmentsMap[pkg.route_id] = {
-          route: route || { id: pkg.route_id, origin: pkg.origen, destination: pkg.destino, status: 'unknown' },
-          packages: []
-        };
+      if (shipmentsMap[pkg.route_id]) {
+        shipmentsMap[pkg.route_id].packages.push(pkg);
       }
-      shipmentsMap[pkg.route_id].packages.push(pkg);
     });
-
-    const shipments = Object.values(shipmentsMap);
-
-    if (activeTab === 'shipments') return { shipments };
-
-    // En modo 'Operativo', solo mostrar despachos que tengan carga para evitar ruido
-    const activeShipments = shipments.filter(s => s.packages.length > 0);
 
     return {
       loose,
-      shipments: activeShipments
+      shipments: Object.values(shipmentsMap)
     };
-  }, [packages, routes, searchTerm, activeTab, filterRouteId]);
+  }, [packages, routes, searchTerm, activeTab]);
 
   const baseColumns = [
     {
@@ -139,12 +126,12 @@ function PackagesPage() {
       label: 'Paquete',
       render: (val, row) => (
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
-            <Boxes size={18} strokeWidth={2.2} />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-700 font-mono text-[10px] font-bold ring-1 ring-primary-100">
+            {val.substring(0, 4)}
           </div>
           <div>
-            <p className="font-semibold text-surface-900">{val}</p>
-            <p className="text-xs text-surface-500 font-medium">{row.description || 'Sin descripción'}</p>
+            <p className="font-bold text-surface-900 text-sm">{val}</p>
+            <p className="text-[10px] text-surface-400 font-medium truncate max-w-[150px]">{row.description || 'Sin descripción'}</p>
           </div>
         </div>
       ),
@@ -157,170 +144,213 @@ function PackagesPage() {
       label: 'Estado',
       render: (val) => {
         const s = statusMap[val] || { label: val, variant: 'neutral' };
-        return <Badge variant={s.variant} dot>{s.label}</Badge>;
+        return <Badge variant={s.variant}>{s.label}</Badge>;
       },
     },
   ];
 
-  const columnsLoose = useMemo(() => [
-    ...baseColumns,
-    {
-      key: 'actions',
-      label: 'Acción',
-      render: (_, row) => (
-        <Button 
-          variant="secondary" 
-          size="sm" 
-          className="flex items-center gap-1 bg-primary-50 text-primary-600 hover:bg-primary-100 border-primary-100"
-          onClick={(e) => {
-            e.stopPropagation();
-            setAssignPackage(row);
-            setShowAssignModal(true);
-          }}
-        >
-          <Link size={14} />
-          Asignar
-        </Button>
-      )
-    }
-  ], [baseColumns]);
-
-  const routeOptions = useMemo(() => [
-    { value: '', label: 'Todos los despachos' },
-    ...routes.filter(r => r.status !== 'completada').map(r => {
-      const date = r.departure_time ? new Date(r.departure_time).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit' }) : '';
-      const driver = r.driver?.full_name ? ` - ${r.driver.full_name}` : '';
-      return { 
-        value: r.id, 
-        label: `${r.origin} → ${r.destination} (${date})${driver}`
-      };
-    })
-  ], [routes]);
-
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-6 pb-12">
       {loading ? (
-        <Skeleton className="h-[220px] w-full" />
+        <Skeleton className="h-[180px] w-full" />
       ) : (
         <PackagesHero totalPackages={totalPackages} deliveredCount={delivered} transitCount={transitCount} pendingCount={pendingCount} />
       )}
 
-      <section className="rounded-[1.8rem] border border-white/70 bg-white/88 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
-        <div className="flex flex-col gap-4 border-b border-surface-100 p-6 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-[0.64rem] uppercase tracking-[0.24em] text-surface-500 font-bold">Gestión de Carga</p>
-            <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-surface-950 text-balance">Panel de Operaciones</h2>
+      <section className="flex flex-col xl:flex-row gap-8 items-start">
+        {/* LEFT: UNIFIED SHIPMENT BOARD (70%) */}
+        <div className="flex-1 w-full space-y-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-xl shadow-primary-500/20">
+                <Truck size={24} strokeWidth={2.5} />
+              </div>
+              <div>
+                <h2 className="font-display text-2xl font-black text-surface-950 tracking-tight">Panel de Despachos</h2>
+                <p className="text-xs text-surface-500 font-medium">Gestiona carga asignada y rutas en tránsito</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <div className="relative group">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 group-focus-within:text-primary-500 transition-colors" />
+                <input 
+                  type="text" 
+                  placeholder="Buscar viaje o ruta..." 
+                  className="pl-9 pr-4 py-2 bg-white border border-surface-200 rounded-xl text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all outline-none w-48 sm:w-72"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Button variant="secondary" size="md" onClick={() => setActiveTab(activeTab === 'delivered' ? 'all' : 'delivered')} className="h-10 px-5 rounded-xl font-bold gap-2">
+                {activeTab === 'delivered' ? <PackageCheck size={18}/> : <Clock size={18}/>}
+                {activeTab === 'delivered' ? 'Ver Operativos' : 'Ver Histórico'}
+              </Button>
+            </div>
           </div>
-          <div className="flex flex-col gap-3 w-full sm:flex-row sm:w-auto sm:items-center">
-            <div className="w-full sm:w-64">
-              <Select 
-                options={routeOptions} 
-                value={filterRouteId} 
-                onChange={(e) => { 
-                  setFilterRouteId(e.target.value); 
-                  if (e.target.value) setActiveTab('shipments'); 
-                }}
-                placeholder="Seleccionar Despacho"
-              />
-            </div>
-            <div className="w-full sm:w-80"><SearchInput value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar código, ciudad o remesa..." /></div>
-            {hasRole(['admin', 'logistics_operator']) && (
-              <Button className="w-full sm:w-auto whitespace-nowrap" onClick={() => setShowForm(true)}>+ Registrar paquete</Button>
-            )}
-          </div>
-        </div>
 
-        <div className="flex border-b border-surface-100 bg-surface-50/30 px-6 overflow-x-auto no-scrollbar">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => { setActiveTab(tab.id); setFilterRouteId(''); }}
-              className={`relative flex items-center gap-2 py-5 px-4 text-sm font-semibold transition-all ${
-                activeTab === tab.id ? 'text-primary-600' : 'text-surface-500 hover:text-surface-700'
-              }`}
-            >
-              <span className="whitespace-nowrap">{tab.label}</span>
-              <span className={`rounded-full px-2 py-0.5 text-[0.65rem] ${
-                activeTab === tab.id ? 'bg-primary-100 text-primary-700' : 'bg-surface-200 text-surface-600'
-              }`}>
-                {tab.count}
-              </span>
-              {activeTab === tab.id && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600" />
-              )}
-            </button>
-          ))}
-        </div>
-
-        <div className="p-6 space-y-10">
-          {(activeTab === 'all' || activeTab === 'loose') && groupedData.loose?.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 px-2">
-                <div className="h-2 w-2 rounded-full bg-warning-500 animate-pulse" />
-                <h3 className="font-semibold text-surface-900 font-display">Carga Suelta (Pendiente de Asignación)</h3>
-                <Badge variant="warning">{groupedData.loose.length}</Badge>
-              </div>
-              <DataTable columns={columnsLoose} data={groupedData.loose} loading={loading} onRowClick={(row) => setSelectedPackage(row)} />
+          {activeTab === 'delivered' ? (
+             <div className="rounded-[2rem] border border-surface-100 bg-white p-6 shadow-sm">
+                <DataTable 
+                  columns={baseColumns} 
+                  data={groupedData.historical || []} 
+                  loading={loading} 
+                  onRowClick={(row) => setSelectedPackage(row)} 
+                  emptyMessage="No hay historial de entregas." 
+                />
+             </div>
+          ) : (
+            <div className="rounded-[2.2rem] border border-surface-100 bg-white shadow-xl shadow-surface-200/20 overflow-hidden">
+               <table className="w-full border-collapse">
+                 <thead>
+                   <tr className="bg-surface-50/50 border-b border-surface-100">
+                     <th className="w-14 px-4 py-5"></th>
+                     <th className="px-4 py-5 text-left text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Viaje / Ruta</th>
+                     <th className="px-4 py-5 text-left text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Responsable</th>
+                     <th className="px-4 py-5 text-center text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Estado</th>
+                     <th className="px-4 py-5 text-center text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Manifiesto</th>
+                     <th className="px-4 py-5 text-right text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest pr-10">Acciones</th>
+                   </tr>
+                 </thead>
+                 <tbody className="divide-y divide-surface-100">
+                   {groupedData.shipments?.length > 0 ? groupedData.shipments.map(ship => {
+                     const isExpanded = expandedShipments.has(ship.route.id);
+                     const route = ship.route;
+                     
+                     return (
+                       <React.Fragment key={route.id}>
+                         <tr className={`hover:bg-primary-50/40 transition-all cursor-pointer group ${isExpanded ? 'bg-primary-50/20' : ''}`} onClick={() => toggleExpansion(route.id)}>
+                           <td className="px-4 py-5 text-center">
+                              <div className={`transition-all duration-300 transform ${isExpanded ? 'rotate-90 text-primary-600' : 'text-surface-300'}`}>
+                                 <ChevronRight size={20} strokeWidth={3} />
+                              </div>
+                           </td>
+                           <td className="px-4 py-5">
+                              <div className="flex flex-col">
+                                 <span className="font-bold text-surface-900 group-hover:text-primary-700 transition-colors">
+                                   {route.origin} → {route.destination}
+                                 </span>
+                                 <span className="text-[10px] font-mono font-black text-primary-500 tracking-tighter uppercase">
+                                   {route.route_code || route.id.substring(0, 8)}
+                                 </span>
+                              </div>
+                           </td>
+                           <td className="px-4 py-5">
+                              <span className="text-sm text-surface-600 font-medium">{route.driver?.full_name || 'Sin conductor'}</span>
+                           </td>
+                           <td className="px-4 py-5 text-center">
+                              <Badge variant={route.status === 'en_transito' ? 'info' : 'neutral'}>
+                                 {route.status === 'en_transito' ? 'Ruta' : 'Standby'}
+                              </Badge>
+                           </td>
+                           <td className="px-4 py-5 text-center text-sm font-bold text-surface-900">
+                              {ship.packages.length}
+                           </td>
+                           <td className="px-4 py-5 text-right pr-8">
+                              <Button variant="secondary" size="xs" className="h-8 px-4 rounded-xl text-[10px] font-black uppercase tracking-tight gap-1.5 border-primary-200 text-primary-700 bg-white hover:bg-primary-600 hover:text-white transition-all shadow-sm" onClick={(e) => { e.stopPropagation(); handleOpenContextualForm(route); }}>
+                                 <PackagePlus size={14} strokeWidth={2.5} /> Cargar
+                              </Button>
+                           </td>
+                         </tr>
+                         
+                         {isExpanded && (
+                           <tr className="bg-surface-50/50">
+                              <td colSpan="6" className="px-10 pb-8 pt-2 animate-in fade-in slide-in-from-top-4 duration-500">
+                                 <div className="rounded-3xl border border-primary-100 bg-white shadow-[0_15px_40px_-20px_rgba(30,58,138,0.15)] overflow-hidden">
+                                    <DataTable 
+                                      columns={baseColumns} 
+                                      data={ship.packages} 
+                                      loading={loading} 
+                                      onRowClick={(row) => setSelectedPackage(row)}
+                                      emptyMessage="Este despacho aún no tiene carga asignada."
+                                    />
+                                 </div>
+                              </td>
+                           </tr>
+                         )}
+                       </React.Fragment>
+                     );
+                   }) : (
+                     <tr>
+                       <td colSpan="6" className="py-24 text-center">
+                          <div className="flex flex-col items-center opacity-25 grayscale">
+                            <Truck size={64} strokeWidth={1} />
+                            <p className="mt-4 font-display text-xl font-bold italic tracking-tight">Sin despachos activos</p>
+                          </div>
+                       </td>
+                     </tr>
+                   )}
+                 </tbody>
+               </table>
             </div>
           )}
+        </div>
 
-          {(activeTab === 'all' || activeTab === 'shipments') && groupedData.shipments?.length > 0 && groupedData.shipments.map(ship => (
-            <div key={ship.route.id} className="space-y-4 rounded-3xl border border-surface-100 bg-surface-50/40 p-5 shadow-sm hover:border-primary-100 transition-colors">
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm text-primary-600 border border-surface-100">
-                    <Truck size={24} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-surface-950 text-xl tracking-tight font-display">
-                      {ship.route.origin} → {ship.route.destination}
-                    </h3>
-                    <p className="text-sm text-surface-500 flex items-center gap-2 mt-1">
-                      <span className="font-mono text-primary-700 bg-primary-50 px-2.5 py-0.5 rounded-lg text-xs font-bold ring-1 ring-primary-100 italic">
-                        {ship.route.route_code || ship.route.id.substring(0, 8)}
-                      </span>
-                      <span className="text-surface-300">•</span>
-                      <span className="font-medium">{ship.route.driver?.full_name || 'Sin chofer asignado'}</span>
-                    </p>
-                  </div>
+        {/* RIGHT: LOOSE CARGO PANEL (30%) */}
+        <aside className="w-full xl:w-[30rem] space-y-5">
+           <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-warning-500 text-white flex items-center justify-center shadow-xl shadow-warning-500/20">
+                  <Package size={24} strokeWidth={2.5} />
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                  <Badge variant={ship.route.status === 'en_transito' ? 'info' : 'neutral'}>
-                    {ship.route.status === 'en_transito' ? 'En Tránsito' : 'Planeado'}
-                  </Badge>
-                  <p className="text-[0.65rem] text-surface-400 font-medium uppercase tracking-wider">
-                    {ship.packages.length} paquete{ship.packages.length !== 1 ? 's' : ''}
-                  </p>
+                <div>
+                  <h2 className="font-display text-2xl font-black text-surface-950 tracking-tight">Carga Suelta</h2>
+                  <p className="text-xs text-surface-500 font-medium">Pendiente de asignación</p>
                 </div>
               </div>
-              <DataTable columns={baseColumns} data={ship.packages} loading={loading} onRowClick={(row) => setSelectedPackage(row)} />
-            </div>
-          ))}
+              <Badge variant="warning" className="h-7 px-3">{groupedData.loose?.length || 0}</Badge>
+           </div>
+           
+           <div className="rounded-[2.2rem] border border-surface-100 bg-white p-5 shadow-xl shadow-surface-200/20 h-fit max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
+              <Button size="lg" className="w-full h-14 mb-6 gap-3 text-sm font-black uppercase tracking-wider shadow-xl shadow-primary-500/25 rounded-2xl" onClick={() => setShowForm(true)}>
+                <PackagePlus size={20} strokeWidth={2.5} /> Nuevo Registro Global
+              </Button>
 
-          {activeTab === 'delivered' && groupedData.historical && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 px-2">
-                <div className="h-2 w-2 rounded-full bg-success-500" />
-                <h3 className="font-semibold text-surface-900 font-display">Archivo de Entregas</h3>
+              <div className="space-y-4">
+                {groupedData.loose?.length > 0 ? (
+                  groupedData.loose.map(pkg => (
+                    <div key={pkg.id} className="group p-5 bg-surface-50 rounded-[1.8rem] border border-surface-100 hover:border-primary-400 hover:bg-white transition-all cursor-pointer shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300" onClick={() => setSelectedPackage(pkg)}>
+                       <div className="flex items-center justify-between mb-3">
+                          <span className="font-mono text-[10px] font-black text-primary-600 bg-primary-100/50 px-3 py-1 rounded-lg ring-1 ring-primary-200 uppercase tracking-tighter italic">
+                             {pkg.tracking_code}
+                          </span>
+                          <span className="text-[11px] font-black text-surface-900 bg-white px-2 py-1 rounded-md shadow-sm border border-surface-100">
+                             {pkg.peso} kg
+                          </span>
+                       </div>
+                       <p className="font-black text-surface-950 text-base mb-1 tracking-tight">{pkg.origen} → {pkg.destino}</p>
+                       <p className="text-xs text-surface-500 truncate italic font-medium">{pkg.description || 'Sin detalles adicionales'}</p>
+                       
+                       <div className="mt-4 flex items-center justify-between pt-4 border-t border-surface-100/80">
+                          <div className="flex items-center gap-2">
+                             <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                             <span className="text-[10px] font-black uppercase text-surface-400 tracking-widest">En Almacén</span>
+                          </div>
+                          <Button variant="secondary" size="xs" className="h-8 px-4 text-[10px] font-black uppercase gap-2 opacity-0 group-hover:opacity-100 transition-all rounded-xl border-primary-200 text-primary-700 bg-white hover:bg-primary-50" onClick={(e) => { e.stopPropagation(); setAssignPackage(pkg); setShowAssignModal(true); }}>
+                             <Link size={12} strokeWidth={2.5} /> Vincular
+                          </Button>
+                       </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-20 text-center opacity-20 flex flex-col items-center gap-4">
+                    <Boxes size={56} strokeWidth={1} />
+                    <p className="text-sm font-bold uppercase tracking-[0.2em]">Almacén Vacío</p>
+                  </div>
+                )}
               </div>
-              <DataTable columns={baseColumns} data={groupedData.historical} loading={loading} onRowClick={(row) => setSelectedPackage(row)} emptyMessage="No hay historial de entregas." />
-            </div>
-          )}
-
-          {Object.keys(groupedData).every(k => !groupedData[k] || groupedData[k].length === 0) && (
-            <div className="py-24 text-center">
-              <div className="inline-flex h-24 w-24 items-center justify-center rounded-full bg-surface-50 text-surface-200 mb-6">
-                <Boxes size={48} />
-              </div>
-              <h3 className="text-xl font-semibold text-surface-950 italic">Área de carga vacía</h3>
-              <p className="text-surface-500 mt-2 max-w-xs mx-auto">No se encontraron paquetes para este filtro. Intenta con otros criterios.</p>
-            </div>
-          )}
-        </div>
+           </div>
+        </aside>
       </section>
 
-      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Registrar nuevo paquete">
-        <PackageForm onSuccess={handleCreateSuccess} onCancel={() => setShowForm(false)} />
+      <Modal isOpen={showForm} onClose={() => { setShowForm(false); setContextualRoute(null); }} title="Registrar nuevo paquete">
+        <PackageForm 
+          onSuccess={handleCreateSuccess} 
+          onCancel={() => { setShowForm(false); setContextualRoute(null); }} 
+          initialRouteId={contextualRoute?.id}
+          initialOrigin={contextualRoute?.origin}
+          initialDestination={contextualRoute?.destination}
+        />
       </Modal>
 
       <Modal isOpen={showAssignModal} onClose={() => setShowAssignModal(false)} title="Asignar Paquete a Despacho">

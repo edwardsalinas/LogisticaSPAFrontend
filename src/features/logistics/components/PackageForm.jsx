@@ -6,8 +6,15 @@ import Select from '../../../components/atoms/Select';
 import Autocomplete from '../../../components/atoms/Autocomplete';
 import apiService from '../../../services/apiService';
 
-function PackageForm({ onSuccess, onCancel }) {
-  const [form, setForm] = useState({ sender_id: '', origen: '', destino: '', peso: '', description: '', route_id: '' });
+function PackageForm({ onSuccess, onCancel, initialRouteId = '', initialOrigin = '', initialDestination = '' }) {
+  const [form, setForm] = useState({ 
+    sender_id: '', 
+    origen: initialOrigin, 
+    destino: initialDestination, 
+    peso: '', 
+    description: '', 
+    route_id: initialRouteId 
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
