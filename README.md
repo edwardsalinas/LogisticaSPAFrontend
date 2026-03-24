@@ -54,7 +54,10 @@ El frontend se divide en contextos de negocio alineados con la lógica del backe
 ```text
 src/
 ├── app/            # Configuración global, AuthProvider, Roles
-├── components/     # UI Framework (Atoms, Molecules, Organisms)
+├── components/     # UI Framework (Atomic Design)
+│   ├── atoms/      # Componentes base (Botones, Inputs, Badges)
+│   ├── molecules/  # Combinaciones (StatCard, FilterSelect, Modales)
+│   └── organisms/  # Estructuras complejas (RouteForm, Sidebar)
 ├── features/       # MÓDULOS DE NEGOCIO (Lógica aislada por dominio)
 │   ├── logistics/
 │   ├── tracking/
