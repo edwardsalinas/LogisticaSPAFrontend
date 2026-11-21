@@ -7,7 +7,15 @@ import {
 } from 'lucide-react';
 import { heroImages } from '../../../constants/heroImages';
 
-export default function AnalyticsHero() {
+const dash = (value, suffix = '') => (value === null || value === undefined ? '—' : `${value}${suffix}`);
+
+// Menos de una hora se muestra en minutos ("0 h" no dice nada)
+export const formatDuration = (hours) => {
+  if (hours === null || hours === undefined) return '—';
+  return hours < 1 ? `${Math.round(hours * 60)} min` : `${hours} h`;
+};
+
+export default function AnalyticsHero({ totals }) {
   return (
     <section className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-[linear-gradient(135deg,#06111f_0%,#0b1d34_35%,#f8fbff_100%)] p-7 shadow-[0_28px_80px_-48px_rgba(2,36,72,0.7)] sm:p-8">
       <div className="absolute inset-0">
@@ -35,22 +43,22 @@ export default function AnalyticsHero() {
               <div className="rounded-[1.35rem] border border-white/10 bg-white/8 p-4 text-white">
                 <PackageCheck size={18} className="text-sky-300" strokeWidth={2.2} />
                 <p className="mt-2 text-[0.6rem] uppercase tracking-[0.18em] text-slate-300">Envios totales</p>
-                <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.05em]">12,482</p>
+                <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.05em]">{dash(totals?.shipments ?? 0)}</p>
               </div>
               <div className="rounded-[1.35rem] border border-white/10 bg-white/8 p-4 text-white">
                 <ShieldCheck size={18} className="text-emerald-300" strokeWidth={2.2} />
                 <p className="mt-2 text-[0.6rem] uppercase tracking-[0.18em] text-slate-300">A tiempo</p>
-                <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.05em]">94.2%</p>
+                <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.05em]">{dash(totals?.onTimePct, '%')}</p>
               </div>
               <div className="rounded-[1.35rem] border border-white/10 bg-white/8 p-4 text-white">
                 <TimerReset size={18} className="text-amber-300" strokeWidth={2.2} />
-                <p className="mt-2 text-[0.6rem] uppercase tracking-[0.18em] text-slate-300">Demora prom.</p>
-                <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.05em]">2.4 hrs</p>
+                <p className="mt-2 text-[0.6rem] uppercase tracking-[0.18em] text-slate-300">Entrega prom.</p>
+                <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.05em]">{formatDuration(totals?.avgDeliveryHours)}</p>
               </div>
               <div className="rounded-[1.35rem] border border-white/10 bg-white/8 p-4 text-white">
                 <AlertTriangle size={18} className="text-violet-300" strokeWidth={2.2} />
-                <p className="mt-2 text-[0.6rem] uppercase tracking-[0.18em] text-slate-300">Incidencias</p>
-                <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.05em]">14</p>
+                <p className="mt-2 text-[0.6rem] uppercase tracking-[0.18em] text-slate-300">Siniestros</p>
+                <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.05em]">{dash(totals?.incidents ?? 0)}</p>
               </div>
             </div>
           </div>
