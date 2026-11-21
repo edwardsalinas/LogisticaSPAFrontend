@@ -26,13 +26,14 @@ function BaseMap({
         aria-label={ariaLabel}
       >
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-          attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; OpenStreetMap contributors'
+          maxZoom={19}
         />
         {children}
       </MapContainer>
       <div className="pointer-events-none absolute bottom-3 right-3 z-[350] rounded-full border border-white/70 bg-white/90 px-3 py-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-surface-500 shadow-sm backdrop-blur-sm">
-        Capa cartografica
+        &copy; OpenStreetMap
       </div>
     </div>
   );

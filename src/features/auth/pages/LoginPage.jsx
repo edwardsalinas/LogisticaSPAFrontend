@@ -167,7 +167,7 @@ function LoginPage() {
 
             <header className="mb-8">
               <h2 className="text-3xl font-extrabold tracking-tight text-[#111827]">
-                Welcome back
+                Bienvenido de nuevo
               </h2>
               <p className="mt-3 text-sm leading-relaxed text-surface-500">
                 Ingresa con tus credenciales para acceder al centro de control
@@ -181,7 +181,7 @@ function LoginPage() {
                   htmlFor="email"
                   className="block text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500"
                 >
-                  Email address
+                  Correo electrónico
                 </label>
                 <input
                   id="email"
@@ -201,14 +201,8 @@ function LoginPage() {
                     htmlFor="password"
                     className="block text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500"
                   >
-                    Password
+                    Contraseña
                   </label>
-                  <button
-                    type="button"
-                    className="text-[0.72rem] font-semibold text-primary-500 transition-colors hover:text-primary-700"
-                  >
-                    Forgot password?
-                  </button>
                 </div>
 
                 <div className="relative">
@@ -226,7 +220,7 @@ function LoginPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-surface-500 hover:text-surface-800"
                   >
-                    {showPassword ? 'Hide' : 'Show'}
+                    {showPassword ? 'Ocultar' : 'Mostrar'}
                   </button>
                 </div>
                 {errors.password && <p role="alert" className="text-xs font-semibold text-red-600">{errors.password.message}</p>}
@@ -258,7 +252,7 @@ function LoginPage() {
                 disabled={loading}
                 className="flex h-12 w-full items-center justify-center rounded-xl bg-[linear-gradient(135deg,#163d70_0%,#0b4ea2_100%)] text-sm font-bold uppercase tracking-[0.12em] text-white shadow-[0_20px_40px_-24px_rgba(11,78,162,0.75)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_48px_-24px_rgba(11,78,162,0.85)] disabled:translate-y-0"
               >
-                {loading ? <Spinner size="sm" className="mx-auto" /> : 'Sign in to dashboard'}
+                {loading ? <Spinner size="sm" className="mx-auto" /> : 'Ingresar al panel'}
               </button>
             </form>
 

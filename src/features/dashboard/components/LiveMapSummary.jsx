@@ -30,20 +30,18 @@ export default function LiveMapSummary({ stats }) {
             </div>
           </div>
           <div className="mt-5 grid gap-3">
-            <div className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/6 px-4 py-3">
-              <div className="flex items-center gap-3">
-                <div className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                <span className="text-sm text-slate-100">Red principal estable</span>
+            {[
+              { label: 'Siniestros reportados', count: stats?.packagesIncident || 0, alert: 'Atencion', bad: 'text-red-300', badDot: 'bg-red-400' },
+              { label: 'Despachos con retraso', count: stats?.packagesDelayed || 0, alert: 'Revisar', bad: 'text-amber-300', badDot: 'bg-amber-400' },
+            ].map((row) => (
+              <div key={row.label} className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/6 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className={`h-2.5 w-2.5 rounded-full ${row.count > 0 ? row.badDot : 'bg-emerald-400'}`} />
+                  <span className="text-sm text-slate-100">{row.label}: {row.count}</span>
+                </div>
+                <span className={`text-xs font-semibold uppercase tracking-[0.14em] ${row.count > 0 ? row.bad : 'text-emerald-300'}`}>{row.count > 0 ? row.alert : 'OK'}</span>
               </div>
-              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-300">OK</span>
-            </div>
-            <div className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/6 px-4 py-3">
-              <div className="flex items-center gap-3">
-                <div className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                <span className="text-sm text-slate-100">2 rutas con trafico</span>
-              </div>
-              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-300">Watch</span>
-            </div>
+            ))}
           </div>
         </div>
       </div>
