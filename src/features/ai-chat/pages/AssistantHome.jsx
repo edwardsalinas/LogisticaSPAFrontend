@@ -135,7 +135,7 @@ function AssistantHome() {
 
       <div className="sticky bottom-20 z-10 bg-gradient-to-t from-[#eef3f9] via-[#eef3f9]/95 to-transparent pb-2 pt-4 lg:bottom-4">
         {composer}
-        <p className="mt-2 text-center text-xs text-surface-400">El asistente solo consulta información: no modifica datos. Verifica lo crítico antes de decidir.</p>
+        <p className="mt-2 text-center text-xs text-surface-400">Si te pido hacer algo, preparo la acción y solo se ejecuta cuando tú la confirmas. Verifica lo crítico antes de decidir.</p>
       </div>
     </div>
   );

@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, MapPin, Package, Truck, User } from 'lucide-react';
+import { CheckCircle2, Clock, MapPin, Package, ShieldAlert, Truck, User, XCircle } from 'lucide-react';
+import apiService from '../../../services/apiService';
 
 /** Tarjetas con los datos estructurados que devuelven las herramientas del asistente. */
 
@@ -236,6 +238,61 @@ export function FleetCard({ data }) {
   );
 }
 
+/**
+ * Acción propuesta por el asistente. El asistente NO la ejecuta: solo se hace cuando el usuario pulsa "Confirmar",
+ * que llama al servidor con su sesión. El resumen lo redacta el servidor, no el modelo.
+ */
+export function ActionProposalCard({ data }) {
+  const action = data.action;
+  const [state, setState] = useState({ status: 'pending' }); // pending | working | done | cancelled | error
+
+  const call = async (verb) => {
+    setState({ status: 'working', verb });
+    try {
+      const res = await apiService.post(`/ai-agent/actions/${action.id}/${verb}`);
+      setState({ status: verb === 'confirm' ? 'done' : 'cancelled', message: res?.result?.message });
+    } catch (err) {
+      setState({ status: 'error', message: err?.message || 'No se pudo completar la acción.' });
+    }
+  };
+
+  const working = state.status === 'working';
+  const finished = state.status === 'done' || state.status === 'cancelled';
+  const tone = state.status === 'done' ? 'border-emerald-300' : state.status === 'cancelled' ? 'border-surface-200' : state.status === 'error' ? 'border-red-300' : 'border-amber-300';
+
+  return (
+    <Card className={`!border-2 ${tone}`}>
+      <div className="flex items-center gap-2 border-b border-surface-100 bg-surface-50 px-4 py-3">
+        {state.status === 'done' ? <CheckCircle2 size={16} className="text-emerald-600" /> : state.status === 'cancelled' ? <XCircle size={16} className="text-surface-500" /> : <ShieldAlert size={16} className="text-amber-600" />}
+        <p className="text-sm font-bold text-surface-900">{action.title}</p>
+        <span className="ml-auto text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-surface-500">
+          {state.status === 'done' ? 'Hecho' : state.status === 'cancelled' ? 'Cancelada' : 'Requiere tu confirmación'}
+        </span>
+      </div>
+
+      <ul className="space-y-1.5 px-4 py-3 text-sm text-surface-800">
+        {action.lines.map((line) => <li key={line}>{line}</li>)}
+      </ul>
+
+      {state.status === 'done' && <p role="status" className="border-t border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">✅ {state.message}</p>}
+      {state.status === 'cancelled' && <p role="status" className="border-t border-surface-100 bg-surface-50 px-4 py-3 text-sm text-surface-600">{state.message ?? 'Acción cancelada. No se hizo ningún cambio.'}</p>}
+      {state.status === 'error' && <p role="alert" className="border-t border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{state.message}</p>}
+
+      {!finished && state.status !== 'error' && (
+        <div className="flex items-center justify-between gap-3 border-t border-surface-100 px-4 py-3">
+          <p className="text-xs text-surface-500">Nada se ha hecho todavía. Revisa los datos antes de confirmar.</p>
+          <div className="flex shrink-0 gap-2">
+            <button type="button" onClick={() => call('cancel')} disabled={working} className="rounded-xl border border-surface-200 bg-white px-3.5 py-2 text-xs font-bold text-surface-700 hover:bg-surface-50 disabled:opacity-50">Cancelar</button>
+            <button type="button" onClick={() => call('confirm')} disabled={working} className="rounded-xl bg-[linear-gradient(135deg,#0b4ea2_0%,#137fec_100%)] px-4 py-2 text-xs font-bold text-white shadow-sm disabled:opacity-60">
+              {working && state.verb === 'confirm' ? 'Ejecutando…' : 'Confirmar'}
+            </button>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 /** Elige la tarjeta según el tipo de dato. */
 export function AttachmentCard({ attachment, onAsk, role }) {
   switch (attachment?.kind) {
@@ -244,6 +301,7 @@ export function AttachmentCard({ attachment, onAsk, role }) {
     case 'operations_summary': return <OperationsSummaryCard data={attachment} />;
     case 'driver_agenda': return <DriverAgendaCard data={attachment} onAsk={onAsk} />;
     case 'fleet_status': return <FleetCard data={attachment} />;
+    case 'action_proposal': return <ActionProposalCard data={attachment} />;
     default: return null;
   }
 }

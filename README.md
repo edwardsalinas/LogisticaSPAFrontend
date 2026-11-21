@@ -101,7 +101,7 @@ npm run build
 ## Pruebas
 
 ```bash
-npm test      # Vitest + Testing Library (jsdom): 88 pruebas
+npm test      # Vitest + Testing Library (jsdom): 95 pruebas
 ```
 
 Cubren todos los formularios principales (login, paquetes, vehículos, checkpoints, rutas, eventos de seguimiento y asignaciones; React Hook Form + Zod), el asistente de IA conectado al backend, la cola offline de puntos GPS (IndexedDB), el cliente HTTP con sesión por cookie (renovación y reintento tras un 401), la resolución de roles, la unificación de estados con el backend y el panel del conductor (aviso de modo offline). El CI (`.github/workflows/ci.yml`) ejecuta `npm test` y `npm run build` en cada push.
@@ -139,6 +139,7 @@ npm run e2e:headed   # viendo el navegador
 
 - `e2e/navigation.spec.js`: cada rol recorre sus páginas sin errores de consola ni de API, y no entra a páginas de otros roles.
 - `e2e/ai-mode.spec.js`: el Modo IA (interruptor, preferencia, respuestas con tarjetas por rol). Escribe datos etiquetados y guarda sus ids en `e2e-results/created-ai.json`.
+- `e2e/ai-actions.spec.js`: acciones del asistente con confirmación (la tarjeta no cambia nada hasta confirmar, cancelar, un tercero no puede confirmar, no se repite, permisos por rol). Ids en `e2e-results/created-actions.json`.
 - `e2e/lifecycle.spec.js`: ciclo completo con acciones reales (viaje, paquete, evento, entrega del conductor con nota, vista del cliente, Analítica y asistente de IA). Escribe datos etiquetados `E2E-<sello>` y guarda sus ids en `e2e-results/created.json`.
 
 **Limpieza** (borra solo lo creado por las pruebas, con la clave de servicio del backend):
@@ -147,6 +148,7 @@ npm run e2e:headed   # viendo el navegador
 cd ../LogisticaSPABackend
 node --env-file=.env scripts/e2e-cleanup.mjs ../LogisticaSPAFrontend/e2e-results/created.json
 node --env-file=.env scripts/e2e-cleanup.mjs ../LogisticaSPAFrontend/e2e-results/created-ai.json
+node --env-file=.env scripts/e2e-cleanup.mjs ../LogisticaSPAFrontend/e2e-results/created-actions.json
 ```
 
 Inician sesión una sola vez por rol y reutilizan la sesión (Supabase Auth limita los intentos de inicio de sesión por IP).
@@ -156,6 +158,6 @@ Inician sesión una sola vez por rol y reutilizan la sesión (Supabase Auth limi
 Interruptor **Modo IA** en la barra superior (preferencia por usuario, guardada en el navegador; desactivado por defecto).
 
 - **Desactivado:** la aplicación se ve como siempre, con el asistente como panel flotante.
-- **Activado:** la aplicación abre en el asistente (`/` y `/assistant`), para todos los roles. Se pregunta en lenguaje natural ("¿dónde está mi paquete?", "¿cómo va la operación?", "¿qué entregas tengo hoy?") y las respuestas incluyen tarjetas con los datos. El menú añade **Asistente** como primera opción y el Dashboard pasa a `/dashboard`.
+- **Activado:** la aplicación abre en el asistente (`/` y `/assistant`), para todos los roles. Se pregunta en lenguaje natural ("¿dónde está mi paquete?", "¿cómo va la operación?", "¿qué entregas tengo hoy?") y las respuestas incluyen tarjetas con los datos. Si se le pide una acción (crear un paquete, registrar un evento, entregar), el asistente la **propone** en una tarjeta y solo se ejecuta al pulsar **Confirmar**. El menú añade **Asistente** como primera opción y el Dashboard pasa a `/dashboard`.
 
 Código: `src/app/AiModeContext.jsx` (preferencia), `src/features/ai-chat/` (vista, tarjetas, preguntas sugeridas por rol y el hook de conversación compartido con el panel flotante).
