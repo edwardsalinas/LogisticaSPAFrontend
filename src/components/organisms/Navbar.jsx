@@ -1,8 +1,18 @@
-﻿import { LogOut } from 'lucide-react';
+﻿import { LogOut, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../app/AuthContext';
+import { useAiMode } from '../../app/AiModeContext';
 
 function Navbar({ title }) {
   const { logout } = useAuth();
+  const { aiMode, toggleAiMode } = useAiMode();
+  const navigate = useNavigate();
+
+  // Al activar el Modo IA se pasa directamente al asistente
+  const handleToggleAiMode = () => {
+    toggleAiMode();
+    if (!aiMode) navigate('/');
+  };
 
   return (
     <header className="fixed left-0 right-0 top-0 z-30 lg:left-[17rem]">
@@ -17,6 +27,22 @@ function Navbar({ title }) {
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
             Sistema operativo
           </div>
+
+          <button
+            type="button"
+            role="switch"
+            aria-checked={aiMode}
+            aria-label="Modo IA"
+            title={aiMode ? 'Modo IA activado: la aplicación abre en el asistente' : 'Activa el Modo IA para abrir la aplicación en el asistente'}
+            onClick={handleToggleAiMode}
+            className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition-all duration-200 sm:px-3.5 ${aiMode ? 'border-primary-300 bg-primary-50 text-primary-700' : 'border-surface-200 bg-white text-surface-600 hover:bg-surface-50'}`}
+          >
+            <Sparkles size={16} strokeWidth={2.2} aria-hidden="true" />
+            <span className="hidden sm:inline">Modo IA</span>
+            <span aria-hidden="true" className={`relative inline-block h-5 w-9 rounded-full transition-colors ${aiMode ? 'bg-primary-500' : 'bg-surface-300'}`}>
+              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${aiMode ? 'left-[1.15rem]' : 'left-0.5'}`} />
+            </span>
+          </button>
 
           <button
             onClick={logout}

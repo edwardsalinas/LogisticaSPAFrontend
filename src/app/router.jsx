@@ -4,6 +4,7 @@ import SectionLoader from '../components/molecules/SectionLoader';
 import DashboardLayout from '../components/templates/DashboardLayout';
 import { useAuth } from './AuthContext';
 import useRole from './useRole';
+import { useAiMode } from './AiModeContext';
 import RoleRoute from './RoleRoute';
 
 const DashboardPage = lazy(() => import('../features/dashboard/pages/DashboardPage'));
@@ -14,7 +15,7 @@ const RouteMapPage = lazy(() => import('../features/logistics/pages/RouteMapPage
 const TrackingPage = lazy(() => import('../features/tracking/pages/TrackingPage'));
 const PackageMapPage = lazy(() => import('../features/tracking/pages/PackageMapPage'));
 const FleetPage = lazy(() => import('../features/fleet/pages/FleetPage'));
-const AiChatPage = lazy(() => import('../features/ai-chat/pages/AiChatPage'));
+const AssistantHome = lazy(() => import('../features/ai-chat/pages/AssistantHome'));
 const AnalyticsPage = lazy(() => import('../features/analytics/pages/AnalyticsPage'));
 const LoginPage = lazy(() => import('../features/auth/pages/LoginPage'));
 const PublicTrackingPage = lazy(() => import('../features/tracking/pages/PublicTrackingPage'));
@@ -49,7 +50,13 @@ function ProtectedRoute() {
 
 function RootRoute({ children }) {
   const { role } = useRole();
-  
+  const { aiMode } = useAiMode();
+
+  // Modo IA: la aplicación abre en el asistente, para todos los roles
+  if (aiMode) {
+    return <AssistantHome />;
+  }
+
   if (role === 'driver') {
     return <Navigate to="/driver" replace />;
   }
@@ -80,7 +87,10 @@ function AppRouter() {
             <Route path="/tracking" element={<RoleRoute roles={['admin', 'logistics_operator', 'client']}><TrackingPage /></RoleRoute>} />
             <Route path="/tracking/:packageId/map" element={<RoleRoute roles={['admin', 'logistics_operator', 'client']}><PackageMapPage /></RoleRoute>} />
             <Route path="/fleet" element={<RoleRoute roles={['admin']}><FleetPage /></RoleRoute>} />
-            <Route path="/ai-chat" element={<RoleRoute roles={['admin']}><AiChatPage /></RoleRoute>} />
+            {/* Asistente: siempre disponible; es la página de inicio cuando el Modo IA está activo */}
+            <Route path="/assistant" element={<AssistantHome />} />
+            <Route path="/ai-chat" element={<Navigate to="/assistant" replace />} />
+            <Route path="/dashboard" element={<RoleRoute roles={['admin', 'logistics_operator']}><DashboardPage /></RoleRoute>} />
             <Route path="/analytics" element={<RoleRoute roles={['admin']}><AnalyticsPage /></RoleRoute>} />
 
             {/* Ruta exclusiva de conductor */}

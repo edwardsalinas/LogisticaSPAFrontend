@@ -2,73 +2,40 @@
 import Button from '../../../components/atoms/Button';
 import Skeleton from '../../../components/atoms/Skeleton';
 import AiSuggestionButtons from './AiSuggestionButtons';
-import apiService from '../../../services/apiService';
+import ChatBubble from './ChatBubble';
+import useAssistantChat, { MAX_MESSAGE_LENGTH } from '../useAssistantChat';
+import { introForRole, suggestionsForRole } from '../suggestions';
 
 const WELCOME_MESSAGE = {
   role: 'assistant',
-  content:
-    'Hola. Soy el asistente logístico de LogisticaSPA. Puedo consultar el estado de un paquete a partir de su código de rastreo (TRK-...) y, si tu perfil lo permite, información de rutas.',
+  local: true,
+  content: 'Hola. Soy el asistente logístico de LogisticaSPA. Pregúntame lo que necesites sobre tus envíos en lenguaje natural.',
 };
 
-const COMMON_SUGGESTIONS = [
-  { icon: 'PK', label: 'Consultar un paquete', value: '¿Cómo puedo consultar el estado de mi paquete?' },
-  { icon: 'RT', label: 'Rutas en tránsito', value: '¿Qué rutas están en tránsito actualmente?' },
-];
-
-const MAX_MESSAGE_LENGTH = 1000;
-const HISTORY_LIMIT = 10; // el backend acepta como máximo 10 mensajes previos
-
-function AiAssistantPanel({ mode = 'panel', onClose = null }) {
-  const [messages, setMessages] = useState([WELCOME_MESSAGE]);
+/**
+ * Panel flotante del asistente (Modo clásico). Comparte la conversación y las tarjetas con la vista del Modo IA.
+ */
+function AiAssistantPanel({ mode = 'panel', onClose = null, role }) {
+  const { messages, loading, send, reset } = useAssistantChat([WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(true);
   const messagesEndRef = useRef(null);
 
   const isPanel = mode === 'panel';
+  const onlyWelcome = messages.length === 1;
+  const suggestions = suggestionsForRole(role).filter((s) => !s.prefill).slice(0, 3);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView?.({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  const handleSend = async (messageText = input) => {
-    const text = messageText.trim();
-    if (!text || loading) return;
-
-    // Contexto: mensajes previos de la conversación (sin el saludo inicial ni los errores locales)
-    const history = messages
-      .filter((m) => m !== WELCOME_MESSAGE && !m.isError)
-      .slice(-HISTORY_LIMIT)
-      .map(({ role, content }) => ({ role, content }));
-
-    setMessages((prev) => [...prev, { role: 'user', content: text }]);
+  const handleSend = async (text = input) => {
+    if (!String(text).trim() || loading) return;
     setInput('');
-    setLoading(true);
-    setShowSuggestions(false);
-
-    try {
-      const res = await apiService.post('/ai-agent/chat', { message: text, history });
-      setMessages((prev) => [...prev, { role: 'assistant', content: res.response }]);
-    } catch (err) {
-      const content =
-        err.status === 429
-          ? 'Has enviado muchos mensajes seguidos. Espera un minuto e inténtalo de nuevo.'
-          : 'No pude procesar tu consulta en este momento. Inténtalo nuevamente.';
-      setMessages((prev) => [...prev, { role: 'assistant', content, isError: true }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSuggestionClick = (value) => {
-    handleSend(value);
+    await send(text);
   };
 
   const handleNewConversation = () => {
-    setMessages([
-      { role: 'assistant', content: 'Nueva conversación iniciada. ¿Qué paquete o ruta quieres consultar?' },
-    ]);
-    setShowSuggestions(true);
+    reset([{ role: 'assistant', local: true, content: 'Nueva conversación iniciada. ¿Qué quieres consultar?' }]);
   };
 
   const handleKeyDown = (e) => {
@@ -89,34 +56,34 @@ function AiAssistantPanel({ mode = 'panel', onClose = null }) {
           <div>
             <p className="text-[0.62rem] uppercase tracking-[0.24em] text-surface-500">Asistente operativo</p>
             <h2 className="mt-1 text-lg font-bold tracking-tight text-primary-700">Copiloto IA LogisticaSPA</h2>
-            <p className="mt-1 text-xs text-surface-500">Consulta el estado de tus envíos en lenguaje natural.</p>
+            <p className="mt-1 text-xs text-surface-500">{introForRole(role)}</p>
           </div>
 
           {onClose && (
-            <button type="button" onClick={onClose} aria-label="Cerrar asistente" className="flex h-10 w-10 items-center justify-center rounded-xl border border-surface-200 bg-white text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-800">x</button>
+            <button type="button" onClick={onClose} aria-label="Cerrar asistente" className="flex h-10 w-10 items-center justify-center rounded-xl border border-surface-200 bg-white text-surface-500 transition-colors hover:bg-surface-50">
+              ✕
+            </button>
           )}
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <button onClick={handleNewConversation} className="rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-primary-700 transition-colors hover:bg-primary-100">Nueva consulta</button>
+          <button onClick={handleNewConversation} className="rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 transition-colors hover:bg-primary-100">
+            Nueva conversación
+          </button>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-5">
         <div className="space-y-4" aria-live="polite">
           {messages.map((msg, idx) => (
-            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[84%] rounded-[1.35rem] px-4 py-3 ${msg.role === 'user' ? 'rounded-br-md bg-[linear-gradient(135deg,#0b4ea2_0%,#137fec_100%)] text-white shadow-[0_18px_40px_-24px_rgba(19,127,236,0.75)]' : 'rounded-bl-md border border-surface-100 bg-surface-50 text-surface-800'}`}>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
-              </div>
-            </div>
+            <ChatBubble key={idx} message={msg} role={role} onAsk={handleSend} showFollowUps={idx === messages.length - 1 && !loading} />
           ))}
 
           {loading && (
-            <div className="flex justify-start">
+            <div className="flex justify-start" role="status">
               <div className="w-[17rem] rounded-[1.35rem] rounded-bl-md border border-surface-100 bg-surface-50 px-4 py-4">
                 <div className="flex items-center gap-2 text-[0.68rem] uppercase tracking-[0.16em] text-surface-500">
-                  <span className="h-2 w-2 rounded-full bg-primary-400 animate-pulse" />
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-primary-400" />
                   Pensando respuesta
                 </div>
                 <Skeleton className="mt-4 h-3 w-11/12" />
@@ -130,10 +97,10 @@ function AiAssistantPanel({ mode = 'panel', onClose = null }) {
         </div>
       </div>
 
-      {showSuggestions && messages.length === 1 && (
+      {onlyWelcome && (
         <div className="border-t border-surface-100 px-4 pb-4 pt-4 sm:px-5">
           <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500">Sugerencias rápidas</p>
-          <AiSuggestionButtons suggestions={COMMON_SUGGESTIONS} onSelect={handleSuggestionClick} />
+          <AiSuggestionButtons suggestions={suggestions.map((s) => ({ icon: s.icon, label: s.label, value: s.value }))} onSelect={handleSend} />
         </div>
       )}
 
@@ -146,7 +113,7 @@ function AiAssistantPanel({ mode = 'panel', onClose = null }) {
             maxLength={MAX_MESSAGE_LENGTH}
             aria-label="Mensaje para el asistente"
             placeholder="Escribe el código de rastreo (TRK-...) o tu consulta..."
-            className="min-h-[3.2rem] flex-1 resize-none rounded-2xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm outline-none transition-all focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
+            className="min-h-[3.2rem] flex-1 resize-none rounded-2xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm outline-none transition-all focus:border-primary-400 focus:bg-white"
             disabled={loading}
             rows={1}
           />

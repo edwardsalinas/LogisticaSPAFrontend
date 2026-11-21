@@ -3,10 +3,14 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import AiAssistantPanel from '../../features/ai-chat/components/AiAssistantPanel';
 import Navbar from '../organisms/Navbar';
-import Sidebar, { navItems } from '../organisms/Sidebar';
+import Sidebar, { getNavItems } from '../organisms/Sidebar';
+import { useAiMode } from '../../app/AiModeContext';
+import useRole from '../../app/useRole';
 
 const pageTitles = {
   '/': 'Dashboard',
+  '/dashboard': 'Dashboard',
+  '/assistant': 'Asistente',
   '/logistics/packages': 'Gestion de Paquetes',
   '/logistics/routes': 'Monitoreo de Rutas',
   '/tracking': 'Trazabilidad',
@@ -17,9 +21,12 @@ const pageTitles = {
 
 function DashboardLayout() {
   const location = useLocation();
-  const title = pageTitles[location.pathname] || 'LogisticaSPA';
+  const { aiMode } = useAiMode();
+  const { hasRole, role } = useRole();
+  const onAssistantPage = location.pathname === '/assistant' || (location.pathname === '/' && aiMode);
+  const title = onAssistantPage ? 'Asistente' : pageTitles[location.pathname] || 'LogisticaSPA';
   const [isAiOpen, setIsAiOpen] = useState(false);
-  const showFloatingAssistant = location.pathname !== '/ai-chat';
+  const showFloatingAssistant = !onAssistantPage;
   const aiPanelId = 'ai-assistant-panel';
 
   useEffect(() => {
@@ -41,7 +48,7 @@ function DashboardLayout() {
 
       <nav className="fixed inset-x-3 bottom-3 z-40 lg:hidden" aria-label="Navegacion principal movil">
         <div className="mobile-bottom-nav no-scrollbar flex items-center gap-2 overflow-x-auto rounded-[1.6rem] border border-white/70 bg-white/88 px-2 py-2 shadow-[0_24px_50px_-28px_rgba(15,23,42,0.28)] backdrop-blur-2xl">
-          {navItems.map((item) => {
+          {getNavItems(aiMode).filter((item) => hasRole(item.roles)).map((item) => {
             const Icon = item.icon;
             return (
               <NavLink
@@ -102,7 +109,7 @@ function DashboardLayout() {
                 aria-label="Cerrar panel del asistente"
               />
               <div id={aiPanelId} className="fixed inset-x-4 bottom-24 top-20 z-50 sm:left-auto sm:right-6 sm:top-24 sm:w-[26rem] lg:right-8 lg:w-[28rem]">
-                <AiAssistantPanel mode="panel" onClose={() => setIsAiOpen(false)} />
+                <AiAssistantPanel mode="panel" role={role} onClose={() => setIsAiOpen(false)} />
               </div>
             </>
           )}

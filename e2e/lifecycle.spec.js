@@ -202,12 +202,12 @@ const H = { 'X-Requested-With': 'XMLHttpRequest' };
 // Escribe en el asistente y devuelve SOLO la última respuesta del asistente (no el texto de toda la página)
 const askAssistant = async (page, question) => {
   await page.getByRole('button', { name: /abrir asistente/i }).click();
-  const log = page.locator('[aria-live="polite"]');
-  const before = await log.locator('.justify-start p').count();
+  const answers = page.locator('[data-role="assistant"]');
+  const before = await answers.count();
   await page.getByLabel(/mensaje para el asistente/i).fill(question);
   await page.getByRole('button', { name: /^enviar$/i }).click();
-  await expect(log.locator('.justify-start p')).toHaveCount(before + 1, { timeout: 60_000 }); // llegó la respuesta
-  return log.locator('.justify-start p').last().innerText();
+  await expect(answers).toHaveCount(before + 1, { timeout: 120_000 }); // llegó la respuesta
+  return answers.last().innerText();
 };
 
 test('9. un cliente ve SU paquete (asignado por el administrador) y consulta al asistente por código', async ({ browser }) => {

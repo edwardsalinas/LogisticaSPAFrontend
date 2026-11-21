@@ -50,7 +50,7 @@ describe('AiAssistantPanel (conectado al backend)', () => {
     apiService.post.mockRejectedValue(Object.assign(new Error('rate'), { status: 429 }));
     render(<AiAssistantPanel />);
     await send('hola');
-    expect(await screen.findByText(/muchos mensajes seguidos/i)).toBeInTheDocument();
+    expect(await screen.findByText(/muchas consultas/i)).toBeInTheDocument();
   });
 
   it('muestra un mensaje genérico ante cualquier otro error, sin exponer detalles', async () => {

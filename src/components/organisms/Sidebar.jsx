@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Sparkles,
   Crosshair,
   LayoutDashboard,
   Map,
@@ -9,6 +10,7 @@ import {
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../app/AuthContext';
 import useRole from '../../app/useRole';
+import { useAiMode } from '../../app/AiModeContext';
 
 export const navItems = [
   { path: '/', label: 'Dashboard', eyebrow: 'Resumen', icon: LayoutDashboard, roles: ['admin'] },
@@ -20,10 +22,22 @@ export const navItems = [
   { path: '/analytics', label: 'Reportes', eyebrow: 'Metricas', icon: BarChart3, roles: ['admin'] },
 ];
 
+/**
+ * Menú según el modo. En Modo IA el asistente es la primera opción (y la página de inicio) y el Dashboard
+ * pasa a /dashboard, disponible también para el operador.
+ */
+export const getNavItems = (aiMode) => {
+  if (!aiMode) return navItems;
+  const assistant = { path: '/', label: 'Asistente', eyebrow: 'IA', icon: Sparkles, roles: ['admin', 'logistics_operator', 'client', 'driver'] };
+  const rest = navItems.map((item) => (item.path === '/' ? { ...item, path: '/dashboard', roles: ['admin', 'logistics_operator'] } : item));
+  return [assistant, ...rest];
+};
+
 function Sidebar() {
   const { user } = useAuth();
   const { hasRole } = useRole();
-  const visibleNavItems = navItems.filter((item) => hasRole(item.roles));
+  const { aiMode } = useAiMode();
+  const visibleNavItems = getNavItems(aiMode).filter((item) => hasRole(item.roles));
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-[17rem] flex-col border-r border-white/6 bg-[#06111f] p-4 text-white shadow-[20px_0_60px_-40px_rgba(0,0,0,0.9)] lg:flex">
       <div className="rounded-[1.75rem] border border-white/7 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-5 motion-fade-in">
