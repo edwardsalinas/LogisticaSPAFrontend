@@ -7,6 +7,7 @@ import {
   isPackageDelivered,
   isRouteFinished,
   isRouteActive,
+  isPackageIncident,
 } from './status';
 
 describe('estados de paquetes', () => {
@@ -43,5 +44,19 @@ describe('estados de rutas', () => {
   it('normaliza los alias de planificación', () => {
     expect(normalizeRouteStatus('pending')).toBe(ROUTE_STATUS.PLANNED);
     expect(normalizeRouteStatus('planeada')).toBe(ROUTE_STATUS.PLANNED);
+  });
+});
+
+describe('RF02: estados En agencia y Siniestro', () => {
+  it('existen con los mismos valores que el backend', () => {
+    expect(PACKAGE_STATUS.AT_AGENCY).toBe('en_agencia');
+    expect(PACKAGE_STATUS.INCIDENT).toBe('siniestro');
+  });
+
+  it('se normalizan desde alias en inglés y mayúsculas', () => {
+    expect(normalizePackageStatus('AT_AGENCY')).toBe('en_agencia');
+    expect(normalizePackageStatus('incident')).toBe('siniestro');
+    expect(isPackageIncident(' Siniestro ')).toBe(true);
+    expect(isPackageIncident('entregado')).toBe(false);
   });
 });

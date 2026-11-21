@@ -92,6 +92,9 @@ function DriverDashboardPage() {
   const [eventsSent, setEventsSent] = useState(0);
   const [completedCheckpointIds, setCompletedCheckpointIds] = useState([]);
   const [deliveringPkgId, setDeliveringPkgId] = useState(null);
+  const [confirmingPkgId, setConfirmingPkgId] = useState(null);
+  const [deliveryNote, setDeliveryNote] = useState('');
+  const [deliverError, setDeliverError] = useState(null);
 
   // --- COLA OFFLINE (puntos GPS sin conexión) ---
   const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
@@ -275,8 +278,11 @@ function DriverDashboardPage() {
 
   const handleDeliverPackage = async (packageId) => {
     setDeliveringPkgId(packageId);
+    setDeliverError(null);
     try {
-      await apiService.deliverPackage(packageId);
+      await apiService.deliverPackage(packageId, deliveryNote);
+      setConfirmingPkgId(null);
+      setDeliveryNote('');
       // Actualizar caché de React Query
       queryClient.setQueryData(['routeDetails', selectedRouteId], prev => {
         if (!prev) return prev;
@@ -291,6 +297,7 @@ function DriverDashboardPage() {
       queryClient.invalidateQueries({ queryKey: ['driverRoutes'] });
     } catch (err) {
       console.error('Error entregando paquete:', err);
+      setDeliverError({ id: packageId, message: err?.response?.data?.message || 'No se pudo registrar la entrega. Intenta de nuevo.' });
     } finally {
       setDeliveringPkgId(null);
     }
@@ -684,7 +691,8 @@ function DriverDashboardPage() {
                           const isDelivered = isPackageDelivered(pkg.status);
                           const isDelivering = deliveringPkgId === pkg.id;
                           return (
-                            <div key={pkg.id} className={`group flex items-center justify-between p-3 rounded-2xl border transition-all duration-300 ${isDelivered ? 'bg-slate-50 border-slate-200/50 grayscale-[0.4]' : 'bg-white border-surface-100 hover:border-surface-200 hover:shadow-md hover:shadow-surface-100/60'}`}>
+                            <div key={pkg.id}>
+                            <div className={`group flex items-center justify-between p-3 rounded-2xl border transition-all duration-300 ${isDelivered ? 'bg-slate-50 border-slate-200/50 grayscale-[0.4]' : 'bg-white border-surface-100 hover:border-surface-200 hover:shadow-md hover:shadow-surface-100/60'}`}>
                               <div className="flex items-center gap-3.5 min-w-0">
                                 <div className={`h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 transition-all ${isDelivered ? 'bg-slate-200 text-slate-500' : 'bg-emerald-50 text-emerald-600 group-hover:scale-110'}`}>
                                   <Package size={18} strokeWidth={2.5} />
@@ -697,7 +705,7 @@ function DriverDashboardPage() {
                               <div className="shrink-0 pl-2">
                                 {!isDelivered ? (
                                   <button
-                                    onClick={() => handleDeliverPackage(pkg.id)}
+                                    onClick={() => { setConfirmingPkgId(pkg.id); setDeliveryNote(''); setDeliverError(null); }}
                                     disabled={isDelivering}
                                     className="text-[9px] font-black text-emerald-700 hover:text-white hover:bg-emerald-600 uppercase tracking-widest px-3.5 py-2 rounded-xl bg-emerald-50 active:scale-95 transition-all border border-emerald-100/50"
                                   >
@@ -709,6 +717,44 @@ function DriverDashboardPage() {
                                   </div>
                                 )}
                               </div>
+                            </div>
+                            {confirmingPkgId === pkg.id && !isDelivered && (
+                              <div className="mt-2 space-y-2 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-3">
+                                <label htmlFor={`note-${pkg.id}`} className="text-[10px] font-black uppercase tracking-widest text-surface-500">
+                                  Nota de entrega (opcional)
+                                </label>
+                                <textarea
+                                  id={`note-${pkg.id}`}
+                                  value={deliveryNote}
+                                  onChange={(e) => setDeliveryNote(e.target.value)}
+                                  maxLength={500}
+                                  rows={2}
+                                  placeholder="Ej: Recibió la señora Mamani"
+                                  className="w-full rounded-xl border border-surface-200 p-2 text-xs"
+                                />
+                                <div className="flex justify-end gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => { setConfirmingPkgId(null); setDeliveryNote(''); }}
+                                    disabled={isDelivering}
+                                    className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-surface-500"
+                                  >
+                                    Cancelar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeliverPackage(pkg.id)}
+                                    disabled={isDelivering}
+                                    className="rounded-xl bg-emerald-600 px-3.5 py-2 text-[10px] font-black uppercase tracking-widest text-white active:scale-95 disabled:opacity-60"
+                                  >
+                                    {isDelivering ? 'Guardando...' : 'Confirmar entrega'}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            {deliverError?.id === pkg.id && (
+                              <p role="alert" className="mt-1 px-2 text-[10px] font-semibold text-red-600">{deliverError.message}</p>
+                            )}
                             </div>
                           );
                         })}

@@ -101,7 +101,7 @@ npm run build
 ## Pruebas
 
 ```bash
-npm test      # Vitest + Testing Library (jsdom): 53 pruebas
+npm test      # Vitest + Testing Library (jsdom): 64 pruebas
 ```
 
 Cubren todos los formularios principales (login, paquetes, vehículos, checkpoints, rutas, eventos de seguimiento y asignaciones; React Hook Form + Zod), el asistente de IA conectado al backend, la cola offline de puntos GPS (IndexedDB), el cliente HTTP con sesión por cookie (renovación y reintento tras un 401), la resolución de roles, la unificación de estados con el backend y el panel del conductor (aviso de modo offline). El CI (`.github/workflows/ci.yml`) ejecuta `npm test` y `npm run build` en cada push.

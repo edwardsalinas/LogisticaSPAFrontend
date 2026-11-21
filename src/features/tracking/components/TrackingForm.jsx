@@ -13,7 +13,9 @@ const STATUS_OPTIONS = [
   { value: PACKAGE_STATUS.PENDING, label: 'Pendiente' },
   { value: PACKAGE_STATUS.ASSIGNED, label: 'Asignado' },
   { value: PACKAGE_STATUS.IN_TRANSIT, label: 'En tránsito' },
+  { value: PACKAGE_STATUS.AT_AGENCY, label: 'En agencia' },
   { value: PACKAGE_STATUS.DELIVERED, label: 'Entregado' },
+  { value: PACKAGE_STATUS.INCIDENT, label: 'Siniestro' },
 ];
 
 // Reglas equivalentes a trackingEventSchema del backend (tracking.schema.js)

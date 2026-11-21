@@ -50,8 +50,9 @@ const apiService = {
   patch: api.patch,
   delete: api.delete,
   get: api.get,
-  async deliverPackage(id) {
-    return api.patch(`/logistics/packages/${id}/deliver`);
+  async deliverPackage(id, note) {
+    const trimmed = typeof note === 'string' ? note.trim() : '';
+    return api.patch(`/logistics/packages/${id}/deliver`, trimmed ? { note: trimmed } : {});
   },
 };
 

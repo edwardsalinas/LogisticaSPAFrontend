@@ -46,4 +46,10 @@ describe('TrackingForm (React Hook Form + Zod)', () => {
     });
     expect(onSuccess).toHaveBeenCalled();
   });
+
+  it('ofrece todos los estados del requerimiento RF02, incluidos En agencia y Siniestro', () => {
+    render(<TrackingForm packages={PACKAGES} onSuccess={vi.fn()} onCancel={vi.fn()} />);
+    const options = Array.from(screen.getByLabelText(/^estado/i).querySelectorAll('option')).map((o) => o.value);
+    expect(options).toEqual(expect.arrayContaining(['en_transito', 'en_agencia', 'entregado', 'siniestro']));
+  });
 });

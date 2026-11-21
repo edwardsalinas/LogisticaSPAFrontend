@@ -9,6 +9,16 @@ const operationalAlerts = [
 export default function AlertsPanel({ stats }) {
   const alerts = [];
 
+  // Alerta de siniestros (excepción logística)
+  if (stats?.packagesIncident > 0) {
+    alerts.push({
+      title: `${stats.packagesIncident} ${stats.packagesIncident === 1 ? 'paquete con siniestro' : 'paquetes con siniestro'}`,
+      detail: 'Requieren atención inmediata: revisa el historial y contacta al cliente.',
+      icon: AlertTriangle,
+      tone: 'text-red-700 bg-red-50 border-red-100'
+    });
+  }
+
   // Alerta de retrasos
   if (stats?.packagesDelayed > 0) {
     alerts.push({

@@ -10,7 +10,10 @@ export const PACKAGE_STATUS = {
   PENDING: 'pendiente',
   ASSIGNED: 'asignado',
   IN_TRANSIT: 'en_transito',
+  AT_AGENCY: 'en_agencia',
   DELIVERED: 'entregado',
+  INCIDENT: 'siniestro',
+  RETURNED: 'devuelto',
   CANCELLED: 'cancelado',
 };
 
@@ -27,6 +30,9 @@ const PACKAGE_ALIASES = {
   delivered: PACKAGE_STATUS.DELIVERED,
   completada: PACKAGE_STATUS.DELIVERED,
   cancelled: PACKAGE_STATUS.CANCELLED,
+  at_agency: PACKAGE_STATUS.AT_AGENCY,
+  incident: PACKAGE_STATUS.INCIDENT,
+  returned: PACKAGE_STATUS.RETURNED,
 };
 
 const ROUTE_ALIASES = {
@@ -47,3 +53,4 @@ export const normalizeRouteStatus = (status) => ROUTE_ALIASES[clean(status)] || 
 export const isPackageDelivered = (status) => normalizePackageStatus(status) === PACKAGE_STATUS.DELIVERED;
 export const isRouteFinished = (status) => normalizeRouteStatus(status) === ROUTE_STATUS.COMPLETED;
 export const isRouteActive = (status) => normalizeRouteStatus(status) === ROUTE_STATUS.ACTIVE;
+export const isPackageIncident = (status) => normalizePackageStatus(status) === PACKAGE_STATUS.INCIDENT;
