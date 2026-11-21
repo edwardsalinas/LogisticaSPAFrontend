@@ -1,12 +1,24 @@
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import Button from '../../../components/atoms/Button';
 import Select from '../../../components/atoms/Select';
 import Spinner from '../../../components/atoms/Spinner';
 import apiService from '../../../services/apiService';
+import { PACKAGE_STATUS, normalizePackageStatus } from '../../../constants/status';
+
+const assignmentSchema = z.object({
+  packageId: z.string().min(1, 'Por favor selecciona un paquete'),
+});
 
 function PackageAssignmentForm({ routeId, onSuccess, onCancel }) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({ resolver: zodResolver(assignmentSchema), defaultValues: { packageId: '' } });
   const [packages, setPackages] = useState([]);
-  const [selectedPackageId, setSelectedPackageId] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -15,8 +27,10 @@ function PackageAssignmentForm({ routeId, onSuccess, onCancel }) {
     const fetchPending = async () => {
       try {
         const res = await apiService.getPackages();
-        // Filtrar solo los que están en estado 'pending' (sin ruta)
-        const pending = (res.data || []).filter(p => p.status === 'pending' || !p.route_id);
+        // Solo los paquetes pendientes (estado «pendiente») o sin ruta asignada
+        const pending = (res.data || []).filter(
+          (p) => normalizePackageStatus(p.status) === PACKAGE_STATUS.PENDING || !p.route_id
+        );
         setPackages(pending);
       } catch (err) {
         console.error('Error cargando paquetes pendientes:', err);
@@ -27,22 +41,16 @@ function PackageAssignmentForm({ routeId, onSuccess, onCancel }) {
     fetchPending();
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedPackageId) {
-      setError('Por favor selecciona un paquete');
-      return;
-    }
-
+  const onSubmit = async ({ packageId }) => {
     setSubmitting(true);
     setError(null);
 
     try {
-      await apiService.assignPackageToRoute(routeId, selectedPackageId);
+      await apiService.assignPackageToRoute(routeId, packageId);
       onSuccess();
     } catch (err) {
       console.error('Error asignando paquete:', err);
-      setError(err.response?.data?.message || 'Error al asignar el paquete');
+      setError(err.message || 'Error al asignar el paquete');
     } finally {
       setSubmitting(false);
     }
@@ -60,23 +68,23 @@ function PackageAssignmentForm({ routeId, onSuccess, onCancel }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
       {error && (
-        <div className="p-3 bg-red-50 text-red-600 text-sm rounded-md">
+        <div role="alert" className="p-3 bg-red-50 text-red-600 text-sm rounded-md">
           {error}
         </div>
       )}
 
       <Select
         label="Paquetes Pendientes"
-        value={selectedPackageId}
-        onChange={(e) => setSelectedPackageId(e.target.value)}
         required
-        options={packages.map(p => ({
+        options={packages.map((p) => ({
           value: p.id,
-          label: `${p.tracking_code} (${p.origen} → ${p.destino}) - ${p.peso}kg`
+          label: `${p.tracking_code} (${p.origen} → ${p.destino}) - ${p.peso}kg`,
         }))}
         placeholder="Selecciona un paquete..."
+        error={errors.packageId?.message}
+        {...register('packageId')}
       />
 
       <div className="flex justify-end gap-3 mt-4">

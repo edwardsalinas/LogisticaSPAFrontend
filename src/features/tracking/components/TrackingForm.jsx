@@ -1,30 +1,48 @@
 import { MapPinned, Route, Save } from 'lucide-react';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import Button from '../../../components/atoms/Button';
 import Input from '../../../components/atoms/Input';
 import Select from '../../../components/atoms/Select';
-import api from '../../../services/api';
+import apiService from '../../../services/apiService';
+import { PACKAGE_STATUS } from '../../../constants/status';
 
-function TrackingForm({ packages, onSuccess, onCancel }) {
-  const [form, setForm] = useState({ package_id: '', status: '', lat: '', lng: '' });
+const STATUS_OPTIONS = [
+  { value: PACKAGE_STATUS.PENDING, label: 'Pendiente' },
+  { value: PACKAGE_STATUS.ASSIGNED, label: 'Asignado' },
+  { value: PACKAGE_STATUS.IN_TRANSIT, label: 'En tránsito' },
+  { value: PACKAGE_STATUS.DELIVERED, label: 'Entregado' },
+];
+
+// Reglas equivalentes a trackingEventSchema del backend (tracking.schema.js)
+export const trackingFormSchema = z.object({
+  package_id: z.string().min(1, 'Selecciona un paquete'),
+  status: z.string().min(1, 'Selecciona el estado'),
+  lat: z.coerce.number({ message: 'Ingresa una latitud válida' }).min(-90, 'La latitud debe estar entre -90 y 90').max(90, 'La latitud debe estar entre -90 y 90'),
+  lng: z.coerce.number({ message: 'Ingresa una longitud válida' }).min(-180, 'La longitud debe estar entre -180 y 180').max(180, 'La longitud debe estar entre -180 y 180'),
+});
+
+function TrackingForm({ packages = [], onSuccess, onCancel }) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(trackingFormSchema),
+    defaultValues: { package_id: '', status: '', lat: '', lng: '' },
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (values) => {
     setLoading(true);
     setError('');
 
     try {
-      await api.post('/tracking/logs', {
-        ...form,
-        lat: parseFloat(form.lat),
-        lng: parseFloat(form.lng),
-      });
+      // POST /tracking (antes apuntaba a /tracking/logs, una ruta que no existe en el backend)
+      await apiService.createTrackingEvent(values);
       onSuccess();
     } catch (err) {
       setError(err.message || 'Error registrando evento');
@@ -38,15 +56,8 @@ function TrackingForm({ packages, onSuccess, onCancel }) {
     label: `${p.tracking_code} - ${p.origen} -> ${p.destino}`,
   }));
 
-  const statusOptions = [
-    { value: 'pending', label: 'Pendiente' },
-    { value: 'assigned', label: 'Asignado' },
-    { value: 'in_transit', label: 'En transito' },
-    { value: 'delivered', label: 'Entregado' },
-  ];
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
       <div className="rounded-[1.4rem] border border-surface-100 bg-surface-50/80 p-5">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
@@ -59,12 +70,12 @@ function TrackingForm({ packages, onSuccess, onCancel }) {
         </div>
       </div>
 
-      <Select label="Paquete" name="package_id" value={form.package_id} onChange={handleChange} options={packageOptions} required />
-      <Select label="Estado" name="status" value={form.status} onChange={handleChange} options={statusOptions} required />
+      <Select label="Paquete" options={packageOptions} placeholder="Selecciona un paquete..." required error={errors.package_id?.message} {...register('package_id')} />
+      <Select label="Estado" options={STATUS_OPTIONS} placeholder="Selecciona el estado..." required error={errors.status?.message} {...register('status')} />
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Input label="Latitud" name="lat" type="number" step="any" value={form.lat} onChange={handleChange} placeholder="Ej: -16.4897" required />
-        <Input label="Longitud" name="lng" type="number" step="any" value={form.lng} onChange={handleChange} placeholder="Ej: -68.1193" required />
+        <Input label="Latitud" type="number" step="any" placeholder="Ej: -16.4897" required error={errors.lat?.message} {...register('lat')} />
+        <Input label="Longitud" type="number" step="any" placeholder="Ej: -68.1193" required error={errors.lng?.message} {...register('lng')} />
       </div>
 
       <div className="rounded-[1.2rem] border border-surface-100 bg-white p-4">
@@ -79,7 +90,7 @@ function TrackingForm({ packages, onSuccess, onCancel }) {
         </div>
       </div>
 
-      {error && <p className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
 
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="secondary" onClick={onCancel} type="button">Cancelar</Button>

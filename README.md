@@ -90,3 +90,40 @@ npm run build
 
 ---
 **LogisticaSPA**: Elevando la gestión logística mediante trazabilidad absoluta e inteligencia aplicada.
+
+## Seguridad en el cliente
+
+- **Sesión:** el JWT lo emite el backend en una cookie `httpOnly`; el frontend nunca lo guarda ni lo lee (solo un indicador no sensible en `localStorage` para saber si consultar la sesión). Las peticiones usan `withCredentials` y el header `X-Requested-With` (protección CSRF). Si el token vence, el interceptor de Axios lo renueva con `/iam/refresh` y reintenta la petición.
+- **Captcha:** `src/components/molecules/Captcha.jsx` (Cloudflare Turnstile) en el login y en el rastreo público. Se activa con `VITE_TURNSTILE_SITE_KEY`.
+- **Formularios:** React Hook Form + Zod (`zodResolver`) en el login y el registro de paquetes.
+- **Estado global de sesión:** React Context API (`src/app/AuthContext.jsx`); estado de servidor con React Query.
+
+## Pruebas
+
+```bash
+npm test      # Vitest + Testing Library (jsdom): 53 pruebas
+```
+
+Cubren todos los formularios principales (login, paquetes, vehículos, checkpoints, rutas, eventos de seguimiento y asignaciones; React Hook Form + Zod), el asistente de IA conectado al backend, la cola offline de puntos GPS (IndexedDB), el cliente HTTP con sesión por cookie (renovación y reintento tras un 401), la resolución de roles, la unificación de estados con el backend y el panel del conductor (aviso de modo offline). El CI (`.github/workflows/ci.yml`) ejecuta `npm test` y `npm run build` en cada push.
+
+## Asistente de IA
+
+El panel de chat (`AiAssistantPanel`) envía cada mensaje a `POST /ai-agent/chat` junto con el historial reciente de la conversación. El backend aplica límites de uso, valida la entrada y restringe lo que cada rol puede consultar. Las respuestas se muestran como texto plano (sin HTML).
+
+## Tracking sin conexión (offline)
+
+El panel del conductor no pierde puntos GPS cuando se cae la conexión:
+
+1. Si no hay red, cada lectura se guarda en una cola local (IndexedDB, `src/services/offlineQueue.js`) con su hora real.
+2. Al recuperar la señal se envían en lote, en orden cronológico, a `POST /tracking/trip/:id/events/batch`.
+3. El service worker (`public/sw.js`, Background Sync) puede vaciar la cola aunque la pestaña esté en segundo plano. Se registra solo en la build de producción (`npm run build` + `npm run preview`).
+4. Limitaciones: Background Sync no existe en Safari/iOS (la app vacía la cola al volver la conexión), y un navegador no obtiene GPS con la pantalla apagada.
+
+## Docker
+
+`Dockerfile` (build con Vite + nginx) y `nginx.conf` (SPA + proxy de `/api` y `/api-docs` al backend). Se orquesta con el `docker-compose.yml` del repositorio del backend:
+
+```bash
+cd ../LogisticaSPABackend
+docker compose up --build   # frontend en http://localhost:8080
+```

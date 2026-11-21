@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import Input from '../../../components/atoms/Input';
 import Select from '../../../components/atoms/Select';
 import Button from '../../../components/atoms/Button';
@@ -19,24 +22,97 @@ const toLocalISO = (date) => {
   return new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
 };
 
-function RouteForm({ onSuccess, onCancel, initialData = null }) {
-  const [form, setForm] = useState({
-    predefined_route_id: initialData?.predefined_route_id || '',
-    origin: initialData?.origin || '',
-    destination: initialData?.destination || '',
-    driver_id: initialData?.driver_id || '',
-    vehicle_id: initialData?.vehicle_id || '',
-    departure_time: initialData?.departure_time ? toLocalISO(initialData.departure_time) : '',
-    checkpoints: initialData?.checkpoints || [],
-    origin_lat: initialData?.origin_lat || null,
-    origin_lng: initialData?.origin_lng || null,
-    dest_lat: initialData?.dest_lat || null,
-    dest_lng: initialData?.dest_lng || null,
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+const optionalCoord = z.number().nullable().optional();
+
+// Las coordenadas de un checkpoint manual pueden venir vacías ('') o como texto: se exige un número válido
+const checkpointCoord = (label, min, max) =>
+  z.preprocess(
+    (v) => (v === '' || v == null ? undefined : v),
+    z.coerce.number({ message: `${label} requerida` }).min(min, `${label} fuera de rango`).max(max, `${label} fuera de rango`)
+  );
+
+// Validación del formulario (React Hook Form + Zod). Equivale a routeSchema / scheduleSchema del backend.
+export const routeFormSchema = z
+  .object({
+    trip_type: z.enum(['schedule', 'single']),
+    predefined_route_id: z.string().optional(),
+    origin: z.string().trim().min(2, 'Define el origen: selecciona un trazado o márcalo en el mapa'),
+    destination: z.string().trim().min(2, 'Define el destino: selecciona un trazado o márcalo en el mapa'),
+    driver_id: z.string().min(1, 'Selecciona un conductor'),
+    vehicle_id: z.string().min(1, 'Selecciona un vehículo'),
+    departure_time: z.string().optional(),
+    origin_lat: optionalCoord,
+    origin_lng: optionalCoord,
+    dest_lat: optionalCoord,
+    dest_lng: optionalCoord,
+    checkpoints: z.array(
+      z
+        .object({
+          name: z.string().trim().min(2, 'El nombre del punto es requerido'),
+          lat: checkpointCoord('Latitud', -90, 90),
+          lng: checkpointCoord('Longitud', -180, 180),
+        })
+        .passthrough()
+    ),
+    day_times: z.record(z.string(), z.string().regex(HHMM, 'Formato de hora inválido (HH:mm)')),
+  })
+  .superRefine((d, ctx) => {
+    if (d.trip_type === 'single') {
+      const t = d.departure_time ? new Date(d.departure_time).getTime() : NaN;
+      if (Number.isNaN(t)) {
+        ctx.addIssue({ code: 'custom', path: ['departure_time'], message: 'Indica la fecha y hora de salida' });
+      } else if (t < Date.now() - 5 * 60000) {
+        ctx.addIssue({ code: 'custom', path: ['departure_time'], message: 'La fecha de salida no puede estar en el pasado' });
+      }
+    } else if (Object.keys(d.day_times).length === 0) {
+      ctx.addIssue({ code: 'custom', path: ['day_times'], message: 'Selecciona al menos un día de operación' });
+    }
   });
 
-  // Schedule state
-  const [tripType, setTripType] = useState('schedule');
-  const [dayTimes, setDayTimes] = useState({});
+function RouteForm({ onSuccess, onCancel, initialData = null }) {
+  const {
+    handleSubmit,
+    watch,
+    setValue,
+    getValues,
+    formState: { errors, isSubmitted },
+  } = useForm({
+    resolver: zodResolver(routeFormSchema),
+    defaultValues: {
+      // Al editar una ruta existente el formulario debe actualizarla (antes arrancaba en modo "recurrente" y creaba un cronograma)
+      trip_type: initialData?.id ? 'single' : 'schedule',
+      day_times: {},
+      predefined_route_id: initialData?.predefined_route_id || '',
+      origin: initialData?.origin || '',
+      destination: initialData?.destination || '',
+      driver_id: initialData?.driver_id || '',
+      vehicle_id: initialData?.vehicle_id || '',
+      departure_time: initialData?.departure_time ? toLocalISO(initialData.departure_time) : '',
+      checkpoints: initialData?.checkpoints || [],
+      origin_lat: initialData?.origin_lat || null,
+      origin_lng: initialData?.origin_lng || null,
+      dest_lat: initialData?.dest_lat || null,
+      dest_lng: initialData?.dest_lng || null,
+    },
+  });
+  const form = watch();
+
+  // Compatibilidad con el resto del componente: actualizan los valores del formulario (solo los que cambian)
+  const setForm = (updater) => {
+    const current = getValues();
+    const next = typeof updater === 'function' ? updater(current) : updater;
+    Object.entries(next).forEach(([key, value]) => {
+      if (value !== current[key]) setValue(key, value, { shouldDirty: true, shouldValidate: isSubmitted });
+    });
+  };
+  const tripType = form.trip_type;
+  const dayTimes = form.day_times || {};
+  const setTripType = (type) => setValue('trip_type', type, { shouldValidate: isSubmitted });
+  const setDayTimes = (updater) =>
+    setValue('day_times', typeof updater === 'function' ? updater(getValues('day_times') || {}) : updater, { shouldValidate: isSubmitted });
+
+  // Estado solo de interfaz (no forma parte de los datos enviados)
   const [sameTime, setSameTime] = useState(true);
   const [globalTime, setGlobalTime] = useState('08:30');
 
@@ -139,34 +215,39 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
     setForm(prev => ({ ...prev, checkpoints: cps }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (values) => {
     setSubmitting(true);
     setError('');
 
     try {
-      if (tripType === 'schedule') {
-        const schedulePayload = {
-          vehicle_id: form.vehicle_id,
-          driver_id: form.driver_id || undefined,
-          predefined_route_id: form.predefined_route_id || undefined,
-          origin: form.origin,
-          destination: form.destination,
-          origin_lat: form.origin_lat,
-          origin_lng: form.origin_lng,
-          dest_lat: form.dest_lat,
-          dest_lng: form.dest_lng,
-          day_times: dayTimes,
-        };
-        await apiService.createSchedule(schedulePayload);
+      if (values.trip_type === 'schedule') {
+        await apiService.createSchedule({
+          vehicle_id: values.vehicle_id,
+          driver_id: values.driver_id || undefined,
+          predefined_route_id: values.predefined_route_id || undefined,
+          origin: values.origin,
+          destination: values.destination,
+          origin_lat: values.origin_lat,
+          origin_lng: values.origin_lng,
+          dest_lat: values.dest_lat,
+          dest_lng: values.dest_lng,
+          day_times: values.day_times,
+        });
       } else {
-        const payload = {
-          ...form,
-          departure_time: new Date(form.departure_time).toISOString(),
-          checkpoints: form.checkpoints.map((cp, idx) => ({
-            name: cp.name, lat: Number(cp.lat), lng: Number(cp.lng), sequence_order: idx + 1
-          }))
-        };
+        const { trip_type, day_times, ...rest } = values;
+        // Los campos vacíos o nulos (p. ej. coordenadas sin definir) no se envían: el backend espera números
+        const payload = Object.fromEntries(
+          Object.entries({
+            ...rest,
+            departure_time: new Date(values.departure_time).toISOString(),
+            checkpoints: values.checkpoints.map((cp, idx) => ({
+              name: cp.name,
+              lat: Number(cp.lat),
+              lng: Number(cp.lng),
+              sequence_order: idx + 1,
+            })),
+          }).filter(([, v]) => v !== null && v !== '')
+        );
         if (initialData?.id) {
           await apiService.updateRoute(initialData.id, payload);
         } else {
@@ -175,7 +256,7 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
       }
       onSuccess();
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Error al guardar');
+      setError(err.message || 'Error al guardar');
     } finally {
       setSubmitting(false);
     }
@@ -192,13 +273,13 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-5">
 
       {/* ── Conductor / Vehículo ── */}
       <div className="grid grid-cols-2 gap-4">
-        <Select label="Conductor" value={form.driver_id} onChange={handleDriverChange} placeholder="Seleccionar conductor..." required
+        <Select label="Conductor" value={form.driver_id} onChange={handleDriverChange} placeholder="Seleccionar conductor..." required error={errors.driver_id?.message}
           options={drivers.map((d) => ({ value: d.id, label: d.full_name || d.email }))} />
-        <Select label="Vehículo" value={form.vehicle_id} onChange={handleVehicleChange} placeholder="Seleccionar vehículo..." required
+        <Select label="Vehículo" value={form.vehicle_id} onChange={handleVehicleChange} placeholder="Seleccionar vehículo..." required error={errors.vehicle_id?.message}
           options={vehicles.map((v) => ({ value: v.id, label: `${v.plate} - ${v.brand || ''} ${v.model}` }))} />
       </div>
       {form.driver_id && form.vehicle_id && (() => {
@@ -254,6 +335,9 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
           onDestinationSelect={handleDestinationSelect}
           onCheckpointsChange={handleCheckpointsChange}
         />
+        {(errors.origin || errors.destination) && (
+          <p role="alert" className="text-xs font-semibold text-red-600">{errors.origin?.message || errors.destination?.message}</p>
+        )}
 
         {/* Checkpoints */}
         <div className="flex flex-col gap-3">
@@ -276,7 +360,10 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
                 <div className="flex-1 flex flex-col gap-2">
                   <Input className="!min-h-[2.5rem] !py-1 text-sm font-semibold border-transparent hover:border-surface-200 focus:border-primary-500 bg-transparent hover:bg-white transition-all px-2 -ml-2"
                     placeholder="Nombre del punto..." value={cp.name}
-                    onChange={(e) => { const newCp = [...form.checkpoints]; newCp[idx].name = e.target.value; setForm({ ...form, checkpoints: newCp }); }} required />
+                    onChange={(e) => { const newCp = [...form.checkpoints]; newCp[idx].name = e.target.value; setForm({ ...form, checkpoints: newCp }); }} required error={errors.checkpoints?.[idx]?.name?.message} />
+                  {(errors.checkpoints?.[idx]?.lat || errors.checkpoints?.[idx]?.lng) && (
+                    <p role="alert" className="px-1 text-xs font-semibold text-red-600">{errors.checkpoints[idx].lat?.message || errors.checkpoints[idx].lng?.message}</p>
+                  )}
                   <div className="flex items-center gap-4 px-1 opacity-60 hover:opacity-100 transition-opacity">
                     <div className="flex items-center gap-1.5 text-xs text-surface-500">
                       <MapPin size={12} className="text-surface-400" /> Lat:
@@ -318,14 +405,15 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
           </div>
 
           {tripType === 'single' ? (
-            <Input 
-              type="datetime-local" 
-              label="Fecha y Hora de Salida" 
-              name="departure_time" 
-              value={form.departure_time} 
+            <Input
+              type="datetime-local"
+              label="Fecha y Hora de Salida"
+              name="departure_time"
+              value={form.departure_time}
               min={toLocalISO(new Date())}
-              onChange={(e) => setForm(prev => ({ ...prev, departure_time: e.target.value }))} 
-              required 
+              onChange={(e) => setForm(prev => ({ ...prev, departure_time: e.target.value }))}
+              required
+              error={errors.departure_time?.message}
             />
           ) : (
             <div className="space-y-4">
@@ -374,22 +462,24 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
       )}
 
       {initialData?.id && (
-        <Input 
-          type="datetime-local" 
-          label="Fecha y Hora de Salida" 
-          name="departure_time" 
-          value={form.departure_time} 
+        <Input
+          type="datetime-local"
+          label="Fecha y Hora de Salida"
+          name="departure_time"
+          value={form.departure_time}
           min={toLocalISO(new Date())}
-          onChange={(e) => setForm(prev => ({ ...prev, departure_time: e.target.value }))} 
-          required 
+          onChange={(e) => setForm(prev => ({ ...prev, departure_time: e.target.value }))}
+              required
+              error={errors.departure_time?.message}
         />
       )}
 
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      {errors.day_times?.message && <p role="alert" className="text-sm font-semibold text-red-600">{errors.day_times.message}</p>}
+      {error && <p role="alert" className="text-red-500 text-sm">{error}</p>}
 
       <div className="mt-2 flex justify-end gap-3">
         <Button variant="secondary" onClick={onCancel} type="button">Cancelar</Button>
-        <Button type="submit" disabled={submitting || (tripType === 'schedule' && selectedDays.length === 0)}>
+        <Button type="submit" disabled={submitting}>
           {submitting ? 'Guardando...' : initialData ? 'Guardar Cambios' : `Confirmar ${tripType === 'schedule' ? 'Rutina' : 'Viaje'}`}
         </Button>
       </div>

@@ -33,7 +33,7 @@ function PackageDetailPage() {
     tracking_code: 'SPA-7749202394',
     origen: 'La Paz',
     destino: 'Oruro',
-    status: 'in_transit',
+    status: 'en_transito',
     peso: 45.5,
     description: 'Equipos electronicos',
     priority: 'Express',

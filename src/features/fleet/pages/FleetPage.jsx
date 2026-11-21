@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useVehicles, useDrivers } from '../../../hooks/queries/useFleet';
 import {
   Eye,
@@ -23,33 +24,25 @@ import DataTable from '../../../components/organisms/DataTable';
 import { heroImages } from '../../../constants/heroImages';
 import apiService from '../../../services/apiService';
 import FleetHero from '../components/FleetHero';
-import DriverForm from '../components/DriverForm';
 import VehicleForm from '../components/VehicleForm';
-const MOCK_VEHICLES = [
-  { id: 'v-001', plate_number: 'INT-1234', brand: 'Volvo', model: 'FH16', year: 2023, type: 'truck', capacity_kg: 25000, status: 'active', driver: 'Juan Perez' },
-  { id: 'v-002', plate_number: 'ABC-5678', brand: 'Mercedes', model: 'Actros', year: 2022, type: 'truck', capacity_kg: 22000, status: 'active', driver: 'Maria Lopez' },
-  { id: 'v-003', plate_number: 'XYZ-9012', brand: 'Ford', model: 'Cargo', year: 2021, type: 'light_truck', capacity_kg: 12000, status: 'maintenance', driver: null },
-  { id: 'v-004', plate_number: 'DEF-3456', brand: 'Scania', model: 'R450', year: 2023, type: 'trailer', capacity_kg: 30000, status: 'active', driver: 'Carlos Ruiz' },
-  { id: 'v-005', plate_number: 'GHI-7890', brand: 'MAN', model: 'TGX', year: 2020, type: 'truck', capacity_kg: 20000, status: 'inactive', driver: null },
-  { id: 'v-006', plate_number: 'JKL-2345', brand: 'Iveco', model: 'Stralis', year: 2022, type: 'van', capacity_kg: 8000, status: 'active', driver: 'Ana Flores' },
-];
-
-const MOCK_DRIVERS = [
-  { id: 'd-001', full_name: 'Juan Perez', email: 'juan@transportes.bo', phone: '+591 70012345', license_number: 'LIC-123456', license_type: 'C', status: 'active' },
-  { id: 'd-002', full_name: 'Maria Lopez', email: 'maria@transportes.bo', phone: '+591 70054321', license_number: 'LIC-234567', license_type: 'C', status: 'active' },
-  { id: 'd-003', full_name: 'Carlos Ruiz', email: 'carlos@transportes.bo', phone: '+591 70098765', license_number: 'LIC-345678', license_type: 'D', status: 'active' },
-  { id: 'd-004', full_name: 'Ana Flores', email: 'ana@transportes.bo', phone: '+591 70011223', license_number: 'LIC-456789', license_type: 'B', status: 'active' },
-  { id: 'd-005', full_name: 'Luis Garcia', email: 'luis@transportes.bo', phone: '+591 70033445', license_number: 'LIC-567890', license_type: 'C', status: 'vacation' },
-];
-
+// Estados de vehículo del backend (disponible, en_servicio, mantenimiento, retirado) y los de conductor
 const statusMap = {
+  disponible: { label: 'Disponible', variant: 'success' },
+  en_servicio: { label: 'En servicio', variant: 'info' },
+  mantenimiento: { label: 'Mantenimiento', variant: 'warning' },
+  retirado: { label: 'Retirado', variant: 'danger' },
   active: { label: 'Activo', variant: 'success' },
   maintenance: { label: 'Mantenimiento', variant: 'warning' },
   inactive: { label: 'Inactivo', variant: 'danger' },
   vacation: { label: 'Vacaciones', variant: 'info' },
 };
 
+const AVAILABLE_STATUSES = ['disponible', 'en_servicio', 'active'];
+const MAINTENANCE_STATUSES = ['mantenimiento', 'maintenance'];
+
 const vehicleTypeLabel = {
+  camion: 'Camion pesado',
+  camion_ligero: 'Camion ligero',
   truck: 'Camion pesado',
   light_truck: 'Camion ligero',
   trailer: 'Trailer',
@@ -60,15 +53,16 @@ function FleetPage() {
   const [activeTab, setActiveTab] = useState('vehicles');
   const [searchTerm, setSearchTerm] = useState('');
   const [showVehicleForm, setShowVehicleForm] = useState(false);
-  const [showDriverForm, setShowDriverForm] = useState(false);
+  const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
   const { data: vData, isLoading: vLoading, isError: vError } = useVehicles();
   const { data: dData, isLoading: dLoading, isError: dError } = useDrivers();
 
-  const vehicles = vError || !vData?.length ? MOCK_VEHICLES : vData;
-  const drivers = dError || !dData?.length ? MOCK_DRIVERS : dData;
+  // Solo datos reales: si la API falla o no hay registros, las listas quedan vacías (sin datos de ejemplo)
+  const vehicles = Array.isArray(vData) ? vData : [];
+  const drivers = Array.isArray(dData) ? dData : [];
   const loading = vLoading || dLoading;
 
   const filterData = (data) => {
@@ -84,8 +78,8 @@ function FleetPage() {
   const paginatedVehicles = filteredVehicles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const paginatedDrivers = filteredDrivers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const activeVehicles = vehicles.filter((v) => v.status === 'active').length;
-  const maintenanceVehicles = vehicles.filter((v) => v.status === 'maintenance').length;
+  const activeVehicles = vehicles.filter((v) => AVAILABLE_STATUSES.includes(v.status)).length;
+  const maintenanceVehicles = vehicles.filter((v) => MAINTENANCE_STATUSES.includes(v.status)).length;
   const availability = Math.round((activeVehicles / vehicles.length) * 100) || 0;
 
   const vehicleColumns = [
@@ -104,7 +98,7 @@ function FleetPage() {
         </div>
       ),
     },
-    { key: 'plate_number', label: 'Placa' },
+    { key: 'plate', label: 'Placa', render: (_, row) => <span>{row.plate_number || row.plate || '—'}</span> },
     { key: 'capacity_kg', label: 'Capacidad', render: (val) => <span>{Intl.NumberFormat('es-BO').format(val)} kg</span> },
     {
       key: 'driver',
@@ -112,11 +106,6 @@ function FleetPage() {
       render: (val) => val ? <div className="flex items-center gap-2"><Avatar name={val} size="sm" /><span className="text-sm text-surface-700">{val}</span></div> : <span className="text-sm text-surface-400">Sin asignar</span>,
     },
     { key: 'status', label: 'Estado', render: (val) => <Badge variant={statusMap[val]?.variant || 'neutral'} dot>{statusMap[val]?.label || val}</Badge> },
-    {
-      key: 'actions',
-      label: 'Acciones',
-      render: (_, row) => <ActionMenu options={[{ label: 'Ver detalles', icon: Eye, onClick: () => console.log('Ver', row.id) }, { label: 'Editar', icon: Pencil, onClick: () => console.log('Editar', row.id) }, { label: row.status === 'active' ? 'Desactivar' : 'Activar', icon: Power, onClick: () => console.log('Toggle', row.id) }, { label: 'Eliminar', icon: Trash2, variant: 'danger', onClick: () => console.log('Eliminar', row.id) }]} />,
-    },
   ];
 
   const driverColumns = [
@@ -128,11 +117,6 @@ function FleetPage() {
     { key: 'phone', label: 'Telefono' },
     { key: 'license_number', label: 'Licencia' },
     { key: 'status', label: 'Estado', render: (val) => <Badge variant={statusMap[val]?.variant || 'neutral'} dot>{statusMap[val]?.label || val}</Badge> },
-    {
-      key: 'actions',
-      label: 'Acciones',
-      render: (_, row) => <ActionMenu options={[{ label: 'Ver perfil', icon: UserRound, onClick: () => console.log('Ver', row.id) }, { label: 'Editar', icon: Pencil, onClick: () => console.log('Editar', row.id) }, { label: 'Eliminar', icon: Trash2, variant: 'danger', onClick: () => console.log('Eliminar', row.id) }]} />,
-    },
   ];
 
   return (
@@ -150,7 +134,7 @@ function FleetPage() {
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
               <div className="rounded-2xl bg-surface-100 p-1 flex"><button onClick={() => { setActiveTab('vehicles'); setCurrentPage(1); }} className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all sm:flex-none ${activeTab === 'vehicles' ? 'bg-white text-primary-700 shadow-sm' : 'text-surface-500'}`}>Vehiculos</button><button onClick={() => { setActiveTab('drivers'); setCurrentPage(1); }} className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all sm:flex-none ${activeTab === 'drivers' ? 'bg-white text-primary-700 shadow-sm' : 'text-surface-500'}`}>Conductores</button></div>
               <div className="w-full xl:w-80"><SearchInput value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder={`Buscar ${activeTab === 'vehicles' ? 'vehiculo o placa' : 'conductor o licencia'}`} /></div>
-              {activeTab === 'vehicles' ? <Button size="md" className="w-full sm:w-auto whitespace-nowrap" onClick={() => setShowVehicleForm(true)}>+ Agregar vehiculo</Button> : <Button size="md" className="w-full sm:w-auto whitespace-nowrap" onClick={() => setShowDriverForm(true)}>+ Registrar conductor</Button>}
+              {activeTab === 'vehicles' && <Button size="md" className="w-full sm:w-auto whitespace-nowrap" onClick={() => setShowVehicleForm(true)}>+ Agregar vehiculo</Button>}
             </div>
           </div>
           <div className="px-6 pt-5"><p className="text-sm text-surface-500">Mostrando {activeTab === 'vehicles' ? filteredVehicles.length : filteredDrivers.length} registros en la vista actual.</p></div>
@@ -158,14 +142,30 @@ function FleetPage() {
         </div>
 
         <aside className="space-y-5">
-          <div className="rounded-[1.6rem] border border-white/70 bg-white/88 p-6 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl"><p className="text-[0.64rem] uppercase tracking-[0.24em] text-surface-500">Actividad reciente</p><div className="mt-5 space-y-4"><div className="rounded-2xl border border-surface-100 bg-surface-50 p-4"><p className="text-sm font-semibold text-surface-900">Unidad #INT-1234 liberada para nueva ruta</p><p className="mt-1 text-xs text-surface-500">Hace 12 minutos</p></div><div className="rounded-2xl border border-surface-100 bg-surface-50 p-4"><p className="text-sm font-semibold text-surface-900">Mantenimiento preventivo para FL-2075</p><p className="mt-1 text-xs text-surface-500">Programado para manana</p></div></div></div>
-          <div className="rounded-[1.6rem] bg-[linear-gradient(135deg,#0b4ea2_0%,#137fec_100%)] p-6 text-white shadow-[0_24px_54px_-36px_rgba(11,78,162,0.75)]"><p className="text-[0.64rem] uppercase tracking-[0.24em] text-sky-100/70">Consumo operativo</p><p className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em]">4,280</p><p className="mt-1 text-sm text-sky-100/75">Litros de combustible en los ultimos 30 dias</p><div className="mt-6 rounded-2xl border border-white/14 bg-white/10 p-4 text-sm font-semibold">Eficiencia: +12% frente al periodo anterior</div></div>
-          <div className="rounded-[1.6rem] border border-sky-100 bg-sky-50 p-6"><p className="text-[0.64rem] uppercase tracking-[0.24em] text-sky-700">Soporte</p><h3 className="mt-2 font-display text-xl font-semibold tracking-[-0.04em] text-primary-700">Operacion 24/7</h3><p className="mt-2 text-sm leading-relaxed text-surface-600">Accede a soporte prioritario para incidencias en ruta, mantenimiento o asignacion de unidades.</p><button className="mt-5 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-primary-700 shadow-sm transition-colors hover:bg-sky-100">Contactar soporte</button></div>
+          <div className="rounded-[1.6rem] border border-white/70 bg-white/88 p-6 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
+            <p className="text-[0.64rem] uppercase tracking-[0.24em] text-surface-500">Resumen de la flota</p>
+            <div className="mt-5 space-y-3">
+              {[
+                { label: 'Vehiculos registrados', value: vehicles.length },
+                { label: 'Disponibles o en servicio', value: activeVehicles },
+                { label: 'En mantenimiento', value: maintenanceVehicles },
+                { label: 'Conductores', value: drivers.length },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between rounded-2xl border border-surface-100 bg-surface-50 px-4 py-3">
+                  <p className="text-sm text-surface-600">{item.label}</p>
+                  <p className="font-display text-xl font-semibold text-surface-900">{item.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-[1.6rem] border border-sky-100 bg-sky-50 p-6">
+            <p className="text-[0.64rem] uppercase tracking-[0.24em] text-sky-700">Alta de conductores</p>
+            <p className="mt-2 text-sm leading-relaxed text-surface-600">Los conductores se registran como usuarios con rol <strong>driver</strong> en Supabase Auth y sus datos se sincronizan automaticamente con la flota.</p>
+          </div>
         </aside>
       </section>
 
-      <Modal isOpen={showVehicleForm} onClose={() => setShowVehicleForm(false)} title="Agregar nuevo vehiculo"><VehicleForm onSuccess={() => setShowVehicleForm(false)} onCancel={() => setShowVehicleForm(false)} /></Modal>
-      <Modal isOpen={showDriverForm} onClose={() => setShowDriverForm(false)} title="Registrar nuevo conductor"><DriverForm onSuccess={() => setShowDriverForm(false)} onCancel={() => setShowDriverForm(false)} /></Modal>
+      <Modal isOpen={showVehicleForm} onClose={() => setShowVehicleForm(false)} title="Agregar nuevo vehiculo"><VehicleForm onSuccess={() => { setShowVehicleForm(false); queryClient.invalidateQueries({ queryKey: ['vehicles'] }); }} onCancel={() => setShowVehicleForm(false)} /></Modal>
     </div>
   );
 }

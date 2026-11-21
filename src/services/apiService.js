@@ -7,6 +7,7 @@ const apiService = {
   getTrackingLogs: (packageId) => api.get(`/tracking/logs/${packageId}`),
   createTrackingEvent: (data) => api.post('/tracking', data),
   getVehicles: () => api.get('/fleet/vehicles'),
+  createVehicle: (data) => api.post('/fleet/vehicles', data),
   getDrivers: () => api.get('/fleet/drivers'),
   getMapData: (packageId) => api.get(`/tracking/${packageId}/map-data`),
   
@@ -24,9 +25,13 @@ const apiService = {
   stopTrip: () => api.post('/tracking/trip/stop'),
   getActiveTrip: () => api.get('/tracking/trip/active'),
   logTripEvent: (tripId, data) => api.post(`/tracking/trip/${tripId}/event`, data),
+  // Envío en lote de los puntos GPS acumulados sin conexión (cola offline)
+  logTripEventsBatch: (tripId, points) => api.post(`/tracking/trip/${tripId}/events/batch`, { points }),
   checkGeofence: (data) => api.post('/tracking/check-geofence', data),
   getRouteTracking: (routeId) => api.get(`/tracking/route/${routeId}`),
-  getPublicTracking: (code) => api.get(`/tracking/public/${code}`),
+  // El rastreo público puede exigir captcha (header x-captcha-token)
+  getPublicTracking: (code, captchaToken) =>
+    api.get(`/tracking/public/${encodeURIComponent(code)}`, captchaToken ? { headers: { 'x-captcha-token': captchaToken } } : undefined),
 
   // Schedules (Cronogramas)
   getSchedules: (params) => api.get('/fleet/schedules', { params }),

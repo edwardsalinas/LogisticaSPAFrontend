@@ -1,57 +1,72 @@
-import { CalendarRange, ShieldCheck, Truck, Wrench } from 'lucide-react';
+import { Truck } from 'lucide-react';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import Button from '../../../components/atoms/Button';
 import Input from '../../../components/atoms/Input';
 import Select from '../../../components/atoms/Select';
+import apiService from '../../../services/apiService';
 
-function VehicleForm({ vehicle = null, onSuccess, onCancel }) {
-  const [form, setForm] = useState({
-    plate_number: vehicle?.plate_number || '',
-    brand: vehicle?.brand || '',
-    model: vehicle?.model || '',
-    year: vehicle?.year || new Date().getFullYear(),
-    type: vehicle?.type || 'truck',
-    capacity_kg: vehicle?.capacity_kg || '',
-    status: vehicle?.status || 'active',
+// Estados de vehículo: los mismos que valida el backend (fleet.schema.js)
+export const VEHICLE_STATUS_OPTIONS = [
+  { value: 'disponible', label: 'Disponible' },
+  { value: 'en_servicio', label: 'En servicio' },
+  { value: 'mantenimiento', label: 'En mantenimiento' },
+  { value: 'retirado', label: 'Retirado' },
+];
+
+const VEHICLE_TYPE_OPTIONS = [
+  { value: 'camion', label: 'Camión pesado' },
+  { value: 'camion_ligero', label: 'Camión ligero' },
+  { value: 'van', label: 'Furgoneta' },
+  { value: 'trailer', label: 'Tráiler' },
+];
+
+// Reglas equivalentes a vehicleSchema del backend
+export const vehicleFormSchema = z.object({
+  plate: z.string().trim().min(6, 'La placa debe tener al menos 6 caracteres').max(10, 'La placa es demasiado larga'),
+  brand: z.string().trim(),
+  model: z.string().trim().min(2, 'El modelo es requerido'),
+  type: z.string().min(2, 'Selecciona el tipo de vehículo'),
+  capacity_kg: z.coerce.number({ message: 'Ingresa una capacidad válida' }).positive('La capacidad debe ser positiva'),
+  status: z.enum(['disponible', 'en_servicio', 'mantenimiento', 'retirado']),
+});
+
+function VehicleForm({ onSuccess, onCancel }) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(vehicleFormSchema),
+    defaultValues: { plate: '', brand: '', model: '', type: 'camion', capacity_kg: '', status: 'disponible' },
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (values) => {
     setLoading(true);
     setError('');
-
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const { brand, ...rest } = values;
+      await apiService.createVehicle({
+        ...rest,
+        plate: rest.plate.toUpperCase(),
+        ...(brand ? { brand } : {}),
+      });
       onSuccess();
     } catch (err) {
-      setError(err.message || 'Error al guardar vehiculo');
+      // El backend devuelve los errores de validación por campo en data.errors
+      const fieldErrors = err.data?.errors ? Object.values(err.data.errors).flat() : [];
+      setError(fieldErrors[0] || err.message || 'Error al guardar el vehículo');
     } finally {
       setLoading(false);
     }
   };
 
-  const vehicleTypes = [
-    { value: 'truck', label: 'Camion pesado' },
-    { value: 'van', label: 'Furgoneta' },
-    { value: 'light_truck', label: 'Camion ligero' },
-    { value: 'trailer', label: 'Trailer' },
-  ];
-
-  const vehicleStatus = [
-    { value: 'active', label: 'Activo' },
-    { value: 'maintenance', label: 'En mantenimiento' },
-    { value: 'inactive', label: 'Inactivo' },
-  ];
-
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 20 }, (_, i) => currentYear - i);
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
       <div className="rounded-[1.4rem] border border-surface-100 bg-surface-50/80 p-5">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
@@ -59,39 +74,31 @@ function VehicleForm({ vehicle = null, onSuccess, onCancel }) {
           </div>
           <div>
             <p className="text-[0.64rem] uppercase tracking-[0.18em] text-surface-500">Ficha de unidad</p>
-            <p className="text-sm text-surface-600">Define placa, capacidad y estado para mantener la flota operativa y ordenada.</p>
+            <p className="text-sm text-surface-600">Define placa, capacidad y estado de la unidad.</p>
           </div>
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Input label="Placa" name="plate_number" value={form.plate_number} onChange={handleChange} placeholder="INT-1234" required />
-        <Input label="Marca" name="brand" value={form.brand} onChange={handleChange} placeholder="Volvo" required />
+        <Input label="Placa" placeholder="INT-1234" required error={errors.plate?.message} {...register('plate')} />
+        <Input label="Marca (opcional)" placeholder="Volvo" error={errors.brand?.message} {...register('brand')} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Input label="Modelo" name="model" value={form.model} onChange={handleChange} placeholder="FH16" required />
-        <Select label="Ano" name="year" value={form.year} onChange={handleChange} required options={years.map((year) => ({ value: year, label: year.toString() }))} />
+        <Input label="Modelo" placeholder="FH16" required error={errors.model?.message} {...register('model')} />
+        <Select label="Tipo de vehículo" required options={VEHICLE_TYPE_OPTIONS} error={errors.type?.message} {...register('type')} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Select label="Tipo de vehiculo" name="type" value={form.type} onChange={handleChange} required options={vehicleTypes} />
-        <Input label="Capacidad (kg)" name="capacity_kg" type="number" value={form.capacity_kg} onChange={handleChange} placeholder="20000" required />
+        <Input label="Capacidad (kg)" type="number" placeholder="20000" required error={errors.capacity_kg?.message} {...register('capacity_kg')} />
+        <Select label="Estado" required options={VEHICLE_STATUS_OPTIONS} error={errors.status?.message} {...register('status')} />
       </div>
 
-      <Select label="Estado" name="status" value={form.status} onChange={handleChange} required options={vehicleStatus} />
-
-      <div className="grid gap-3 md:grid-cols-3">
-        <div className="rounded-[1.2rem] border border-surface-100 bg-white p-4"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-50 text-sky-700"><CalendarRange size={17} strokeWidth={2.2} /></div><div><p className="text-sm font-semibold text-surface-900">Vida util visible</p><p className="text-xs text-surface-500">Ano y modelo listos para control preventivo.</p></div></div></div>
-        <div className="rounded-[1.2rem] border border-surface-100 bg-white p-4"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-700"><Wrench size={17} strokeWidth={2.2} /></div><div><p className="text-sm font-semibold text-surface-900">Mantenimiento claro</p><p className="text-xs text-surface-500">El estado ayuda a evitar asignaciones incorrectas.</p></div></div></div>
-        <div className="rounded-[1.2rem] border border-surface-100 bg-white p-4"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700"><ShieldCheck size={17} strokeWidth={2.2} /></div><div><p className="text-sm font-semibold text-surface-900">Capacidad lista</p><p className="text-xs text-surface-500">Base util para planificacion de carga y despacho.</p></div></div></div>
-      </div>
-
-      {error && <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>}
+      {error && <div role="alert" className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>}
 
       <div className="flex flex-col-reverse justify-end gap-3 pt-2 sm:flex-row">
         <Button variant="secondary" onClick={onCancel} type="button">Cancelar</Button>
-        <Button type="submit" disabled={loading}><Truck size={16} strokeWidth={2.2} />{loading ? 'Guardando...' : vehicle ? 'Actualizar vehiculo' : 'Crear vehiculo'}</Button>
+        <Button type="submit" disabled={loading}><Truck size={16} strokeWidth={2.2} />{loading ? 'Guardando...' : 'Crear vehículo'}</Button>
       </div>
     </form>
   );

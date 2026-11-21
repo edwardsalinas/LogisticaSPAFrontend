@@ -4,12 +4,22 @@ import Badge from '../../../components/atoms/Badge';
 import ProgressBar from '../../../components/atoms/ProgressBar';
 
 import { usePackages } from '../../../hooks/queries/usePackages';
+import { PACKAGE_STATUS, normalizePackageStatus } from '../../../constants/status';
 
 const STATUS_MAP = {
-  pending: { label: 'Pendiente', variant: 'warning' },
-  in_transit: { label: 'En ruta', variant: 'info' },
-  delivered: { label: 'Entregado', variant: 'success' },
-  delayed: { label: 'Retraso', variant: 'danger' },
+  [PACKAGE_STATUS.PENDING]: { label: 'Pendiente', variant: 'warning' },
+  [PACKAGE_STATUS.ASSIGNED]: { label: 'Asignado', variant: 'info' },
+  [PACKAGE_STATUS.IN_TRANSIT]: { label: 'En ruta', variant: 'info' },
+  [PACKAGE_STATUS.DELIVERED]: { label: 'Entregado', variant: 'success' },
+  [PACKAGE_STATUS.CANCELLED]: { label: 'Cancelado', variant: 'danger' },
+};
+
+const PROGRESS = {
+  [PACKAGE_STATUS.PENDING]: 10,
+  [PACKAGE_STATUS.ASSIGNED]: 25,
+  [PACKAGE_STATUS.IN_TRANSIT]: 50,
+  [PACKAGE_STATUS.DELIVERED]: 100,
+  [PACKAGE_STATUS.CANCELLED]: 0,
 };
 
 export default function PrioritizedShipments() {
@@ -17,14 +27,17 @@ export default function PrioritizedShipments() {
 
   const packages = (rawPackages.data || rawPackages)
     .slice(0, 5)
-    .map(pkg => ({
-      id: pkg.id.split('-')[0].toUpperCase(), // Short ID for UI
-      destination: `${pkg.origen} -> ${pkg.destino}`,
-      operator: { name: 'Unidad Logistica', initials: 'UL' },
-      status: pkg.status || 'pending',
-      progress: pkg.status === 'delivered' ? 100 : pkg.status === 'in_transit' ? 50 : 10,
-      eta: pkg.status === 'delivered' ? 'Entregado' : '---'
-    }));
+    .map(pkg => {
+      const status = normalizePackageStatus(pkg.status) || PACKAGE_STATUS.PENDING;
+      return {
+        id: pkg.id.split('-')[0].toUpperCase(), // Short ID for UI
+        destination: `${pkg.origen} -> ${pkg.destino}`,
+        operator: { name: 'Unidad Logistica', initials: 'UL' },
+        status,
+        progress: PROGRESS[status] ?? 10,
+        eta: status === PACKAGE_STATUS.DELIVERED ? 'Entregado' : '---'
+      };
+    });
 
   if (isLoading) return <div className="p-8 text-center">Cargando despachos...</div>;
   return (

@@ -1,3 +1,4 @@
+import { isPackageDelivered, isRouteFinished, isRouteActive, normalizeRouteStatus, ROUTE_STATUS } from '../../../constants/status';
 import { useEffect, useState, useRef, useMemo, useCallback, memo } from 'react';
 import { toast } from 'sonner';
 import { MapPinned, Route, Search, Truck, Calendar, List, User, MapPin, Flag, Layers, ChevronDown, Plus, Filter, X, CalendarRange, Clock, RotateCw } from 'lucide-react';
@@ -64,7 +65,7 @@ const RoutesMap = memo(({
     <>
       <div className="absolute inset-0">
         <BaseMap center={[extendedSelectedRoute.vehicle_position?.lat || extendedSelectedRoute.origin_lat || -16.5, extendedSelectedRoute.vehicle_position?.lng || extendedSelectedRoute.origin_lng || -68.15]} zoom={9} className="h-full w-full">
-          <RoutePath route={extendedSelectedRoute} isCompleted={['completed', 'finalizada', 'completada'].includes(extendedSelectedRoute.status)} />
+          <RoutePath route={extendedSelectedRoute} isCompleted={isRouteFinished(extendedSelectedRoute.status)} />
           <HistoryPath logs={trackingLogs} />
           
           {extendedSelectedRoute?.origin_lat && extendedSelectedRoute?.origin_lng && (
@@ -79,7 +80,7 @@ const RoutesMap = memo(({
           {(() => {
             const hasLogs = trackingLogs && trackingLogs.length > 0;
             const lastLog = hasLogs ? trackingLogs[trackingLogs.length - 1] : null;
-            const isFinished = ['completed', 'finalizada', 'completada'].includes(extendedSelectedRoute.status);
+            const isFinished = isRouteFinished(extendedSelectedRoute.status);
             
             let pos = null;
             if (hasLogs) pos = [lastLog.lat, lastLog.lng];
@@ -107,7 +108,7 @@ const RoutesMap = memo(({
             <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em]">{extendedSelectedRoute.origin} - {extendedSelectedRoute.destination}</h2>
             <p className="mt-2 text-sm text-white/72">{extendedSelectedRoute.route_code} - {extendedSelectedRoute.driver_name || 'Sin conductor'}</p>
           </div>
-          <Badge variant={extendedSelectedRoute.status === 'active' || extendedSelectedRoute.status === 'en_transito' ? 'success' : extendedSelectedRoute.status === 'delayed' ? 'danger' : 'warning'} dot>{extendedSelectedRoute.status}</Badge>
+          <Badge variant={isRouteActive(extendedSelectedRoute.status) ? 'success' : extendedSelectedRoute.status === 'delayed' ? 'danger' : 'warning'} dot>{extendedSelectedRoute.status}</Badge>
         </div>
         <div className="pointer-events-none mt-auto flex flex-wrap items-end justify-between gap-4 p-6">
           <div className="pointer-events-auto rounded-[1.5rem] border border-white/40 bg-white/80 p-4 shadow-xl backdrop-blur-xl">
@@ -196,7 +197,7 @@ function RoutesPage() {
       if (route.packages) {
         route.packages.forEach(pkg => {
           const prevStatus = prevPackagesState.current[pkg.id];
-          if (prevStatus && prevStatus !== pkg.status && (pkg.status === 'delivered' || pkg.status === 'completada')) {
+          if (prevStatus && prevStatus !== pkg.status && isPackageDelivered(pkg.status)) {
             toast.success(`¡Paquete Entregado!`, { description: `Código: ${pkg.tracking_code} en la ruta ${route.route_code}`, duration: 5000 });
           }
           prevPackagesState.current[pkg.id] = pkg.status;
@@ -272,7 +273,7 @@ function RoutesPage() {
   
   const listRoutes = useMemo(() => typeFilteredRoutes.filter(r => {
     if (r.type === 'schedule') return true;
-    if (r.schedule_id && (r.status === 'planeada' || r.status === 'pending')) {
+    if (r.schedule_id && normalizeRouteStatus(r.status) === ROUTE_STATUS.PLANNED) {
       if (!r.scheduled_date || r.scheduled_date > todayStr) return false;
     }
     return true;

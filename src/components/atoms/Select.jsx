@@ -11,6 +11,7 @@ function Select({
   error,
   required = false,
   hint = '',
+  ...rest
 }) {
   const generatedId = useId();
   const selectId = name || generatedId;
@@ -35,6 +36,7 @@ function Select({
           aria-required={required}
           aria-invalid={!!error}
           aria-describedby={describedBy}
+          {...rest}
           className="w-full min-h-12 appearance-none rounded-[14px] border border-surface-200 bg-white px-3.5 py-3 pr-11 text-sm text-surface-900 outline-none transition-all duration-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10"
         >
           {placeholder && <option value="">{placeholder}</option>}

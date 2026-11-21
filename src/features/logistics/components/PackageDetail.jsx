@@ -4,28 +4,28 @@ import Badge from '../../../components/atoms/Badge';
 import Skeleton from '../../../components/atoms/Skeleton';
 import EmptyState from '../../../components/molecules/EmptyState';
 import api from '../../../services/api';
+import { PACKAGE_STATUS, normalizePackageStatus } from '../../../constants/status';
 
 const statusSteps = [
-  { key: 'pending', label: 'Recibido en almacen', description: 'Procesado y listo para salida' },
-  { key: 'assigned', label: 'Asignado a ruta', description: 'Paquete asignado a una ruta de transporte' },
-  { key: 'in_transit', label: 'En tránsito', description: 'Desplazamiento hacia el siguiente nodo logístico' },
-  { key: 'delivered', label: 'Entregado', description: 'Confirmación de entrega realizada' },
+  { key: PACKAGE_STATUS.PENDING, label: 'Recibido en almacen', description: 'Procesado y listo para salida' },
+  { key: PACKAGE_STATUS.ASSIGNED, label: 'Asignado a ruta', description: 'Paquete asignado a una ruta de transporte' },
+  { key: PACKAGE_STATUS.IN_TRANSIT, label: 'En tránsito', description: 'Desplazamiento hacia el siguiente nodo logístico' },
+  { key: PACKAGE_STATUS.DELIVERED, label: 'Entregado', description: 'Confirmación de entrega realizada' },
 ];
 
 const statusMeta = {
-  pending: { label: 'Pendiente', variant: 'warning' },
-  assigned: { label: 'Asignado', variant: 'info' },
-  in_transit: { label: 'En tránsito', variant: 'info' },
-  en_transito: { label: 'En tránsito', variant: 'info' },
-  delivered: { label: 'Entregado', variant: 'success' },
-  entregado: { label: 'Entregado', variant: 'success' },
+  [PACKAGE_STATUS.PENDING]: { label: 'Pendiente', variant: 'warning' },
+  [PACKAGE_STATUS.ASSIGNED]: { label: 'Asignado', variant: 'info' },
+  [PACKAGE_STATUS.IN_TRANSIT]: { label: 'En tránsito', variant: 'info' },
+  [PACKAGE_STATUS.DELIVERED]: { label: 'Entregado', variant: 'success' },
+  [PACKAGE_STATUS.CANCELLED]: { label: 'Cancelado', variant: 'danger' },
 };
 
 const getStatusLabel = (status) => {
   if (!status) return 'Estado desconocido';
   const clean = status.trim().toLowerCase();
   if (clean.includes(':') || clean.includes('llegó') || clean.length > 20) return status;
-  return statusMeta[clean]?.label || status;
+  return statusMeta[normalizePackageStatus(clean)]?.label || status;
 };
 
 function PackageDetail({ pkg }) {
@@ -47,8 +47,9 @@ function PackageDetail({ pkg }) {
     fetchLogs();
   }, [pkg.id]);
 
-  const currentStepIndex = statusSteps.findIndex((s) => s.key === pkg.status);
-  const currentStatus = statusMeta[pkg.status] || { label: pkg.status, variant: 'neutral' };
+  const normalizedStatus = normalizePackageStatus(pkg.status);
+  const currentStepIndex = statusSteps.findIndex((s) => s.key === normalizedStatus);
+  const currentStatus = statusMeta[normalizedStatus] || { label: pkg.status, variant: 'neutral' };
 
   return (
     <div className="space-y-6">

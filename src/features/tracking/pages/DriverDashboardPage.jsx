@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
-import { Truck, Navigation, Play, Square, Activity, MapPin, Search, Calendar as CalendarIcon, Package, Clock, Route } from 'lucide-react';
+import { Truck, Navigation, Play, Square, Activity, MapPin, Search, Calendar as CalendarIcon, Package, Clock, Route, WifiOff } from 'lucide-react';
 import { Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import FullCalendar from '@fullcalendar/react';
@@ -19,27 +19,29 @@ import OriginDestMarker from '../../../components/molecules/OriginDestMarker';
 import VehicleMarker from '../../../components/molecules/VehicleMarker';
 import { heroImages } from '../../../constants/heroImages';
 import apiService from '../../../services/apiService';
+import { PACKAGE_STATUS, isPackageDelivered, isRouteFinished } from '../../../constants/status';
+import { enqueuePoint, countQueued, flushQueue, requestBackgroundSync } from '../../../services/offlineQueue';
 import { haversineDistance, calculateTripProgress } from '../../../utils/geoUtils';
 
 const GPS_INTERVAL_MS = 30000;
 
 // Componente de Calendario Memoizado para evitar re-renders por GPS
 // Componente de Mapa Memoizado para aislar actualizaciones de GPS
-const DashboardMap = memo(({ 
-  currentPosition, 
-  activeRouteData, 
-  isActive, 
-  activeTrip, 
-  completedCheckpointIds, 
-  isFinished, 
-  eventsSent 
+const DashboardMap = memo(({
+  currentPosition,
+  activeRouteData,
+  isActive,
+  activeTrip,
+  completedCheckpointIds,
+  isFinished,
+  eventsSent
 }) => {
   const center = currentPosition || (activeRouteData ? [activeRouteData.origin_lat || -16.5, activeRouteData.origin_lng || -68.15] : [-16.5, -68.15]);
 
   return (
     <BaseMap center={center} zoom={13} className="h-full w-full rounded-[1.6rem]">
       {activeRouteData && <RoutePath route={activeRouteData} isCompleted={isFinished} />}
-      
+
       {activeRouteData?.origin_lat && (
         <OriginDestMarker type="origin" position={[activeRouteData.origin_lat, activeRouteData.origin_lng]} title={activeRouteData.origin} subtitle="Punto de partida" />
       )}
@@ -52,10 +54,10 @@ const DashboardMap = memo(({
       ))}
 
       {(currentPosition || (isFinished && activeRouteData?.dest_lat)) && (
-        <VehicleMarker 
-          position={isFinished ? [activeRouteData.dest_lat, activeRouteData.dest_lng] : currentPosition} 
-          title="Tu Ubicación" 
-          subtitle={activeRouteData?.plate_number || 'Vehículo'} 
+        <VehicleMarker
+          position={isFinished ? [activeRouteData.dest_lat, activeRouteData.dest_lng] : currentPosition}
+          title="Tu Ubicación"
+          subtitle={activeRouteData?.plate_number || 'Vehículo'}
           isFinished={isFinished}
         />
       )}
@@ -90,6 +92,10 @@ function DriverDashboardPage() {
   const [eventsSent, setEventsSent] = useState(0);
   const [completedCheckpointIds, setCompletedCheckpointIds] = useState([]);
   const [deliveringPkgId, setDeliveringPkgId] = useState(null);
+
+  // --- COLA OFFLINE (puntos GPS sin conexión) ---
+  const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
+  const [pendingCount, setPendingCount] = useState(0);
 
   // --- REACT QUERY ---
   const { data: activeTrip, isLoading: loadingTrip } = useQuery({
@@ -138,7 +144,7 @@ function DriverDashboardPage() {
   const isActive = !!activeTrip;
   const activeRouteData = activeRouteDetails || routes.find(r => String(r.id) === String(selectedRouteId));
   const routeStatus = (activeRouteData?.status || '').toLowerCase();
-  const isFinished = useMemo(() => 
+  const isFinished = useMemo(() =>
     ['completed', 'finalizada', 'completada', 'entregado', 'terminada'].includes(routeStatus),
   [routeStatus]);
 
@@ -148,7 +154,7 @@ function DriverDashboardPage() {
       activeRouteData.checkpoints?.length || 0,
       completedCheckpointIds.length,
       activeRouteData.packages?.length || 0,
-      (activeRouteData.packages?.filter(p => p.status === 'delivered' || p.status === 'completada') || []).length
+      (activeRouteData.packages?.filter(p => isPackageDelivered(p.status)) || []).length
     );
   }, [isActive, activeRouteData, completedCheckpointIds]);
 
@@ -156,11 +162,11 @@ function DriverDashboardPage() {
     return routes.filter(r => r.departure_time).map(r => {
       const start = new Date(r.departure_time);
       if (isNaN(start.getTime())) return null;
-      
+
       const status = r.status;
       const isCompleted = ['completed', 'finalizada', 'completada'].includes(status);
       const isActiveStatus = ['active', 'en_transito'].includes(status);
-      
+
       let end;
       let isEstimated = false;
 
@@ -177,7 +183,7 @@ function DriverDashboardPage() {
         end = new Date(start.getTime() + ((r.eta_minutes || 120) * 60000));
         isEstimated = true;
       }
-      
+
       let bgColor = '#3b82f6';
       if (isActiveStatus) bgColor = '#10b981';
       if (isCompleted) bgColor = '#18181b';
@@ -202,7 +208,7 @@ function DriverDashboardPage() {
 
     const isEstimated = event.extendedProps.isEstimated;
     const route = event.extendedProps.route;
-    
+
     if (isMonthView) {
       return (
         <div className={`w-full overflow-hidden flex items-center gap-1 px-1 py-0.5 rounded-md ${isPast && routeStatus === 'planeada' ? 'opacity-60' : ''}`} style={isEstimated ? { maskImage: 'linear-gradient(to right, black 80%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, black 80%, transparent 100%)' } : {}}>
@@ -214,7 +220,7 @@ function DriverDashboardPage() {
     }
 
     return (
-      <div 
+      <div
         className={`p-1.5 flex flex-col h-full overflow-hidden leading-tight rounded-md border-l-4 border-white/20 transition-all ${isPast && routeStatus === 'planeada' ? 'opacity-60 grayscale-[0.3]' : 'hover:scale-[1.02] shadow-sm'}`}
         style={isEstimated ? { maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)' } : {}}
       >
@@ -233,7 +239,7 @@ function DriverDashboardPage() {
             <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)] shrink-0" />
           )}
         </div>
-        
+
         <div className="min-w-0 flex-1 flex flex-col justify-center">
           <p className="text-[10px] font-black text-white leading-tight truncate">
             {event.title.split('|')[0].trim()}
@@ -249,7 +255,7 @@ function DriverDashboardPage() {
           </span>
           <div className="flex items-center gap-1 min-w-0">
             <span className="text-[9px] font-black text-white/90 truncate">
-               {['completed', 'finalizada', 'completada'].includes(routeStatus) 
+               {['completed', 'finalizada', 'completada'].includes(routeStatus)
                  ? `✓ ${new Date(route.arrival_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
                  : `→ ${eventInfo.timeText.split(' - ')[1] || ''}`}
             </span>
@@ -262,7 +268,7 @@ function DriverDashboardPage() {
   const handleEventClick = useCallback((info) => {
     setSelectedRouteId(info.event.id);
   }, []);
-  
+
   const watchIdRef = useRef(null);
   const intervalRef = useRef(null);
   const lastPositionRef = useRef(null);
@@ -276,8 +282,8 @@ function DriverDashboardPage() {
         if (!prev) return prev;
         return {
           ...prev,
-          packages: prev.packages.map(p => 
-            p.id === packageId ? { ...p, status: 'delivered' } : p
+          packages: prev.packages.map(p =>
+            p.id === packageId ? { ...p, status: PACKAGE_STATUS.DELIVERED } : p
           )
         };
       });
@@ -312,20 +318,34 @@ function DriverDashboardPage() {
     intervalRef.current = null;
   }, []);
 
+  // Envía al servidor los puntos GPS acumulados offline (en orden cronológico y en lote)
+  const flushOfflineQueue = useCallback(async () => {
+    try {
+      const result = await flushQueue(apiService.logTripEventsBatch);
+      setPendingCount(result.remaining);
+      if (result.sent > 0) queryClient.invalidateQueries({ queryKey: ['activeTrip'] });
+      return result;
+    } catch (err) {
+      console.error('Error vaciando la cola offline:', err);
+      return null;
+    }
+  }, [queryClient]);
+
   const isStoppingRef = useRef(false);
 
   const handleStopTrip = useCallback(async () => {
     if (isStoppingRef.current) return;
     isStoppingRef.current = true;
     setToggling(true);
-    
+
     // 1. Detener el tracking localmente DE INMEDIATO
     stopGpsTracking();
-    
+
     try {
-      // 2. Notificar al servidor
+      // 2. Registrar los puntos GPS pendientes (si los hay) y notificar al servidor
+      await flushOfflineQueue();
       await apiService.stopTrip();
-      
+
       // 3. Limpiar estado local y refrescar queries
       setCurrentPosition(null);
       setCompletedCheckpointIds([]);
@@ -346,7 +366,7 @@ function DriverDashboardPage() {
       setToggling(false);
       isStoppingRef.current = false;
     }
-  }, [stopGpsTracking, queryClient, selectedRouteId]);
+  }, [stopGpsTracking, flushOfflineQueue, queryClient, selectedRouteId]);
 
   const handleStartTrip = useCallback(async () => {
     if (!selectedRouteId) {
@@ -358,7 +378,7 @@ function DriverDashboardPage() {
       await apiService.startTrip(selectedRouteId);
       setEventsSent(0);
       setCompletedCheckpointIds([]);
-      
+
       // Invalidar queries para refrescar estado global
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['activeTrip'] }),
@@ -377,14 +397,47 @@ function DriverDashboardPage() {
     const pos = lastPositionRef.current;
     if (!pos || !activeTrip || isStoppingRef.current) return;
 
+    // Cada punto lleva su timestamp real: si se envía tarde (offline), el servidor conserva la hora de lectura
+    const point = {
+      lat: pos.latitude,
+      lng: pos.longitude,
+      status: 'in_transit',
+      timestamp: new Date().toISOString()
+    };
+
+    const enqueue = async () => {
+      try {
+        await enqueuePoint({ tripId: activeTrip.id, ...point });
+        setPendingCount(await countQueued());
+        requestBackgroundSync(); // el service worker lo enviará al recuperar la señal (si el navegador lo soporta)
+      } catch (queueErr) {
+        console.error('Error guardando el punto GPS en la cola offline:', queueErr);
+      }
+    };
+
+    // Sin conexión: guardar en el dispositivo
+    if (!navigator.onLine) {
+      await enqueue();
+      return;
+    }
+
     try {
-      const res = await apiService.logTripEvent(activeTrip.id, {
-        lat: pos.latitude,
-        lng: pos.longitude,
-        status: 'in_transit'
-      });
+      // Primero se vacían los puntos pendientes para respetar el orden cronológico
+      if ((await countQueued()) > 0) {
+        const flushed = await flushOfflineQueue();
+        if (flushed?.arrived) {
+          handleStopTrip();
+          return;
+        }
+        if (!flushed || flushed.remaining > 0) {
+          await enqueue();
+          return;
+        }
+      }
+
+      const res = await apiService.logTripEvent(activeTrip.id, point);
       setEventsSent((prev) => prev + 1);
-      
+
       // Forzar actualización de estadísticas (pings, etc)
       queryClient.invalidateQueries({ queryKey: ['activeTrip'] });
 
@@ -393,9 +446,35 @@ function DriverDashboardPage() {
         handleStopTrip();
       }
     } catch (err) {
-      console.error('Error enviando posición:', err);
+      if (err.isNetworkError) {
+        await enqueue(); // se cayó la conexión justo ahora
+      } else {
+        console.error('Error enviando posición:', err);
+      }
     }
-  }, [activeTrip, handleStopTrip]);
+  }, [activeTrip, handleStopTrip, flushOfflineQueue, queryClient]);
+
+  // Contador inicial de la cola y reacción a los cambios de conectividad
+  const stopTripRef = useRef(null);
+  stopTripRef.current = handleStopTrip;
+
+  useEffect(() => {
+    countQueued().then(setPendingCount).catch(() => {});
+
+    const goOnline = async () => {
+      setIsOnline(true);
+      const flushed = await flushOfflineQueue();
+      if (flushed?.arrived) stopTripRef.current?.();
+    };
+    const goOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, [flushOfflineQueue]);
 
   const startGpsTracking = useCallback(() => {
     if (!navigator.geolocation) {
@@ -451,6 +530,17 @@ function DriverDashboardPage() {
         </div>
       </section>
 
+      {(!isOnline || pendingCount > 0) && (
+        <div role="status" className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+          <WifiOff size={18} strokeWidth={2.2} className="shrink-0" />
+          <span>
+            {isOnline
+              ? `Sincronizando ${pendingCount} punto(s) GPS pendientes...`
+              : `Sin conexión: ${pendingCount} punto(s) GPS guardados en el dispositivo. Se enviarán automáticamente al recuperar la señal.`}
+          </span>
+        </div>
+      )}
+
       {/* Las tarjetas de estadísticas se movieron al interior del mapa como overlays flotantes */}
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-12">
@@ -476,13 +566,13 @@ function DriverDashboardPage() {
                 .custom-driver-calendar .fc-theme-standard td, .custom-driver-calendar .fc-theme-standard th { border-color: #f1f5f9; }
                 .custom-driver-calendar .fc-event { cursor: pointer; border: none; }
               `}</style>
-              <DashboardCalendar 
+              <DashboardCalendar
                 events={calendarEvents}
                 onEventClick={handleEventClick}
                 renderEventContent={renderEventContent}
               />
             </div>
-            
+
             <div className="mt-auto border-t border-surface-100 bg-surface-50">
               {!(activeRouteData || activeTrip) ? (
                 <div className="p-8 flex flex-col items-center text-center gap-3">
@@ -511,21 +601,21 @@ function DriverDashboardPage() {
                           </span>
                         </div>
                       </div>
-                      
+
                       <div className="shrink-0">
                         {isActive ? (
-                          <Button 
-                            variant="danger" 
-                            className="px-4 py-2 h-9 text-[10px] font-black uppercase tracking-wider gap-1.5 shadow-none border-none rounded-xl" 
-                            onClick={handleStopTrip} 
+                          <Button
+                            variant="danger"
+                            className="px-4 py-2 h-9 text-[10px] font-black uppercase tracking-wider gap-1.5 shadow-none border-none rounded-xl"
+                            onClick={handleStopTrip}
                             disabled={toggling}
                           >
                             {toggling ? '...' : <><Square fill="currentColor" size={10} stroke="none" /> Finalizar</>}
                           </Button>
                         ) : (
-                          <Button 
-                            className={`${(isFinished || !selectedRouteId) ? 'bg-surface-100 text-surface-400' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200/40'} px-4 py-2 h-9 text-[10px] font-black uppercase tracking-wider gap-1.5 transition-all active:scale-95 border-none rounded-xl`} 
-                            onClick={handleStartTrip} 
+                          <Button
+                            className={`${(isFinished || !selectedRouteId) ? 'bg-surface-100 text-surface-400' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200/40'} px-4 py-2 h-9 text-[10px] font-black uppercase tracking-wider gap-1.5 transition-all active:scale-95 border-none rounded-xl`}
+                            onClick={handleStartTrip}
                             disabled={toggling || !selectedRouteId || isFinished}
                           >
                             {toggling ? '...' : isFinished ? 'Completado' : <><Play fill="currentColor" size={10} stroke="none" /> Iniciar</>}
@@ -544,8 +634,8 @@ function DriverDashboardPage() {
                          <span className="text-[11px] font-black text-primary-600">{realProgress}%</span>
                        </div>
                        <div className="h-1.5 w-full bg-surface-200 rounded-full overflow-hidden">
-                         <div 
-                           className="h-full bg-primary-500 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]" 
+                         <div
+                           className="h-full bg-primary-500 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]"
                            style={{ width: `${realProgress}%` }}
                          />
                        </div>
@@ -572,7 +662,7 @@ function DriverDashboardPage() {
                                   </div>
                                 </div>
                                 {!isReached && (
-                                  <button 
+                                  <button
                                     onClick={() => handleCheckpointCheck(cp.id)}
                                     className="text-[9px] font-black text-primary-600 hover:text-white hover:bg-primary-600 uppercase tracking-widest px-3 py-1.5 rounded-lg bg-primary-50 active:scale-95 transition-all border border-primary-100/30"
                                   >
@@ -591,7 +681,7 @@ function DriverDashboardPage() {
                       <p className="text-[10px] font-black text-surface-400 uppercase tracking-[0.2em] mb-3 px-1">Carga a Entregar</p>
                       <div className="space-y-2.5 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
                         {activeRouteData.packages.map(pkg => {
-                          const isDelivered = pkg.status === 'delivered' || pkg.status === 'completada';
+                          const isDelivered = isPackageDelivered(pkg.status);
                           const isDelivering = deliveringPkgId === pkg.id;
                           return (
                             <div key={pkg.id} className={`group flex items-center justify-between p-3 rounded-2xl border transition-all duration-300 ${isDelivered ? 'bg-slate-50 border-slate-200/50 grayscale-[0.4]' : 'bg-white border-surface-100 hover:border-surface-200 hover:shadow-md hover:shadow-surface-100/60'}`}>
@@ -606,7 +696,7 @@ function DriverDashboardPage() {
                               </div>
                               <div className="shrink-0 pl-2">
                                 {!isDelivered ? (
-                                  <button 
+                                  <button
                                     onClick={() => handleDeliverPackage(pkg.id)}
                                     disabled={isDelivering}
                                     className="text-[9px] font-black text-emerald-700 hover:text-white hover:bg-emerald-600 uppercase tracking-widest px-3.5 py-2 rounded-xl bg-emerald-50 active:scale-95 transition-all border border-emerald-100/50"
@@ -634,7 +724,7 @@ function DriverDashboardPage() {
 
         <div className="xl:col-span-8">
           <div className="h-[65vh] min-h-[35rem] overflow-hidden rounded-[2rem] border border-white/60 bg-white p-3 shadow-2xl relative">
-            <DashboardMap 
+            <DashboardMap
               currentPosition={currentPosition}
               activeRouteData={activeRouteData}
               isActive={isActive}
@@ -661,7 +751,7 @@ function DriverDashboardPage() {
                       <span className="text-[11px] font-black text-surface-900">{activeRouteData?.ping_count || 0}</span>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     <Clock size={12} className="text-surface-400" />
                     <div className="flex flex-col">
@@ -684,7 +774,7 @@ function DriverDashboardPage() {
                 </div>
               </div>
             )}
-            
+
             {!isActive && !selectedRouteId && !currentPosition && (
               <div className="absolute inset-0 flex items-center justify-center bg-surface-900/15 backdrop-blur-sm z-[1000] rounded-[1.6rem] pointer-events-none m-3">
                 <div className="bg-white/95 p-8 rounded-2xl shadow-2xl text-center border border-white/20 max-w-sm">

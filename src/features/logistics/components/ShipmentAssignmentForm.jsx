@@ -1,13 +1,27 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import Button from '../../../components/atoms/Button';
 import Select from '../../../components/atoms/Select';
 import Spinner from '../../../components/atoms/Spinner';
 import apiService from '../../../services/apiService';
 import { Truck, MapPin } from 'lucide-react';
+import { ROUTE_STATUS, normalizeRouteStatus } from '../../../constants/status';
+
+const shipmentAssignmentSchema = z.object({
+  routeId: z.string().min(1, 'Por favor selecciona un despacho'),
+});
 
 function ShipmentAssignmentForm({ pkg, onSuccess, onCancel }) {
   const [routes, setRoutes] = useState([]);
-  const [selectedRouteId, setSelectedRouteId] = useState('');
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm({ resolver: zodResolver(shipmentAssignmentSchema), defaultValues: { routeId: '' } });
+  const selectedRouteId = watch('routeId');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -30,28 +44,22 @@ function ShipmentAssignmentForm({ pkg, onSuccess, onCancel }) {
 
   const compatibleRoutes = useMemo(() => {
     return routes.filter(r => 
-      r.status !== 'completada' && 
+      normalizeRouteStatus(r.status) !== ROUTE_STATUS.COMPLETED && 
       r.origin === pkg.origen && 
       r.destination === pkg.destino
     );
   }, [routes, pkg]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedRouteId) {
-      setError('Por favor selecciona un despacho');
-      return;
-    }
-
+  const onSubmit = async ({ routeId }) => {
     setSubmitting(true);
     setError(null);
 
     try {
-      await apiService.assignPackageToRoute(selectedRouteId, pkg.id);
+      await apiService.assignPackageToRoute(routeId, pkg.id);
       onSuccess();
     } catch (err) {
       console.error('Error asignando a despacho:', err);
-      setError(err.response?.data?.message || 'Error al asignar el despacho');
+      setError(err.message || 'Error al asignar el despacho');
     } finally {
       setSubmitting(false);
     }
@@ -65,7 +73,7 @@ function ShipmentAssignmentForm({ pkg, onSuccess, onCancel }) {
   );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
       <div className="rounded-[1.4rem] border border-primary-100 bg-primary-50/50 p-4">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-primary-600 shadow-sm border border-primary-100">
@@ -92,9 +100,9 @@ function ShipmentAssignmentForm({ pkg, onSuccess, onCancel }) {
         <div className="space-y-4">
           <Select
             label="Despachos Disponibles (Mismo Trayecto)"
-            value={selectedRouteId}
-            onChange={(e) => setSelectedRouteId(e.target.value)}
             required
+            error={errors.routeId?.message}
+            {...register('routeId')}
             options={compatibleRoutes.map(r => {
                 const date = r.departure_time ? new Date(r.departure_time).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit' }) : '';
                 return {

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Search, Package, MapPin, Clock, ArrowLeft, Navigation, ShieldCheck, Truck, Boxes, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import apiService from '../../../services/apiService';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
+import Captcha, { CAPTCHA_ENABLED } from '../../../components/molecules/Captcha';
 
 const statusMapValue = {
   pendiente: { label: 'Pendiente', variant: 'warning' },
@@ -28,22 +29,31 @@ function PublicTrackingPage() {
   const [trackingData, setTrackingData] = useState(null);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const captchaRef = useRef(null);
+  const [captchaToken, setCaptchaToken] = useState(null);
 
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!code.trim()) return;
+    if (CAPTCHA_ENABLED && !captchaToken) {
+      setError('Completa la verificación de seguridad (captcha) para consultar.');
+      return;
+    }
 
     setLoading(true);
     setError(null);
     setTrackingData(null);
 
     try {
-      const res = await apiService.getPublicTracking(code.trim());
+      const res = await apiService.getPublicTracking(code.trim(), captchaToken);
       setTrackingData(res.data);
     } catch (err) {
       console.error('Error en rastreo público:', err);
-      setError('No se encontró ningún paquete con ese código o hubo un problema de conexión.');
+      const isGuardError = err.status === 429 || String(err.code || '').startsWith('CAPTCHA');
+      setError(isGuardError ? err.message : 'No se encontró ningún paquete con ese código o hubo un problema de conexión.');
     } finally {
+      // Los tokens de captcha son de un solo uso
+      captchaRef.current?.reset();
       setLoading(false);
     }
   };
@@ -109,6 +119,9 @@ function PublicTrackingPage() {
                  </button>
               </div>
            </form>
+           <div className="mt-4">
+             <Captcha ref={captchaRef} onToken={setCaptchaToken} theme="dark" />
+           </div>
            {error && (
              <p className="mt-4 text-center text-rose-400 font-bold animate-in zoom-in duration-300">{error}</p>
            )}

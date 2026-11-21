@@ -1,43 +1,50 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import api from '../services/api';
+import api, { SESSION_HINT_KEY } from '../services/api';
 
 const AuthContext = createContext(null);
 
+/**
+ * Contexto de autenticación (React Context API).
+ * La identidad la gestiona Supabase Auth; el backend entrega la sesión en cookies httpOnly,
+ * por lo que aquí solo se guarda el usuario (nunca el token).
+ */
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Verificar si hay token al cargar la app
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      api.get('/iam/profile')
-        .then(res => {
-          setUser(res.user);
-        })
-        .catch(() => {
-          localStorage.removeItem('auth_token');
-          setUser(null);
-        })
-        .finally(() => setLoading(false));
-    } else {
+    // Solo se consulta la sesión si hubo un login previo en este navegador.
+    if (!localStorage.getItem(SESSION_HINT_KEY)) {
       setLoading(false);
+      return;
     }
+    api.get('/iam/profile')
+      .then((res) => setUser(res.user))
+      .catch(() => {
+        localStorage.removeItem(SESSION_HINT_KEY);
+        setUser(null);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  const login = async (email, password) => {
-    const res = await api.post('/iam/login', { email, password });
-    const { session, user: userData } = res.data;
-    const { access_token } = session;
-    
-    localStorage.setItem('auth_token', access_token);
-    setUser(userData);
-    
-    return userData;
+  const login = async (email, password, captchaToken) => {
+    const res = await api.post(
+      '/iam/login',
+      { email, password },
+      captchaToken ? { headers: { 'x-captcha-token': captchaToken } } : undefined
+    );
+    localStorage.setItem(SESSION_HINT_KEY, '1');
+    setUser(res.data.user);
+    return res.data.user;
   };
 
-  const logout = () => {
-    localStorage.removeItem('auth_token');
+  const logout = async () => {
+    try {
+      await api.post('/iam/logout');
+    } catch {
+      // aunque falle la red, se limpia el estado local
+    }
+    localStorage.removeItem(SESSION_HINT_KEY);
     setUser(null);
   };
 

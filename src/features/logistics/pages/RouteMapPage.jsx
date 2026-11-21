@@ -1,3 +1,4 @@
+import { isRouteActive } from '../../../constants/status';
 import { Suspense, lazy, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { MapPinned, MoveLeft, Route, Ruler, TimerReset } from 'lucide-react';
@@ -52,7 +53,7 @@ function RouteMapPage() {
     );
   }
 
-  const isActive = route.status === 'active';
+  const isActive = isRouteActive(route.status);
 
   return (
     <div className="space-y-6 sm:space-y-8">

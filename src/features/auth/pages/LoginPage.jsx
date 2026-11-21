@@ -1,13 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Boxes, Radar } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useAuth } from '../../../app/AuthContext';
 import Spinner from '../../../components/atoms/Spinner';
+import Captcha, { CAPTCHA_ENABLED } from '../../../components/molecules/Captcha';
 import { heroImages } from '../../../constants/heroImages';
 import apiService from '../../../services/apiService';
 
+// Esquema de validación del formulario (React Hook Form + Zod)
+const loginSchema = z.object({
+  email: z.string().min(1, 'Ingresa tu correo').email('Correo electrónico inválido'),
+  password: z.string().min(1, 'Ingresa tu contraseña'),
+});
+
 function LoginPage() {
-  const [form, setForm] = useState({ email: '', password: '' });
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  });
+  const captchaRef = useRef(null);
+  const [captchaToken, setCaptchaToken] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -40,21 +55,24 @@ function LoginPage() {
     fetchStats();
   }, []);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async ({ email, password }) => {
+    if (CAPTCHA_ENABLED && !captchaToken) {
+      setError('Completa la verificación de seguridad (captcha).');
+      return;
+    }
     setLoading(true);
     setError('');
 
     try {
-      await login(form.email, form.password);
+      await login(email, password, captchaToken);
       navigate('/');
     } catch (err) {
-      setError('Credenciales invalidas. Verifica tus datos e intenta nuevamente.');
+      // Mensajes específicos para límite de intentos y captcha; credenciales inválidas en otro caso
+      const isGuardError = err.status === 429 || String(err.code || '').startsWith('CAPTCHA');
+      setError(isGuardError ? err.message : 'Credenciales invalidas. Verifica tus datos e intenta nuevamente.');
     } finally {
+      // Los tokens de captcha son de un solo uso
+      captchaRef.current?.reset();
       setLoading(false);
     }
   };
@@ -157,7 +175,7 @@ function LoginPage() {
               </p>
             </header>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
               <div className="space-y-2">
                 <label
                   htmlFor="email"
@@ -167,14 +185,14 @@ function LoginPage() {
                 </label>
                 <input
                   id="email"
-                  name="email"
                   type="email"
-                  value={form.email}
-                  onChange={handleChange}
+                  autoComplete="username"
                   placeholder="nombre@logisticaspa.com"
-                  required
+                  aria-invalid={!!errors.email}
+                  {...register('email')}
                   className="h-12 w-full rounded-xl border border-surface-200 bg-white px-4 text-sm text-surface-900 outline-none transition-all focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
                 />
+                {errors.email && <p role="alert" className="text-xs font-semibold text-red-600">{errors.email.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -196,12 +214,11 @@ function LoginPage() {
                 <div className="relative">
                   <input
                     id="password"
-                    name="password"
                     type={showPassword ? 'text' : 'password'}
-                    value={form.password}
-                    onChange={handleChange}
+                    autoComplete="current-password"
                     placeholder="••••••••"
-                    required
+                    aria-invalid={!!errors.password}
+                    {...register('password')}
                     className="h-12 w-full rounded-xl border border-surface-200 bg-white px-4 pr-12 text-sm text-surface-900 outline-none transition-all focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
                   />
                   <button
@@ -212,6 +229,7 @@ function LoginPage() {
                     {showPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
+                {errors.password && <p role="alert" className="text-xs font-semibold text-red-600">{errors.password.message}</p>}
               </div>
 
               <div className="flex items-center gap-3">
@@ -226,6 +244,8 @@ function LoginPage() {
                   Recordarme en este dispositivo
                 </label>
               </div>
+
+              <Captcha ref={captchaRef} onToken={setCaptchaToken} />
 
               {error && (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
