@@ -101,7 +101,7 @@ npm run build
 ## Pruebas
 
 ```bash
-npm test      # Vitest + Testing Library (jsdom): 64 pruebas
+npm test      # Vitest + Testing Library (jsdom): 69 pruebas
 ```
 
 Cubren todos los formularios principales (login, paquetes, vehículos, checkpoints, rutas, eventos de seguimiento y asignaciones; React Hook Form + Zod), el asistente de IA conectado al backend, la cola offline de puntos GPS (IndexedDB), el cliente HTTP con sesión por cookie (renovación y reintento tras un 401), la resolución de roles, la unificación de estados con el backend y el panel del conductor (aviso de modo offline). El CI (`.github/workflows/ci.yml`) ejecuta `npm test` y `npm run build` en cada push.
@@ -127,3 +127,24 @@ El panel del conductor no pierde puntos GPS cuando se cae la conexión:
 cd ../LogisticaSPABackend
 docker compose up --build   # frontend en http://localhost:8080
 ```
+
+## Pruebas end-to-end (Playwright)
+
+Manejan un Chrome real contra la aplicación y la base conectada (Supabase), con los 4 roles. Requieren el backend en `http://localhost:3000` y `npm run dev` (frontend) corriendo, más los usuarios de `LogisticaSPABackend/scripts/seed-users.js` (o los de `E2E_*_EMAIL` / `E2E_*_PASSWORD`).
+
+```bash
+npm run e2e          # en segundo plano
+npm run e2e:headed   # viendo el navegador
+```
+
+- `e2e/navigation.spec.js`: cada rol recorre sus páginas sin errores de consola ni de API, y no entra a páginas de otros roles.
+- `e2e/lifecycle.spec.js`: ciclo completo con acciones reales (viaje, paquete, evento, entrega del conductor con nota, vista del cliente, Analítica y asistente de IA). Escribe datos etiquetados `E2E-<sello>` y guarda sus ids en `e2e-results/created.json`.
+
+**Limpieza** (borra solo lo creado por las pruebas, con la clave de servicio del backend):
+
+```bash
+cd ../LogisticaSPABackend
+node --env-file=.env scripts/e2e-cleanup.mjs ../LogisticaSPAFrontend/e2e-results/created.json
+```
+
+Inician sesión una sola vez por rol y reutilizan la sesión (Supabase Auth limita los intentos de inicio de sesión por IP).

@@ -3,3 +3,7 @@ dist
 .env
 .env.local
 *.log
+
+# Playwright
+e2e-results/
+playwright-report/
