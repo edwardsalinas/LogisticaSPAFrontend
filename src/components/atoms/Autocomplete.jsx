@@ -64,23 +64,23 @@ function Autocomplete({
           disabled={disabled}
           className={clsx(
             'flex w-full items-center justify-between rounded-xl border bg-white px-4 py-3 text-left text-sm text-surface-900 shadow-sm outline-none transition-all',
-            disabled ? 'cursor-not-allowed border-surface-200 bg-surface-50 text-surface-400' : 'border-surface-200 hover:border-surface-300 focus:border-primary-400 focus:ring-4 focus:ring-primary-400/10'
+            disabled ? 'cursor-not-allowed border-surface-200 bg-surface-50 text-surface-500' : 'border-surface-200 hover:border-surface-300 focus:border-primary-400 focus:ring-4 focus:ring-primary-400/10'
           )}
         >
           <span className="truncate">
             {selectedOption ? (
-              <span>{selectedOption.label} <span className="text-surface-400 font-normal">({selectedOption.subtext})</span></span>
+              <span>{selectedOption.label} <span className="text-surface-500 font-normal">({selectedOption.subtext})</span></span>
             ) : (
-              <span className="text-surface-400">{placeholder}</span>
+              <span className="text-surface-500">{placeholder}</span>
             )}
           </span>
           <div className="flex items-center gap-1">
              {selectedOption && !disabled && (
                <div onClick={handleClear} className="p-1 hover:bg-surface-100 rounded-md transition-colors">
-                  <X size={14} className="text-surface-400" />
+                  <X size={14} className="text-surface-500" />
                </div>
              )}
-            <ChevronsUpDown size={16} className="text-surface-400" />
+            <ChevronsUpDown size={16} className="text-surface-500" />
           </div>
         </button>
 
@@ -88,7 +88,7 @@ function Autocomplete({
         {isOpen && (
           <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-surface-200 bg-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] mb-4">
             <div className="flex items-center border-b border-surface-100 px-3">
-              <Search size={16} className="text-surface-400" />
+              <Search size={16} className="text-surface-500" />
               <input
                 autoFocus
                 type="text"
@@ -118,7 +118,7 @@ function Autocomplete({
                   >
                     <div>
                       <p>{opt.label}</p>
-                      {opt.subtext && <p className="text-xs text-surface-400 mt-0.5">{opt.subtext}</p>}
+                      {opt.subtext && <p className="text-xs text-surface-500 mt-0.5">{opt.subtext}</p>}
                     </div>
                     {value === opt.value && <Check size={16} className="text-primary-600 flex-shrink-0" />}
                   </button>

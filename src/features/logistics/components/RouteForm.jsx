@@ -276,7 +276,7 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-5">
 
       {/* ── Conductor / Vehículo ── */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Select label="Conductor" value={form.driver_id} onChange={handleDriverChange} placeholder="Seleccionar conductor..." required error={errors.driver_id?.message}
           options={drivers.map((d) => ({ value: d.id, label: d.full_name || d.email }))} />
         <Select label="Vehículo" value={form.vehicle_id} onChange={handleVehicleChange} placeholder="Seleccionar vehículo..." required error={errors.vehicle_id?.message}
@@ -298,7 +298,7 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
 
         {/* Selector de ruta predefinida arriba del mapa */}
         <Select
-          label="Trazado Predefinido (opcional)"
+          label="Recorrido guardado (opcional)"
           value={form.predefined_route_id}
           onChange={handlePredefinedChange}
           placeholder="— Seleccionar tramo para precargar —"
@@ -317,7 +317,7 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> {form.origin}
               </div>
             )}
-            {form.origin && form.destination && <span className="text-surface-300">→</span>}
+            {form.origin && form.destination && <span className="text-surface-500">→</span>}
             {form.destination && (
               <div className="flex items-center gap-2 bg-red-50 text-red-700 px-3 py-1.5 rounded-lg border border-red-200 text-sm font-semibold">
                 <div className="w-2.5 h-2.5 rounded-full bg-red-500" /> {form.destination}
@@ -350,7 +350,7 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
           <div className="space-y-3">
             {form.checkpoints.map((cp, idx) => (
               <div key={idx} className="group flex items-center gap-3 bg-white p-3 pr-4 rounded-xl border border-surface-200 shadow-sm hover:shadow-md transition-all">
-                <div className="flex flex-col items-center gap-1 text-surface-400">
+                <div className="flex flex-col items-center gap-1 text-surface-500">
                   <button type="button" disabled={idx === 0} onClick={() => { const newCp = [...form.checkpoints]; [newCp[idx - 1], newCp[idx]] = [newCp[idx], newCp[idx - 1]]; newCp.forEach((c, i) => c.sequence_order = i + 1); setForm({ ...form, checkpoints: newCp }); }}
                     className="p-1 hover:text-primary-600 hover:bg-primary-50 rounded disabled:opacity-30 transition-colors"><ArrowUp size={14} strokeWidth={2.5} /></button>
                   <button type="button" disabled={idx === form.checkpoints.length - 1} onClick={() => { const newCp = [...form.checkpoints]; [newCp[idx + 1], newCp[idx]] = [newCp[idx], newCp[idx + 1]]; newCp.forEach((c, i) => c.sequence_order = i + 1); setForm({ ...form, checkpoints: newCp }); }}
@@ -366,7 +366,7 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
                   )}
                   <div className="flex items-center gap-4 px-1 opacity-60 hover:opacity-100 transition-opacity">
                     <div className="flex items-center gap-1.5 text-xs text-surface-500">
-                      <MapPin size={12} className="text-surface-400" /> Lat:
+                      <MapPin size={12} className="text-surface-500" /> Lat:
                       <input type="number" step="any" required className="w-20 bg-transparent border-b border-dashed border-surface-300 focus:border-primary-500 outline-none p-0.5 text-surface-700 font-mono" value={cp.lat}
                         onChange={(e) => { const newCp = [...form.checkpoints]; newCp[idx].lat = e.target.value; setForm({ ...form, checkpoints: newCp }); }} />
                     </div>
@@ -376,7 +376,7 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
                     </div>
                   </div>
                 </div>
-                <button type="button" className="flex-shrink-0 p-2 text-surface-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                <button type="button" className="flex-shrink-0 p-2 text-surface-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                   onClick={() => { const newCp = form.checkpoints.filter((_, i) => i !== idx); newCp.forEach((c, i) => c.sequence_order = i + 1); setForm({ ...form, checkpoints: newCp }); }}>
                   <Trash2 size={18} strokeWidth={2} />
                 </button>
@@ -440,9 +440,9 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
                   </div>
                   {sameTime ? (
                     <div className="flex items-center gap-3">
-                      <Clock size={16} className="text-surface-400" />
+                      <Clock size={16} className="text-surface-500" />
                       <input type="time" value={globalTime} onChange={(e) => setGlobalTime(e.target.value)} className="rounded-xl border border-surface-200 px-3 py-2 text-sm font-mono font-semibold focus:border-primary-500 outline-none" />
-                      <span className="text-xs text-surface-400">para todos los días</span>
+                      <span className="text-xs text-surface-500">para todos los días</span>
                     </div>
                   ) : (
                     <div className="space-y-2">

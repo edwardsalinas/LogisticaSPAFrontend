@@ -53,7 +53,7 @@ function RouteCard({ route, isSelected = false, onClick, onEdit, onDelete }) {
 
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex flex-col">
-          <span className="text-xs font-bold uppercase tracking-[0.15em] text-surface-400 leading-none mb-1.5">Ruta</span>
+          <span className="text-xs font-bold uppercase tracking-[0.15em] text-surface-500 leading-none mb-1.5">Ruta</span>
           <span className="text-sm font-bold text-surface-900 tracking-tight leading-none group-hover:text-primary-600 transition-colors">
             {routeName(route)}
           </span>
@@ -81,7 +81,7 @@ function RouteCard({ route, isSelected = false, onClick, onEdit, onDelete }) {
 
       <div className="mb-5 flex items-center gap-3 rounded-xl bg-surface-50/80 p-3 border border-surface-100/50">
         <div className="flex flex-col min-w-0 flex-1">
-          <span className="text-xs font-bold text-surface-400 uppercase tracking-widest leading-none mb-1">Tramo</span>
+          <span className="text-xs font-bold text-surface-500 uppercase tracking-widest leading-none mb-1">Tramo</span>
           <div className="flex items-center gap-2 text-xs font-bold text-surface-800">
             <span className="truncate">{route.origin || 'Ori'}</span>
             <ArrowRight size={12} strokeWidth={3} className="shrink-0 text-primary-400/60" />
@@ -94,7 +94,7 @@ function RouteCard({ route, isSelected = false, onClick, onEdit, onDelete }) {
         <>
           <div className="mb-4 px-1">
              <div className="flex justify-between items-center mb-1.5">
-               <span className="text-xs font-bold text-surface-400 uppercase tracking-widest">Progreso</span>
+               <span className="text-xs font-bold text-surface-500 uppercase tracking-widest">Progreso</span>
                <span className="text-xs font-bold text-primary-600">{progress}%</span>
              </div>
              <ProgressBar 
@@ -148,7 +148,7 @@ function RouteCard({ route, isSelected = false, onClick, onEdit, onDelete }) {
               </button>
             )}
           </div>
-          <div className="text-xs font-bold uppercase tracking-tighter text-surface-300">
+          <div className="text-xs font-bold uppercase tracking-tighter text-surface-500">
             {isSchedule ? 'Autómata' : 'Venta Única'}
           </div>
         </div>

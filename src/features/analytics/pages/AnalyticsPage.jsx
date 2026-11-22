@@ -71,7 +71,7 @@ function AnalyticsPage() {
         <p className="text-sm text-surface-500">
           Ultima actualizacion: {dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleString('es-BO', { dateStyle: 'long', timeStyle: 'short' }) : '—'}
         </p>
-        <p className="mt-1 text-xs text-surface-400">Los datos se actualizan automaticamente cada 5 minutos.</p>
+        <p className="mt-1 text-xs text-surface-500">Los datos se actualizan automaticamente cada 5 minutos.</p>
       </section>
     </div>
   );

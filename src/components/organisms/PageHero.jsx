@@ -23,8 +23,8 @@ function PageHero({
             {Icon ? <Icon size={14} strokeWidth={2.2} /> : null}
             {eyebrow}
           </div>
-          <h1 className="mt-5 max-w-3xl font-display text-[clamp(2rem,4.8vw,4.15rem)] font-semibold tracking-[-0.06em] text-white">{title}</h1>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-200 sm:text-base">{description}</p>
+          <h1 className="mt-3 max-w-3xl sm:mt-5 font-display text-[clamp(1.65rem,4.8vw,4.15rem)] font-semibold tracking-[-0.06em] text-white">{title}</h1>
+          <p className="mt-4 hidden max-w-2xl text-sm sm:block leading-relaxed text-slate-200 sm:text-base">{description}</p>
         </div>
 
         {(actions || aside) && (

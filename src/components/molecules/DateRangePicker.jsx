@@ -41,7 +41,7 @@ function DateRangePicker({ value = { from: null, to: null }, onChange }) {
             type="date"
             value={fromDate}
             onChange={handleFromChange}
-            className="date-range-picker__input w-full rounded-2xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm outline-none"
+            className="date-range-picker__input w-full rounded-2xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10"
           />
         </div>
 
@@ -55,7 +55,7 @@ function DateRangePicker({ value = { from: null, to: null }, onChange }) {
             type="date"
             value={toDate}
             onChange={handleToChange}
-            className="date-range-picker__input w-full rounded-2xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm outline-none"
+            className="date-range-picker__input w-full rounded-2xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10"
           />
         </div>
       </div>

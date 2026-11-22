@@ -134,11 +134,11 @@ function TrackingPage() {
                         <h2 className="font-display text-xl font-bold text-surface-950 tracking-tight">Trazabilidad</h2>
                         <div className="flex items-center gap-1.5">
                            <div className="h-1.5 w-1.5 rounded-full bg-success-500 animate-pulse" />
-                           <span className="text-xs font-bold text-surface-400 uppercase tracking-widest">Sistema Operativo</span>
+                           <span className="text-xs font-bold text-surface-500 uppercase tracking-widest">Sistema Operativo</span>
                         </div>
                      </div>
                   </div>
-                  <button onClick={() => setShowSidebar(false)} className="h-8 w-8 rounded-lg hover:bg-surface-100 flex items-center justify-center text-surface-400 transition-colors xl:hidden">
+                  <button onClick={() => setShowSidebar(false)} className="h-8 w-8 rounded-lg hover:bg-surface-100 flex items-center justify-center text-surface-500 transition-colors xl:hidden">
                      <ChevronRight size={18} className="rotate-180" />
                   </button>
                </div>
@@ -210,12 +210,12 @@ function TrackingPage() {
             {!isClient && (
               <div className="p-5 bg-primary-600/5 border-t border-primary-100 flex items-center justify-around">
                  <div className="text-center">
-                    <p className="text-xs font-bold uppercase text-surface-400 tracking-tighter">Activos</p>
+                    <p className="text-xs font-bold uppercase text-surface-500 tracking-tighter">Activos</p>
                     <p className="text-lg font-bold text-primary-700">{activeCount}</p>
                  </div>
                  <div className="h-8 w-px bg-primary-100" />
                  <div className="text-center">
-                    <p className="text-xs font-bold uppercase text-surface-400 tracking-tighter">Total Hoy</p>
+                    <p className="text-xs font-bold uppercase text-surface-500 tracking-tighter">Total Hoy</p>
                     <p className="text-lg font-bold text-primary-700">{packages.length}</p>
                  </div>
               </div>

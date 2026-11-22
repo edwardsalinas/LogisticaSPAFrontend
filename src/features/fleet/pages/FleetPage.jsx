@@ -93,7 +93,7 @@ function FleetPage() {
           </div>
           <div>
             <p className="font-semibold text-surface-900">{row.brand} {row.model}</p>
-            <p className="text-xs uppercase tracking-[0.18em] text-surface-400">{vehicleTypeLabel[row.type] || row.type}</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-surface-500">{vehicleTypeLabel[row.type] || row.type}</p>
           </div>
         </div>
       ),
@@ -103,7 +103,7 @@ function FleetPage() {
     {
       key: 'driver',
       label: 'Conductor',
-      render: (val) => val ? <div className="flex items-center gap-2"><Avatar name={val} size="sm" /><span className="text-sm text-surface-700">{val}</span></div> : <span className="text-sm text-surface-400">Sin asignar</span>,
+      render: (val) => val ? <div className="flex items-center gap-2"><Avatar name={val} size="sm" /><span className="text-sm text-surface-700">{val}</span></div> : <span className="text-sm text-surface-500">Sin asignar</span>,
     },
     { key: 'status', label: 'Estado', render: (val) => <Badge variant={statusMap[val]?.variant || 'neutral'} dot>{statusMap[val]?.label || val}</Badge> },
   ];

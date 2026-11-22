@@ -50,7 +50,7 @@ function TrendChart({ title = 'Tendencia del volumen logistico', data = [], tota
           <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 px-4 py-3">
             <p className="text-xs uppercase tracking-[0.18em] text-surface-500">Variacion</p>
             {change === null ? (
-              <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-400" title="El período anterior no tiene envíos para comparar">—</p>
+              <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-500" title="El período anterior no tiene envíos para comparar">—</p>
             ) : (
               <p className={`mt-1 font-display text-2xl font-semibold tracking-[-0.04em] ${change >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>{change >= 0 ? '+' : ''}{change}%</p>
             )}

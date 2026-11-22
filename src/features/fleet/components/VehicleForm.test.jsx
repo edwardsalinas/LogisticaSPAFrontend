@@ -24,7 +24,7 @@ describe('VehicleForm (conectado al backend)', () => {
     renderForm();
     await submit();
 
-    expect(await screen.findByText('La placa debe tener al menos 6 caracteres')).toBeInTheDocument();
+    expect(await screen.findByText('La placa debe tener al menos 6 caracteres (ej: 1234-ABC)')).toBeInTheDocument();
     expect(screen.getByText('El modelo es requerido')).toBeInTheDocument();
     expect(screen.getByText('La capacidad debe ser positiva')).toBeInTheDocument();
     expect(apiService.createVehicle).not.toHaveBeenCalled();
@@ -82,5 +82,27 @@ describe('VehicleForm (conectado al backend)', () => {
     } finally {
       apiService.createVehicle = spy;
     }
+  });
+
+  it('al elegir el tipo propone la capacidad habitual si está vacía, y no pisa la que ya escribiste', async () => {
+    renderForm();
+    await userEvent.selectOptions(screen.getByLabelText(/tipo de vehículo/i), 'van');
+    expect(screen.getByLabelText(/capacidad/i)).toHaveValue(1500);
+
+    await userEvent.clear(screen.getByLabelText(/capacidad/i));
+    await userEvent.type(screen.getByLabelText(/capacidad/i), '2500');
+    await userEvent.selectOptions(screen.getByLabelText(/tipo de vehículo/i), 'trailer');
+    expect(screen.getByLabelText(/capacidad/i)).toHaveValue(2500);
+  });
+
+  it('traduce los kilos a toneladas para que el dato se entienda', async () => {
+    renderForm();
+    await userEvent.type(screen.getByLabelText(/capacidad/i), '20000');
+    expect(screen.getByText('Equivale a 20 toneladas.')).toBeInTheDocument();
+  });
+
+  it('explica el formato de la placa', () => {
+    renderForm();
+    expect(screen.getByLabelText(/^placa/i)).toHaveAttribute('placeholder', '1234-ABC');
   });
 });

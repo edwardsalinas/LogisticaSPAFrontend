@@ -71,7 +71,7 @@ function TrackingHistory({ packageId, className }) {
                     <p className="text-sm font-semibold text-surface-900">{getStatusLabel(log.status)}</p>
                     <p className="mt-1 flex items-center gap-1.5 text-xs text-surface-500"><MapPinned size={13} strokeWidth={2.2} /> {log.lat}, {log.lng}</p>
                   </div>
-                  <span className="flex items-center gap-1.5 text-xs text-surface-400"><Clock3 size={13} strokeWidth={2.2} /> {new Date(log.timestamp).toLocaleString('es-BO')}</span>
+                  <span className="flex items-center gap-1.5 text-xs text-surface-500"><Clock3 size={13} strokeWidth={2.2} /> {new Date(log.timestamp).toLocaleString('es-BO')}</span>
                 </div>
               </div>
             </div>

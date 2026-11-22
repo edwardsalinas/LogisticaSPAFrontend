@@ -115,7 +115,7 @@ function ShipmentAssignmentForm({ pkg, onSuccess, onCancel }) {
           />
           
           <div className="pt-2">
-            <p className="text-xs text-surface-400 font-medium px-1 mb-4 italic">
+            <p className="text-xs text-surface-500 font-medium px-1 mb-4 italic">
               Solo se muestran despachos con origen y destino coincidentes.
             </p>
             <div className="flex justify-end gap-3">
@@ -128,11 +128,11 @@ function ShipmentAssignmentForm({ pkg, onSuccess, onCancel }) {
         </div>
       ) : (
         <div className="text-center py-8 px-4 rounded-[1.8rem] border-2 border-dashed border-surface-200 bg-surface-50/50">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white text-surface-300 shadow-sm mb-4">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white text-surface-500 shadow-sm mb-4">
             <Truck size={32} />
           </div>
           <p className="text-surface-600 font-medium font-display">No hay despachos planeados para esta ruta</p>
-          <p className="text-sm text-surface-400 mt-2 max-w-[240px] mx-auto italic">
+          <p className="text-sm text-surface-500 mt-2 max-w-[240px] mx-auto italic">
             Debes crear primero un despacho (viaje) para {pkg.origen} → {pkg.destino} en la sección de rutas.
           </p>
           <div className="mt-6 flex justify-center">

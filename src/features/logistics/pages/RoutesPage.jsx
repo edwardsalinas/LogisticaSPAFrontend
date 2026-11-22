@@ -449,7 +449,7 @@ function RoutesPage() {
     const isActive = !!value;
     return (
       <div className={`relative flex items-center group transition-all duration-300 ${className}`}>
-        <div className={`absolute left-3.5 z-10 pointer-events-none transition-colors duration-300 ${isActive ? 'text-primary-600' : 'text-surface-400 group-hover:text-surface-600'}`}>
+        <div className={`absolute left-3.5 z-10 pointer-events-none transition-colors duration-300 ${isActive ? 'text-primary-600' : 'text-surface-500 group-hover:text-surface-600'}`}>
           <Icon size={16} strokeWidth={2.5} />
         </div>
         <select
@@ -468,7 +468,7 @@ function RoutesPage() {
             </option>
           ))}
         </select>
-        <div className={`absolute right-3 z-10 pointer-events-none transition-all duration-300 ${isActive ? 'text-primary-500 rotate-180' : 'text-surface-400'}`}>
+        <div className={`absolute right-3 z-10 pointer-events-none transition-all duration-300 ${isActive ? 'text-primary-500 rotate-180' : 'text-surface-500'}`}>
           <ChevronDown size={14} strokeWidth={2.5} />
         </div>
       </div>
@@ -503,7 +503,7 @@ function RoutesPage() {
                 </div>
                 <div>
                   <h2 className="font-display text-xl font-bold tracking-tight text-surface-950 leading-tight">Control de Rutas</h2>
-                  <p className="text-xs font-bold text-surface-400 uppercase tracking-[0.2em] mt-0.5">Operativa Logística</p>
+                  <p className="text-xs font-bold text-surface-500 uppercase tracking-[0.2em] mt-0.5">Operativa Logística</p>
                 </div>
               </div>
               
@@ -520,7 +520,7 @@ function RoutesPage() {
 
             <div className="bg-surface-50/50 rounded-2xl border border-surface-100/80 px-3 py-2 flex items-center gap-3">
               <div className="relative group shrink-0">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-surface-400 group-focus-within:text-primary-500 transition-colors">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-surface-500 group-focus-within:text-primary-500 transition-colors">
                   <Search size={16} strokeWidth={2.5} />
                 </div>
                 <input
@@ -569,7 +569,7 @@ function RoutesPage() {
                 />
 
                 {anyFilterActive && (
-                  <button onClick={handleClearFilters} className="flex shrink-0 items-center justify-center h-9 w-9 text-surface-400 hover:text-danger-600 transition-all bg-white border border-surface-200 rounded-xl hover:bg-danger-50 shadow-sm" title="Limpiar"><X size={14} strokeWidth={3} /></button>
+                  <button onClick={handleClearFilters} className="flex shrink-0 items-center justify-center h-9 w-9 text-surface-500 hover:text-danger-600 transition-all bg-white border border-surface-200 rounded-xl hover:bg-danger-50 shadow-sm" title="Limpiar"><X size={14} strokeWidth={3} /></button>
                 )}
               </div>
             </div>

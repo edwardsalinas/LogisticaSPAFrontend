@@ -28,7 +28,7 @@ function CheckpointAlert({ checkpoint, onDismiss }) {
                 <p className="text-xs uppercase tracking-[0.18em] text-emerald-600">Checkpoint alcanzado</p>
                 <h3 className="mt-1 text-sm font-semibold text-surface-950">{checkpoint.name}</h3>
               </div>
-              <button onClick={() => { setIsVisible(false); onDismiss?.(); }} className="text-surface-400 transition-colors hover:text-surface-700">
+              <button onClick={() => { setIsVisible(false); onDismiss?.(); }} className="text-surface-500 transition-colors hover:text-surface-700">
                 <X size={16} strokeWidth={2.2} />
               </button>
             </div>

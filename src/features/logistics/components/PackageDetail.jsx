@@ -78,7 +78,7 @@ function PackageDetail({ pkg }) {
               return (
                 <div key={step.key} className="flex gap-3">
                   <div className="flex flex-col items-center"><div className={`mt-1 h-3 w-3 rounded-full ${isCompleted ? 'bg-primary-500' : 'bg-surface-300'} ${isCurrent ? 'ring-4 ring-primary-100' : ''}`} />{idx < statusSteps.length - 1 && <div className={`h-10 w-0.5 ${isCompleted ? 'bg-primary-300' : 'bg-surface-200'}`} />}</div>
-                  <div className="pb-2"><p className={`text-sm font-semibold ${isCompleted ? 'text-surface-900' : 'text-surface-400'}`}>{step.label}</p><p className="mt-1 text-xs text-surface-500">{step.description}</p></div>
+                  <div className="pb-2"><p className={`text-sm font-semibold ${isCompleted ? 'text-surface-900' : 'text-surface-500'}`}>{step.label}</p><p className="mt-1 text-xs text-surface-500">{step.description}</p></div>
                 </div>
               );
             })}
@@ -114,7 +114,7 @@ function PackageDetail({ pkg }) {
                     <p className="text-sm font-semibold text-surface-900">{getStatusLabel(log.status)}</p>
                     <p className="mt-1 flex items-center gap-1.5 text-xs text-surface-500"><MapPinned size={13} strokeWidth={2.2} /> {log.lat}, {log.lng}</p>
                   </div>
-                  <span className="flex items-center gap-1.5 text-xs text-surface-400"><Clock3 size={13} strokeWidth={2.2} /> {new Date(log.timestamp).toLocaleString('es-BO')}</span>
+                  <span className="flex items-center gap-1.5 text-xs text-surface-500"><Clock3 size={13} strokeWidth={2.2} /> {new Date(log.timestamp).toLocaleString('es-BO')}</span>
                 </div>
               </div>
             ))}

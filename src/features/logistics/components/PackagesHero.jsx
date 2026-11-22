@@ -15,7 +15,7 @@ export default function PackagesHero({ totalPackages, deliveredCount, transitCou
             <PackageCheck size={14} strokeWidth={2.4} />
             Gestion de paquetes
           </div>
-          <h1 className="mt-5 max-w-3xl font-display text-[clamp(2.1rem,5vw,4rem)] font-semibold tracking-[-0.06em] text-white">
+          <h1 className="mt-3 max-w-3xl sm:mt-5 font-display text-[clamp(1.65rem,5vw,4rem)] font-semibold tracking-[-0.06em] text-white">
             Inventario de paquetes con lectura clara de flujo y trazabilidad.
           </h1>
         </div>

@@ -105,7 +105,7 @@ function LiveTracker({ packageId, routeId }) {
                   <p>{history.length} registros disponibles</p>
                 </div>
               ) : (
-                <p className="mt-3 text-xs text-surface-400">Esperando senal de posicion...</p>
+                <p className="mt-3 text-xs text-surface-500">Esperando senal de posicion...</p>
               )}
 
               {error && <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600"><TriangleAlert size={13} strokeWidth={2.2} /> {error}</p>}

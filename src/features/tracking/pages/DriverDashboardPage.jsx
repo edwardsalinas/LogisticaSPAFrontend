@@ -643,7 +643,7 @@ function DriverDashboardPage() {
                   {isActive && (
                     <div className="pt-2">
                        <div className="flex justify-between items-center mb-1.5">
-                         <span className="text-xs font-bold text-surface-400 uppercase tracking-wider">Progreso del Viaje</span>
+                         <span className="text-xs font-bold text-surface-500 uppercase tracking-wider">Progreso del Viaje</span>
                          <span className="text-xs font-bold text-primary-600">{realProgress}%</span>
                        </div>
                        <div className="h-1.5 w-full bg-surface-200 rounded-full overflow-hidden">
@@ -657,7 +657,7 @@ function DriverDashboardPage() {
 
                   {isActive && (activeRouteData?.checkpoints?.length > 0) && (
                     <div className="pt-0">
-                      <p className="text-xs font-bold text-surface-400 uppercase tracking-[0.2em] mb-3 px-1">Checkpoints de Control</p>
+                      <p className="text-xs font-bold text-surface-500 uppercase tracking-[0.2em] mb-3 px-1">Checkpoints de Control</p>
                       <div className="space-y-2.5 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
                         {[...(activeRouteData?.checkpoints || [])]
                           .sort((a,b) => (a.sequence_order || 0) - (b.sequence_order || 0))
@@ -691,7 +691,7 @@ function DriverDashboardPage() {
 
                   {isActive && (activeRouteData?.packages?.length > 0) && (
                     <div className="pt-2 border-t border-surface-100/80">
-                      <p className="text-xs font-bold text-surface-400 uppercase tracking-[0.2em] mb-3 px-1">Carga a Entregar</p>
+                      <p className="text-xs font-bold text-surface-500 uppercase tracking-[0.2em] mb-3 px-1">Carga a Entregar</p>
                       <div className="space-y-2.5 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
                         {activeRouteData.packages.map(pkg => {
                           const isDelivered = isPackageDelivered(pkg.status);
@@ -705,7 +705,7 @@ function DriverDashboardPage() {
                                 </div>
                                 <div className="min-w-0">
                                   <p className={`text-[12px] font-bold tracking-tight ${isDelivered ? 'text-slate-500' : 'text-surface-900'}`}>{pkg.tracking_code}</p>
-                                  <p className="text-xs text-surface-400 truncate mt-0.5 leading-none">{pkg.destino}</p>
+                                  <p className="text-xs text-surface-500 truncate mt-0.5 leading-none">{pkg.destino}</p>
                                 </div>
                               </div>
                               <div className="shrink-0 pl-2">
@@ -797,17 +797,17 @@ function DriverDashboardPage() {
 
                 <div className="flex items-center gap-6">
                   <div className="flex items-center gap-2">
-                    <Activity size={12} className="text-surface-400" />
+                    <Activity size={12} className="text-surface-500" />
                     <div className="flex flex-col">
-                      <span className="text-[7.5px] font-bold text-surface-400 uppercase tracking-tighter leading-none mb-0.5">Pings</span>
+                      <span className="text-[7.5px] font-bold text-surface-500 uppercase tracking-tighter leading-none mb-0.5">Pings</span>
                       <span className="text-xs font-bold text-surface-900">{activeRouteData?.ping_count || 0}</span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Clock size={12} className="text-surface-400" />
+                    <Clock size={12} className="text-surface-500" />
                     <div className="flex flex-col">
-                      <span className="text-[7.5px] font-bold text-surface-400 uppercase tracking-tighter leading-none mb-0.5">Inicio</span>
+                      <span className="text-[7.5px] font-bold text-surface-500 uppercase tracking-tighter leading-none mb-0.5">Inicio</span>
                       <span className="text-xs font-bold text-surface-900">
                         {activeRouteData?.start_time ? new Date(activeRouteData.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                       </span>
@@ -817,7 +817,7 @@ function DriverDashboardPage() {
                   <div className="flex items-center gap-2 ml-1">
                     <MapPin size={12} className="text-emerald-500" />
                     <div className="flex flex-col">
-                       <span className="text-[7.5px] font-bold text-surface-400 uppercase tracking-tighter leading-none mb-0.5">Destino</span>
+                       <span className="text-[7.5px] font-bold text-surface-500 uppercase tracking-tighter leading-none mb-0.5">Destino</span>
                        <span className="text-xs font-bold text-surface-900 truncate max-w-[150px]">
                          {(activeRouteData || activeTrip?.route)?.destination || '---'}
                        </span>
@@ -830,7 +830,7 @@ function DriverDashboardPage() {
             {!isActive && !selectedRouteId && !currentPosition && (
               <div className="absolute inset-0 flex items-center justify-center bg-surface-900/15 backdrop-blur-sm z-[1000] rounded-[1.6rem] pointer-events-none m-3">
                 <div className="bg-white/95 p-8 rounded-2xl shadow-2xl text-center border border-white/20 max-w-sm">
-                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-surface-100 text-surface-400 mb-4">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-surface-100 text-surface-500 mb-4">
                     <Navigation size={28} />
                   </div>
                   <h3 className="font-display text-xl font-bold text-surface-900">GPS en espera</h3>

@@ -61,12 +61,12 @@ export default function SchedulePanel() {
       </div>
 
       {loading ? (
-        <div className="text-center py-8 text-surface-400">Cargando cronogramas...</div>
+        <div className="text-center py-8 text-surface-500">Cargando cronogramas...</div>
       ) : schedules.length === 0 ? (
         <div className="text-center py-10 bg-surface-50 rounded-2xl border border-dashed border-surface-200">
-          <CalendarRange size={36} className="mx-auto text-surface-300 mb-3" />
+          <CalendarRange size={36} className="mx-auto text-surface-500 mb-3" />
           <p className="text-surface-500 font-medium">No hay cronogramas configurados</p>
-          <p className="text-surface-400 text-sm mt-1">Usa "Crear Ruta" → Programación Semanal para añadir uno.</p>
+          <p className="text-surface-500 text-sm mt-1">Usa "Crear Ruta" → Programación Semanal para añadir uno.</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -79,7 +79,7 @@ export default function SchedulePanel() {
               <div key={sch.id} className="group bg-white border border-surface-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all relative">
                 <button
                   onClick={() => handleDelete(sch.id)}
-                  className="absolute top-4 right-4 p-1.5 text-surface-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                  className="absolute top-4 right-4 p-1.5 text-surface-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -106,13 +106,13 @@ export default function SchedulePanel() {
 
                 <div className="flex gap-1.5 mt-3">
                   {DAY_NAMES.map((name, idx) => (
-                    <span key={idx} className={clsx("w-8 h-8 flex items-center justify-center text-xs font-bold rounded-lg", dayTimes[String(idx)] ? "bg-primary-100 text-primary-700" : "bg-surface-50 text-surface-300")}>
+                    <span key={idx} className={clsx("w-8 h-8 flex items-center justify-center text-xs font-bold rounded-lg", dayTimes[String(idx)] ? "bg-primary-100 text-primary-700" : "bg-surface-50 text-surface-500")}>
                       {name[0]}
                     </span>
                   ))}
                 </div>
 
-                <div className="mt-3 pt-3 border-t border-surface-100 text-xs text-surface-400 space-y-1">
+                <div className="mt-3 pt-3 border-t border-surface-100 text-xs text-surface-500 space-y-1">
                   {sch.vehicles && <p>🚛 {sch.vehicles.plate} - {sch.vehicles.brand} {sch.vehicles.model}</p>}
                   {sch.drivers && <p>👤 {sch.drivers.full_name || sch.drivers.email}</p>}
                 </div>

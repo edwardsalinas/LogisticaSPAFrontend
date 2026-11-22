@@ -6,7 +6,7 @@ function StatusTimeline({ steps = [] }) {
       {steps.map((step, index) => {
         const isCompleted = step.completed;
         const isActive = step.active;
-        const tone = isCompleted ? 'bg-emerald-500 text-white border-emerald-500' : isActive ? 'bg-primary-500 text-white border-primary-500 ring-4 ring-primary-100' : 'bg-white text-surface-400 border-surface-200';
+        const tone = isCompleted ? 'bg-emerald-500 text-white border-emerald-500' : isActive ? 'bg-primary-500 text-white border-primary-500 ring-4 ring-primary-100' : 'bg-white text-surface-500 border-surface-200';
         const lineTone = isCompleted ? 'bg-emerald-200' : 'bg-surface-200';
 
         return (
@@ -24,7 +24,7 @@ function StatusTimeline({ steps = [] }) {
                   <p className={`text-sm font-semibold ${isActive || isCompleted ? 'text-surface-950' : 'text-surface-500'}`}>{step.label}</p>
                   {step.location && <p className="mt-1 flex items-center gap-1.5 text-xs text-surface-500"><MapPinned size={13} strokeWidth={2.2} /> {step.location}</p>}
                 </div>
-                {step.date && <span className="inline-flex items-center gap-1.5 text-xs text-surface-400"><Clock3 size={13} strokeWidth={2.2} /> {step.date}</span>}
+                {step.date && <span className="inline-flex items-center gap-1.5 text-xs text-surface-500"><Clock3 size={13} strokeWidth={2.2} /> {step.date}</span>}
               </div>
             </div>
           </div>

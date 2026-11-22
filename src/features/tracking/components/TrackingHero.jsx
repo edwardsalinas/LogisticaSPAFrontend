@@ -15,10 +15,10 @@ export default function TrackingHero({ visibleCount, activeCount, pendingCount, 
             <Search size={14} strokeWidth={2.4} />
             Torre de control
           </div>
-          <h1 className="mt-5 max-w-3xl font-display text-[clamp(2.1rem,5vw,4rem)] font-semibold tracking-[-0.06em] text-white">
+          <h1 className="mt-3 max-w-3xl sm:mt-5 font-display text-[clamp(1.65rem,5vw,4rem)] font-semibold tracking-[-0.06em] text-white">
             Seguimiento en vivo, excepciones y busqueda universal.
           </h1>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">
+          <p className="mt-4 hidden max-w-2xl text-sm sm:block leading-relaxed text-slate-300 sm:text-base">
             El layout empareja la vista de busqueda con un mapa vivo para que cada paquete se entienda rapido sin perder contexto geoespacial.
           </p>
         </div>
