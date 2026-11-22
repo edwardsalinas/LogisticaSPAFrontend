@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './AuthContext';
 import { AiModeProvider } from './AiModeContext';
+import { AssistantChatProvider } from '../features/ai-chat/AssistantChatProvider';
 import AppRouter from './router';
 
 import { Toaster } from 'sonner';
@@ -22,7 +23,9 @@ function App() {
       <Toaster position="top-right" richColors closeButton />
       <AuthProvider>
         <AiModeProvider>
-          <AppRouter />
+          <AssistantChatProvider>
+            <AppRouter />
+          </AssistantChatProvider>
         </AiModeProvider>
       </AuthProvider>
     </QueryClientProvider>

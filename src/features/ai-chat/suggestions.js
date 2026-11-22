@@ -1,5 +1,6 @@
 /** Preguntas sugeridas según el rol: qué se le puede preguntar al asistente. */
 const CLIENT = [
+  { icon: '🗓️', label: '¿Qué viajes hay esta semana?', value: '¿Qué viajes hay esta semana y cuánto espacio queda?' },
   { icon: '📦', label: '¿Qué paquetes tengo?', value: '¿Qué paquetes tengo?' },
   { icon: '📍', label: '¿Dónde está mi último paquete?', value: '¿Dónde está mi último paquete?' },
   { icon: '🚚', label: '¿Cuáles están en tránsito?', value: '¿Cuáles de mis paquetes están en tránsito?' },
@@ -19,6 +20,7 @@ const OPERATIONS = [
   { icon: '📍', label: 'Ubicar un paquete', value: '¿Dónde está el paquete TRK-', prefill: true },
   { icon: '🔎', label: 'Buscar por nombre', value: 'Busca el paquete a nombre de ', prefill: true },
   { icon: '🛣️', label: 'Rutas en tránsito', value: '¿Qué rutas están en tránsito ahora?' },
+  { icon: '🗓️', label: 'Viajes con espacio', value: '¿Qué viajes hay el viernes de 3 a 5 de la tarde y cuánto espacio tienen?' },
   { icon: '➕', label: 'Crear un paquete', value: 'Crea un paquete de ', prefill: true },
   { icon: '📝', label: 'Registrar un evento', value: 'Registra que el paquete TRK-', prefill: true },
 ];

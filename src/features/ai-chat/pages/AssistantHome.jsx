@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { RotateCcw, Send, Sparkles } from 'lucide-react';
+import { Headphones, Mic, RotateCcw, Send, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { useAuth } from '../../../app/AuthContext';
 import useRole from '../../../app/useRole';
 import Skeleton from '../../../components/atoms/Skeleton';
 import ChatBubble from '../components/ChatBubble';
+import VoiceMode from '../components/VoiceMode';
+import { useSpeechRecognition, useSpeechSynthesis } from '../useVoice';
+import { stripForSpeech } from '../voice';
 import useAssistantChat, { MAX_MESSAGE_LENGTH } from '../useAssistantChat';
 import { introForRole, suggestionsForRole } from '../suggestions';
 
@@ -15,6 +18,11 @@ export const displayName = (user) => {
 };
 
 const SLOW_AFTER_MS = 8000;
+const SPEAK_KEY = 'logistica:ai-speak-replies';
+
+const readSpeakPref = () => {
+  try { return window.localStorage.getItem(SPEAK_KEY) === '1'; } catch { return false; }
+};
 
 /**
  * Vista "IA primero": la conversación con el asistente es la pantalla principal.
@@ -23,8 +31,12 @@ const SLOW_AFTER_MS = 8000;
 function AssistantHome() {
   const { user } = useAuth();
   const { role } = useRole();
-  const { messages, loading, send, reset } = useAssistantChat([]);
+  const chat = useAssistantChat();
+  const { messages, loading, send, reset } = chat;
   const [input, setInput] = useState('');
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [speakReplies, setSpeakReplies] = useState(readSpeakPref);
+  const synth = useSpeechSynthesis();
   const [slow, setSlow] = useState(false);
   const endRef = useRef(null);
 
@@ -45,7 +57,25 @@ function AssistantHome() {
   const submit = async (text = input) => {
     if (!String(text).trim() || loading) return;
     setInput('');
-    await send(text);
+    const result = await send(text);
+    // con "leer respuestas" activado, la respuesta también se escucha
+    if (speakReplies && result?.ok) synth.speak(stripForSpeech(result.text));
+  };
+
+  // Dictado: se habla una frase, se envía y, si la lectura está activada, se responde en voz alta
+  const dictation = useSpeechRecognition({ onFinal: (spoken) => submit(spoken) });
+
+  const toggleSpeak = () => {
+    const next = !speakReplies;
+    setSpeakReplies(next);
+    if (!next) synth.cancel();
+    try { window.localStorage.setItem(SPEAK_KEY, next ? '1' : '0'); } catch { /* sin almacenamiento */ }
+  };
+
+  const openVoice = () => {
+    dictation.abort();
+    synth.cancel();
+    setVoiceOpen(true);
   };
 
   const onKeyDown = (e) => {
@@ -59,16 +89,51 @@ function AssistantHome() {
     <div className="rounded-[1.6rem] border border-surface-200 bg-white p-2 shadow-[0_20px_50px_-30px_rgba(15,23,42,0.35)] focus-within:border-primary-400">
       <div className="flex items-end gap-2">
         <textarea
-          value={input}
+          value={dictation.listening && dictation.interim ? dictation.interim : input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
           maxLength={MAX_MESSAGE_LENGTH}
           aria-label="Mensaje para el asistente"
-          placeholder="Pregunta lo que necesites: ¿dónde está mi paquete?"
+          placeholder={dictation.listening ? 'Te escucho…' : 'Pregunta lo que necesites: ¿dónde está mi paquete?'}
           rows={1}
           disabled={loading}
           className="max-h-40 min-h-[3rem] flex-1 resize-none rounded-2xl bg-transparent px-4 py-3 text-base outline-none placeholder:text-surface-400 disabled:opacity-60"
         />
+        {dictation.supported && (
+          <button
+            type="button"
+            onClick={() => (dictation.listening ? dictation.stop() : dictation.start())}
+            disabled={loading}
+            aria-label={dictation.listening ? 'Dejar de dictar' : 'Dictar con el micrófono'}
+            aria-pressed={dictation.listening}
+            title="Dictar con el micrófono"
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border transition-colors disabled:opacity-40 ${dictation.listening ? 'animate-pulse border-red-300 bg-red-50 text-red-600' : 'border-surface-200 bg-white text-surface-600 hover:bg-surface-50'}`}
+          >
+            <Mic size={18} aria-hidden="true" />
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={openVoice}
+          aria-label="Abrir el chat de voz"
+          title={dictation.supported ? 'Chat de voz: habla y el asistente te responde en voz alta' : 'Tu navegador no permite reconocimiento de voz (usa Chrome o Edge)'}
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary-200 bg-primary-50 text-primary-700 transition-colors hover:bg-primary-100"
+        >
+          <Headphones size={18} aria-hidden="true" />
+        </button>
+        {synth.supported && (
+          <button
+            type="button"
+            onClick={toggleSpeak}
+            role="switch"
+            aria-checked={speakReplies}
+            aria-label="Leer las respuestas en voz alta"
+            title={speakReplies ? 'Las respuestas se leen en voz alta' : 'Leer las respuestas en voz alta'}
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border transition-colors ${speakReplies ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-surface-200 bg-white text-surface-500 hover:bg-surface-50'}`}
+          >
+            {speakReplies ? <Volume2 size={18} aria-hidden="true" /> : <VolumeX size={18} aria-hidden="true" />}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => submit()}
@@ -83,6 +148,7 @@ function AssistantHome() {
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-9.5rem)] w-full max-w-3xl flex-col">
+      {voiceOpen && <VoiceMode chat={chat} onClose={() => setVoiceOpen(false)} />}
       {empty ? (
         <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">
           <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-[linear-gradient(135deg,#0b4ea2_0%,#137fec_100%)] text-white shadow-lg shadow-primary-500/25">

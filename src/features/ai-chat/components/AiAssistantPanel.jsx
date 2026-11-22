@@ -16,12 +16,15 @@ const WELCOME_MESSAGE = {
  * Panel flotante del asistente (Modo clásico). Comparte la conversación y las tarjetas con la vista del Modo IA.
  */
 function AiAssistantPanel({ mode = 'panel', onClose = null, role }) {
-  const { messages, loading, send, reset } = useAssistantChat([WELCOME_MESSAGE]);
+  const chat = useAssistantChat();
+  const { loading, send, reset } = chat;
+  // el saludo no es parte de la conversación compartida: se muestra solo mientras está vacía
+  const messages = chat.messages.length ? chat.messages : [WELCOME_MESSAGE];
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
 
   const isPanel = mode === 'panel';
-  const onlyWelcome = messages.length === 1;
+  const onlyWelcome = chat.messages.length === 0;
   const suggestions = suggestionsForRole(role).filter((s) => !s.prefill).slice(0, 3);
 
   useEffect(() => {
@@ -35,7 +38,7 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role }) {
   };
 
   const handleNewConversation = () => {
-    reset([{ role: 'assistant', local: true, content: 'Nueva conversación iniciada. ¿Qué quieres consultar?' }]);
+    reset([]);
   };
 
   const handleKeyDown = (e) => {

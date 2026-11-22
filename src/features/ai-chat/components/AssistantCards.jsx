@@ -293,6 +293,86 @@ export function ActionProposalCard({ data }) {
   );
 }
 
+const kgText = (n) => (n == null ? 'capacidad sin registrar' : `${Number(n).toLocaleString('es-BO')} kg`);
+
+function TripRow({ trip, canSchedule, onAsk, weightKg }) {
+  const fits = trip.fits;
+  return (
+    <li className="px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-surface-900">{trip.origin} → {trip.destination}</p>
+        <span className={`rounded-full border px-2.5 py-1 text-[0.68rem] font-bold uppercase tracking-wider ${fits === false ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+          {fits === false ? 'No cabe' : trip.free_kg != null ? `${Number(trip.free_kg).toLocaleString('es-BO')} kg libres` : 'Con cupo'}
+        </span>
+      </div>
+      <p className="mt-0.5 text-xs text-surface-500">
+        Sale {formatDateTime(trip.departure_time) ?? '—'}{trip.estimated_arrival ? ` · llega ${formatDateTime(trip.estimated_arrival)}` : ''}
+        {trip.vehicle ? ` · ${trip.vehicle}` : ''}{trip.capacity_kg != null ? ` (${kgText(trip.capacity_kg)})` : ''}
+      </p>
+      {canSchedule && fits !== false && (
+        <button
+          type="button"
+          onClick={() => onAsk?.(`Quiero agendar un paquete${weightKg ? ` de ${weightKg} kg` : ''} en el viaje ${trip.ref}`)}
+          className="mt-2 rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-bold text-primary-700 hover:bg-primary-100"
+        >
+          Agendar un paquete aquí
+        </button>
+      )}
+    </li>
+  );
+}
+
+/** Viajes disponibles en una fecha y horario, con el espacio que queda; alternativas si no hay ninguno. */
+export function AvailableTripsCard({ data, onAsk }) {
+  const { trips = [], alternatives = [], query = {}, can_schedule: canSchedule } = data;
+  const when = [query.date, query.from_time && query.to_time ? `${query.from_time}–${query.to_time}` : null].filter(Boolean).join(' · ');
+  return (
+    <Card>
+      <div className="border-b border-surface-100 bg-surface-50 px-4 py-3">
+        <p className="text-sm font-bold text-surface-900">Viajes disponibles{query.destination ? ` a ${query.destination}` : ''}{query.origin ? ` desde ${query.origin}` : ''}</p>
+        {when && <p className="mt-0.5 text-xs text-surface-500">{when}</p>}
+      </div>
+      {trips.length > 0 && <ul className="divide-y divide-surface-100">{trips.map((t) => <TripRow key={t.ref} trip={t} canSchedule={canSchedule} onAsk={onAsk} weightKg={query.weight_kg} />)}</ul>}
+      {trips.length === 0 && (
+        <>
+          <p className="px-4 py-3 text-sm text-surface-600">No hay viajes en ese horario.</p>
+          {alternatives.length > 0 && (
+            <>
+              <p className="border-t border-surface-100 px-4 pt-3 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-surface-500">Los más cercanos</p>
+              <ul className="divide-y divide-surface-100">{alternatives.map((t) => <TripRow key={t.ref} trip={t} canSchedule={canSchedule} onAsk={onAsk} weightKg={query.weight_kg} />)}</ul>
+            </>
+          )}
+        </>
+      )}
+    </Card>
+  );
+}
+
+/** Vehículos y conductores libres u ocupados en una fecha y horario (solo personal). */
+export function FleetAvailabilityCard({ data }) {
+  const { window: w = {}, vehicles_free: vf = [], vehicles_busy: vb = [], drivers_free: df = [], drivers_busy: db = [] } = data;
+  const Col = ({ title, items, tone, label }) => (
+    <div>
+      <p className={`text-[0.62rem] font-semibold uppercase tracking-[0.16em] ${tone}`}>{title} ({items.length})</p>
+      {items.length === 0 ? <p className="mt-1 text-sm text-surface-400">—</p> : <ul className="mt-1 space-y-1">{items.map((i) => <li key={label(i)} className="text-sm text-surface-800">{label(i)}</li>)}</ul>}
+    </div>
+  );
+  return (
+    <Card>
+      <div className="border-b border-surface-100 bg-surface-50 px-4 py-3">
+        <p className="text-sm font-bold text-surface-900">Flota en ese horario</p>
+        <p className="mt-0.5 text-xs text-surface-500">{[w.date, w.from_time && w.to_time ? `${w.from_time}–${w.to_time}` : null].filter(Boolean).join(' · ')}</p>
+      </div>
+      <div className="grid gap-4 px-4 py-4 sm:grid-cols-2">
+        <Col title="Vehículos libres" items={vf} tone="text-emerald-700" label={(v) => v.vehicle || v.plate} />
+        <Col title="Vehículos ocupados" items={vb} tone="text-amber-700" label={(v) => v.vehicle || v.plate} />
+        <Col title="Conductores libres" items={df} tone="text-emerald-700" label={(d) => d.name} />
+        <Col title="Conductores ocupados" items={db} tone="text-amber-700" label={(d) => d.name} />
+      </div>
+    </Card>
+  );
+}
+
 /** Elige la tarjeta según el tipo de dato. */
 export function AttachmentCard({ attachment, onAsk, role }) {
   switch (attachment?.kind) {
@@ -302,6 +382,8 @@ export function AttachmentCard({ attachment, onAsk, role }) {
     case 'driver_agenda': return <DriverAgendaCard data={attachment} onAsk={onAsk} />;
     case 'fleet_status': return <FleetCard data={attachment} />;
     case 'action_proposal': return <ActionProposalCard data={attachment} />;
+    case 'available_trips': return <AvailableTripsCard data={attachment} onAsk={onAsk} />;
+    case 'fleet_availability': return <FleetAvailabilityCard data={attachment} />;
     default: return null;
   }
 }

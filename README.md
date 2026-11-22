@@ -101,7 +101,7 @@ npm run build
 ## Pruebas
 
 ```bash
-npm test      # Vitest + Testing Library (jsdom): 95 pruebas
+npm test      # Vitest + Testing Library (jsdom): 138 pruebas
 ```
 
 Cubren todos los formularios principales (login, paquetes, vehículos, checkpoints, rutas, eventos de seguimiento y asignaciones; React Hook Form + Zod), el asistente de IA conectado al backend, la cola offline de puntos GPS (IndexedDB), el cliente HTTP con sesión por cookie (renovación y reintento tras un 401), la resolución de roles, la unificación de estados con el backend y el panel del conductor (aviso de modo offline). El CI (`.github/workflows/ci.yml`) ejecuta `npm test` y `npm run build` en cada push.
@@ -139,6 +139,7 @@ npm run e2e:headed   # viendo el navegador
 
 - `e2e/navigation.spec.js`: cada rol recorre sus páginas sin errores de consola ni de API, y no entra a páginas de otros roles.
 - `e2e/ai-mode.spec.js`: el Modo IA (interruptor, preferencia, respuestas con tarjetas por rol). Escribe datos etiquetados y guarda sus ids en `e2e-results/created-ai.json`.
+- `e2e/ai-voice.spec.js`: chat de voz (reconocimiento y síntesis simulados), varias peticiones en una frase, contexto entre preguntas, conversación que sobrevive al cambio de pantalla, acciones que no se confirman por voz y permisos del cliente. Sin datos persistentes.
 - `e2e/ai-actions.spec.js`: acciones del asistente con confirmación (la tarjeta no cambia nada hasta confirmar, cancelar, un tercero no puede confirmar, no se repite, permisos por rol). Ids en `e2e-results/created-actions.json`.
 - `e2e/lifecycle.spec.js`: ciclo completo con acciones reales (viaje, paquete, evento, entrega del conductor con nota, vista del cliente, Analítica y asistente de IA). Escribe datos etiquetados `E2E-<sello>` y guarda sus ids en `e2e-results/created.json`.
 
@@ -161,3 +162,16 @@ Interruptor **Modo IA** en la barra superior (preferencia por usuario, guardada 
 - **Activado:** la aplicación abre en el asistente (`/` y `/assistant`), para todos los roles. Se pregunta en lenguaje natural ("¿dónde está mi paquete?", "¿cómo va la operación?", "¿qué entregas tengo hoy?") y las respuestas incluyen tarjetas con los datos. Si se le pide una acción (crear un paquete, registrar un evento, entregar), el asistente la **propone** en una tarjeta y solo se ejecuta al pulsar **Confirmar**. El menú añade **Asistente** como primera opción y el Dashboard pasa a `/dashboard`.
 
 Código: `src/app/AiModeContext.jsx` (preferencia), `src/features/ai-chat/` (vista, tarjetas, preguntas sugeridas por rol y el hook de conversación compartido con el panel flotante).
+
+## Chat de voz y conversación
+
+- **Conversación compartida:** el panel flotante, la pantalla del asistente y el chat de voz hablan en la misma conversación, que no se pierde al cambiar de pantalla y se borra al cerrar sesión o cambiar de usuario (`AssistantChatProvider`).
+- **Dictar** (botón del micrófono): hablas una frase y se envía como pregunta.
+- **Chat de voz** (botón de auriculares): pantalla completa con un círculo de estados (te escucho / pensando / hablando). El asistente responde en voz alta y vuelve a escucharte (**manos libres**, desactivable); tocar el círculo mientras habla lo **interrumpe**. Tras dos silencios seguidos se detiene.
+- **Leer las respuestas** (botón del altavoz): en el chat escrito, las respuestas también se escuchan.
+- **Las acciones no se confirman por voz:** pedirlas por voz crea la tarjeta, pero ejecutar exige pulsar **Confirmar**.
+
+Limitaciones y privacidad (Web Speech API del navegador, sin servidor ni claves propias):
+- El reconocimiento de voz funciona en **Chrome, Edge y Safari**; en Firefox no hay micrófono (queda el chat escrito y la lectura en voz alta). Necesita HTTPS o `localhost` y permiso de micrófono.
+- En **Chrome el audio se procesa en servidores de Google**; el asistente solo recibe el texto transcrito.
+- La calidad del reconocimiento y de la voz dependen del navegador y del sistema operativo; las pruebas automáticas usan un reconocimiento simulado (no pueden validar la voz real).
