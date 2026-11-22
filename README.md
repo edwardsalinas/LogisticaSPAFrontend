@@ -101,7 +101,7 @@ npm run build
 ## Pruebas
 
 ```bash
-npm test      # Vitest + Testing Library (jsdom): 138 pruebas
+npm test      # Vitest + Testing Library (jsdom): 144 pruebas
 ```
 
 Cubren todos los formularios principales (login, paquetes, vehículos, checkpoints, rutas, eventos de seguimiento y asignaciones; React Hook Form + Zod), el asistente de IA conectado al backend, la cola offline de puntos GPS (IndexedDB), el cliente HTTP con sesión por cookie (renovación y reintento tras un 401), la resolución de roles, la unificación de estados con el backend y el panel del conductor (aviso de modo offline). El CI (`.github/workflows/ci.yml`) ejecuta `npm test` y `npm run build` en cada push.
@@ -175,3 +175,7 @@ Limitaciones y privacidad (Web Speech API del navegador, sin servidor ni claves 
 - El reconocimiento de voz funciona en **Chrome, Edge y Safari**; en Firefox no hay micrófono (queda el chat escrito y la lectura en voz alta). Necesita HTTPS o `localhost` y permiso de micrófono.
 - En **Chrome el audio se procesa en servidores de Google**; el asistente solo recibe el texto transcrito.
 - La calidad del reconocimiento y de la voz dependen del navegador y del sistema operativo; las pruebas automáticas usan un reconocimiento simulado (no pueden validar la voz real).
+
+## Tarjetas del asistente (resumen)
+
+Ficha del paquete, lista de paquetes, resumen de operación, agenda del conductor, flota, viajes disponibles, flota libre, **resumen del día** (prioridades, qué atender, pendientes sin viaje, salidas de hoy), **analítica del período** y la **tarjeta de confirmación** de acciones. En las acciones en lote, tras confirmar se muestra el resultado de **cada paquete** (✓ hecho / ✗ con el motivo).

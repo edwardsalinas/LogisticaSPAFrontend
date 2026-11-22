@@ -250,7 +250,7 @@ export function ActionProposalCard({ data }) {
     setState({ status: 'working', verb });
     try {
       const res = await apiService.post(`/ai-agent/actions/${action.id}/${verb}`);
-      setState({ status: verb === 'confirm' ? 'done' : 'cancelled', message: res?.result?.message });
+      setState({ status: verb === 'confirm' ? 'done' : 'cancelled', message: res?.result?.message, results: res?.result?.data?.results });
     } catch (err) {
       setState({ status: 'error', message: err?.message || 'No se pudo completar la acción.' });
     }
@@ -274,7 +274,20 @@ export function ActionProposalCard({ data }) {
         {action.lines.map((line) => <li key={line}>{line}</li>)}
       </ul>
 
-      {state.status === 'done' && <p role="status" className="border-t border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">✅ {state.message}</p>}
+      {state.status === 'done' && (
+        <div role="status" className="border-t border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <p className="font-semibold">✅ {state.message}</p>
+          {(state.results?.length ?? 0) > 1 && (
+            <ul aria-label="Resultado por paquete" className="mt-2 space-y-1 text-xs">
+              {state.results.map((r) => (
+                <li key={r.tracking_code} className={r.ok ? 'text-emerald-800' : 'font-semibold text-red-700'}>
+                  {r.ok ? '✓' : '✗'} <span className="font-mono">{r.tracking_code}</span>{r.ok ? '' : ` — ${r.error}`}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
       {state.status === 'cancelled' && <p role="status" className="border-t border-surface-100 bg-surface-50 px-4 py-3 text-sm text-surface-600">{state.message ?? 'Acción cancelada. No se hizo ningún cambio.'}</p>}
       {state.status === 'error' && <p role="alert" className="border-t border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{state.message}</p>}
 
@@ -373,6 +386,111 @@ export function FleetAvailabilityCard({ data }) {
   );
 }
 
+/** Resumen del día para el personal: prioridades ya ordenadas, qué atender, pendientes sin viaje y salidas de hoy. */
+export function DailyBriefingCard({ data, onAsk }) {
+  const k = data.kpis ?? {};
+  const attention = data.attention ?? [];
+  const unassigned = data.unassigned ?? { count: 0, oldest: [] };
+  const departures = data.departures_today ?? [];
+  return (
+    <Card>
+      <div className="border-b border-surface-100 bg-surface-50 px-4 py-3">
+        <p className="text-sm font-bold text-surface-900">Resumen del día</p>
+        {data.date && <p className="mt-0.5 text-xs text-surface-500">{data.date}</p>}
+      </div>
+
+      <div className="px-4 pt-3">
+        <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-surface-500">Prioridades</p>
+        <ol className="mt-1.5 space-y-1">
+          {(data.priorities ?? []).map((p, i) => (
+            <li key={p} className="flex gap-2 text-sm text-surface-900">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-50 text-[0.68rem] font-bold text-primary-700">{i + 1}</span>
+              {p}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2.5 p-4 sm:grid-cols-4">
+        <Kpi label="En tránsito" value={k.in_transit} />
+        <Kpi label="Pendientes" value={k.pending} />
+        <Kpi label="Retrasados" value={k.delayed} tone={k.delayed > 0 ? 'text-amber-600' : undefined} />
+        <Kpi label="Siniestros" value={k.incidents} tone={k.incidents > 0 ? 'text-red-600' : undefined} />
+      </div>
+
+      {attention.length > 0 && (
+        <div className="border-t border-surface-100">
+          <p className="px-4 pt-3 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-surface-500">Requieren atención</p>
+          <ul className="divide-y divide-surface-100">
+            {attention.map((a) => (
+              <li key={`${a.tracking_code}-${a.reason}`}>
+                <button type="button" onClick={() => onAsk?.(`¿Dónde está el paquete ${a.tracking_code}?`)} className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-primary-50/50">
+                  <span className="min-w-0"><span className="block font-mono text-xs font-bold text-surface-700">{a.tracking_code}</span><span className="block truncate text-sm text-surface-900">{a.route}</span></span>
+                  <span className="shrink-0 text-xs font-semibold text-red-600">{a.reason}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {unassigned.count > 0 && (
+        <div className="border-t border-surface-100 px-4 py-3">
+          <p className="text-sm text-surface-900"><span className="font-bold">{unassigned.count}</span> {unassigned.count === 1 ? 'paquete pendiente sin viaje' : 'paquetes pendientes sin viaje'}</p>
+          <ul className="mt-1 space-y-0.5 text-xs text-surface-500">
+            {(unassigned.oldest ?? []).map((p) => <li key={p.tracking_code}><span className="font-mono">{p.tracking_code}</span> · {p.route}{p.peso ? ` · ${p.peso} kg` : ''}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {departures.length > 0 && (
+        <div className="border-t border-surface-100 px-4 py-3">
+          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-surface-500">Salen hoy</p>
+          <ul className="mt-1 space-y-0.5 text-sm text-surface-900">
+            {departures.map((d, i) => <li key={`${d.departure_time}-${i}`}>{d.origin} → {d.destination} · {formatDateTime(d.departure_time)}</li>)}
+          </ul>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+const durationText = (hours) => (hours == null ? '—' : hours < 1 ? `${Math.round(hours * 60)} min` : `${hours} h`);
+
+/** Analítica de un período para el personal. */
+export function AnalyticsSummaryCard({ data }) {
+  const t = data.totals ?? {};
+  const change = t.change;
+  return (
+    <Card>
+      <div className="border-b border-surface-100 bg-surface-50 px-4 py-3">
+        <p className="text-sm font-bold text-surface-900">Analítica del período</p>
+        {data.range && <p className="mt-0.5 text-xs text-surface-500">{data.range.from} → {data.range.to} ({data.range.days} días)</p>}
+      </div>
+      <div className="grid grid-cols-2 gap-2.5 p-4 sm:grid-cols-4">
+        <Kpi label="Envíos" value={t.shipments} />
+        <Kpi label="Variación" value={change == null ? '—' : `${change > 0 ? '+' : ''}${change}%`} tone={change == null ? 'text-surface-400' : change >= 0 ? 'text-emerald-700' : 'text-red-600'} />
+        <Kpi label="A tiempo" value={t.onTimePct == null ? '—' : `${t.onTimePct}%`} />
+        <Kpi label="Entrega prom." value={durationText(t.avgDeliveryHours)} />
+      </div>
+      {(data.top_drivers ?? []).length > 0 && (
+        <div className="border-t border-surface-100 px-4 py-3">
+          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-surface-500">Conductores</p>
+          <ul className="mt-1 space-y-0.5 text-sm text-surface-900">
+            {data.top_drivers.map((d) => <li key={d.name}>{d.name} · {d.deliveries} {d.deliveries === 1 ? 'entrega' : 'entregas'}{d.efficiency_pct != null ? ` · ${d.efficiency_pct}% a tiempo` : ''}</li>)}
+          </ul>
+        </div>
+      )}
+      {(data.busiest_days ?? []).length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 border-t border-surface-100 px-4 py-3">
+          <span className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-surface-500">Más movimiento</span>
+          {data.busiest_days.map((d) => <span key={d.date} className="rounded-full border border-surface-200 bg-surface-50 px-2.5 py-1 text-xs text-surface-700">{d.date}: {d.packages}</span>)}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 /** Elige la tarjeta según el tipo de dato. */
 export function AttachmentCard({ attachment, onAsk, role }) {
   switch (attachment?.kind) {
@@ -384,6 +502,8 @@ export function AttachmentCard({ attachment, onAsk, role }) {
     case 'action_proposal': return <ActionProposalCard data={attachment} />;
     case 'available_trips': return <AvailableTripsCard data={attachment} onAsk={onAsk} />;
     case 'fleet_availability': return <FleetAvailabilityCard data={attachment} />;
+    case 'daily_briefing': return <DailyBriefingCard data={attachment} onAsk={onAsk} />;
+    case 'analytics_summary': return <AnalyticsSummaryCard data={attachment} />;
     default: return null;
   }
 }

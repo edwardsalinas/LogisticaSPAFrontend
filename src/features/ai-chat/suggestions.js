@@ -15,13 +15,16 @@ const DRIVER = [
 ];
 
 const OPERATIONS = [
+  { icon: '🌅', label: 'Resumen del día', value: 'Dame el resumen del día: ¿por dónde empiezo?' },
   { icon: '📊', label: '¿Cómo va la operación hoy?', value: '¿Cómo va la operación hoy?' },
+  { icon: '📈', label: 'Balance del mes', value: '¿Cómo fue el último mes? ¿Quién entrega mejor?' },
   { icon: '⚠️', label: '¿Qué tengo que atender?', value: '¿Qué paquetes tengo que atender? ¿Hay siniestros o retrasos?' },
   { icon: '📍', label: 'Ubicar un paquete', value: '¿Dónde está el paquete TRK-', prefill: true },
   { icon: '🔎', label: 'Buscar por nombre', value: 'Busca el paquete a nombre de ', prefill: true },
   { icon: '🛣️', label: 'Rutas en tránsito', value: '¿Qué rutas están en tránsito ahora?' },
   { icon: '🗓️', label: 'Viajes con espacio', value: '¿Qué viajes hay el viernes de 3 a 5 de la tarde y cuánto espacio tienen?' },
   { icon: '➕', label: 'Crear un paquete', value: 'Crea un paquete de ', prefill: true },
+  { icon: '📦', label: 'Entregar varios', value: 'Entrega los paquetes TRK-', prefill: true },
   { icon: '📝', label: 'Registrar un evento', value: 'Registra que el paquete TRK-', prefill: true },
 ];
 
@@ -38,7 +41,7 @@ export const suggestionsForRole = (role) => {
 export const introForRole = (role) => {
   if (role === 'driver') return 'Pregúntame por tus entregas de hoy, tu próxima ruta o el estado de los paquetes que llevas.';
   if (role === 'admin' || role === 'logistics_operator') {
-    return 'Pregúntame por cualquier paquete, cómo va la operación o qué hay que atender. También puedo preparar acciones (crear un paquete, registrar un evento, entregar) que tú confirmas antes de ejecutarlas.';
+    return 'Pregúntame por cualquier paquete, el resumen del día o qué hay que atender. También puedo preparar acciones (crear, asignar a un viaje, registrar un evento, entregar; incluso varios paquetes a la vez) que tú confirmas antes de ejecutarlas.';
   }
   return 'Pregúntame dónde está tu paquete, en qué estado está, quién lo lleva y cuándo llega.';
 };
