@@ -1,13 +1,14 @@
-import { MapPinned, Route, Save } from 'lucide-react';
+import { Route, Save } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Button from '../../../components/atoms/Button';
-import Input from '../../../components/atoms/Input';
 import Select from '../../../components/atoms/Select';
 import apiService from '../../../services/apiService';
 import { PACKAGE_STATUS } from '../../../constants/status';
+import { isInsideBolivia, matchCity } from '../../../constants/bolivia';
+import LocationPicker from './LocationPicker';
 
 const STATUS_OPTIONS = [
   { value: PACKAGE_STATUS.PENDING, label: 'Pendiente' },
@@ -19,17 +20,40 @@ const STATUS_OPTIONS = [
 ];
 
 // Reglas equivalentes a trackingEventSchema del backend (tracking.schema.js)
-export const trackingFormSchema = z.object({
-  package_id: z.string().min(1, 'Selecciona un paquete'),
-  status: z.string().min(1, 'Selecciona el estado'),
-  lat: z.coerce.number({ message: 'Ingresa una latitud válida' }).min(-90, 'La latitud debe estar entre -90 y 90').max(90, 'La latitud debe estar entre -90 y 90'),
-  lng: z.coerce.number({ message: 'Ingresa una longitud válida' }).min(-180, 'La longitud debe estar entre -180 y 180').max(180, 'La longitud debe estar entre -180 y 180'),
-});
+const LOCATION_REQUIRED = 'Elige una ubicación (ciudad, tu posición o un punto en el mapa)';
+const coordinate = (range, label) =>
+  z.preprocess(
+    (v) => (v === '' || v == null ? undefined : v), // un campo vacío no debe convertirse en 0
+    z.coerce.number({ message: LOCATION_REQUIRED }).min(-range, `La ${label} debe estar entre -${range} y ${range}`).max(range, `La ${label} debe estar entre -${range} y ${range}`),
+  );
+
+export const trackingFormSchema = z
+  .object({
+    package_id: z.string().min(1, 'Selecciona un paquete'),
+    status: z.string().min(1, 'Selecciona el estado'),
+    lat: coordinate(90, 'latitud'),
+    lng: coordinate(180, 'longitud'),
+  })
+  .superRefine((v, ctx) => {
+    if (!isInsideBolivia(v.lat, v.lng)) {
+      ctx.addIssue({ code: 'custom', path: ['lat'], message: 'Esa ubicación queda fuera de Bolivia. Revisa la ciudad o las coordenadas.' });
+    }
+  });
+
+// Dónde suele estar el paquete según el estado: al asignarlo, en el origen; al entregarlo o dejarlo en agencia, en el destino.
+export const suggestedCityFor = (pkg, status) => {
+  if (!pkg) return null;
+  if (status === PACKAGE_STATUS.PENDING || status === PACKAGE_STATUS.ASSIGNED) return matchCity(pkg.origen);
+  if (status === PACKAGE_STATUS.DELIVERED || status === PACKAGE_STATUS.AT_AGENCY) return matchCity(pkg.destino);
+  return null;
+};
 
 function TrackingForm({ packages = [], onSuccess, onCancel }) {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(trackingFormSchema),
@@ -37,6 +61,8 @@ function TrackingForm({ packages = [], onSuccess, onCancel }) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [packageId, status, lat, lng] = watch(['package_id', 'status', 'lat', 'lng']);
+  const suggestion = suggestedCityFor(packages.find((p) => p.id === packageId), status);
 
   const onSubmit = async (values) => {
     setLoading(true);
@@ -67,7 +93,7 @@ function TrackingForm({ packages = [], onSuccess, onCancel }) {
           </div>
           <div>
             <p className="text-[0.64rem] uppercase tracking-[0.18em] text-surface-500">Nuevo evento</p>
-            <p className="text-sm text-surface-600">Asocia el paquete, define el estado y guarda la ubicacion reportada.</p>
+            <p className="text-sm text-surface-600">Asocia el paquete, define el estado y indica dónde está.</p>
           </div>
         </div>
       </div>
@@ -75,22 +101,7 @@ function TrackingForm({ packages = [], onSuccess, onCancel }) {
       <Select label="Paquete" options={packageOptions} placeholder="Selecciona un paquete..." required error={errors.package_id?.message} {...register('package_id')} />
       <Select label="Estado" options={STATUS_OPTIONS} placeholder="Selecciona el estado..." required error={errors.status?.message} {...register('status')} />
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Input label="Latitud" type="number" step="any" placeholder="Ej: -16.4897" required error={errors.lat?.message} {...register('lat')} />
-        <Input label="Longitud" type="number" step="any" placeholder="Ej: -68.1193" required error={errors.lng?.message} {...register('lng')} />
-      </div>
-
-      <div className="rounded-[1.2rem] border border-surface-100 bg-white p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-50 text-sky-700">
-            <MapPinned size={17} strokeWidth={2.2} />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-surface-900">Coordenadas de referencia</p>
-            <p className="text-xs text-surface-500">Usa valores reales para que el mapa y la trazabilidad mantengan consistencia.</p>
-          </div>
-        </div>
-      </div>
+      <LocationPicker register={register} errors={errors} setValue={setValue} lat={lat} lng={lng} suggestion={suggestion} />
 
       {error && <p role="alert" className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
 
