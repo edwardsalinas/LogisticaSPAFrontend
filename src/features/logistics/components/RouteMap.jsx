@@ -23,7 +23,7 @@ function RouteMap({ routeId, initialPosition, showControls = false }) {
         const res = await apiService.getCheckpointsByRoute(routeId);
         setCheckpoints(res.data || []);
       } catch (error) {
-        console.error('Error cargando checkpoints:', error);
+        console.error('Error cargando los puntos de control:', error);
         setCheckpoints([]);
       } finally {
         setLoading(false);
@@ -34,16 +34,16 @@ function RouteMap({ routeId, initialPosition, showControls = false }) {
   }, [routeId]);
 
   if (loading) {
-    return <SectionLoader eyebrow="Cargando mapa" title="Preparando checkpoints y ruta" description="Estamos organizando la geometria operativa y los puntos de control." className="min-h-[28rem] rounded-none border-none shadow-none" />;
+    return <SectionLoader eyebrow="Cargando mapa" title="Preparando puntos de control y ruta" description="Estamos organizando la geometria operativa y los puntos de control." className="min-h-[28rem] rounded-none border-none shadow-none" />;
   }
 
   if (checkpoints.length === 0) {
     return (
       <EmptyState
-        eyebrow="Sin checkpoints"
+        eyebrow="Sin puntos de control"
         title="Todavia no hay puntos de control"
-        description="Agrega el primer checkpoint para dibujar la ruta y habilitar el seguimiento geoespacial."
-        action={showControls ? <Button>+ Agregar primer checkpoint</Button> : null}
+        description="Agrega el primer punto de control para dibujar la ruta y habilitar el seguimiento geoespacial."
+        action={showControls ? <Button>+ Agregar primer punto de control</Button> : null}
         className="min-h-[28rem] rounded-none border-none bg-[radial-gradient(circle_at_top,rgba(11,78,162,0.06),transparent_55%)] shadow-none"
       />
     );
@@ -55,7 +55,7 @@ function RouteMap({ routeId, initialPosition, showControls = false }) {
 
   return (
     <div className="relative h-full w-full overflow-hidden rounded-[1.6rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.8),rgba(248,250,252,0.88))]">
-      <BaseMap center={[centerLat, centerLng]} zoom={9} className="h-full w-full" scrollWheelZoom ariaLabel="Mapa de ruta con checkpoints y posicion de unidad">
+      <BaseMap center={[centerLat, centerLng]} zoom={9} className="h-full w-full" scrollWheelZoom ariaLabel="Mapa de ruta con puntos de control y posicion de unidad">
         <FitBounds checkpoints={checkpoints} />
         <RoutePath checkpoints={checkpoints} />
         {checkpoints.map((checkpoint) => (
@@ -69,7 +69,7 @@ function RouteMap({ routeId, initialPosition, showControls = false }) {
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-surface-500">Lectura del mapa</p>
-              <h3 className="mt-1 font-display text-xl font-semibold tracking-[-0.04em] text-surface-950">Ruta y checkpoints</h3>
+              <h3 className="mt-1 font-display text-xl font-semibold tracking-[-0.04em] text-surface-950">Ruta y puntos de control</h3>
             </div>
             <Badge variant="info" dot>{checkpoints.length} puntos</Badge>
           </div>
@@ -91,10 +91,10 @@ function RouteMap({ routeId, initialPosition, showControls = false }) {
           <div className="pointer-events-auto rounded-[1.5rem] border border-white/70 bg-white/94 p-4 shadow-[0_24px_60px_-38px_rgba(15,23,42,0.3)] backdrop-blur-xl motion-fade-up">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-surface-500">Checkpoint seleccionado</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-surface-500">Punto de control seleccionado</p>
                 <h3 className="mt-1 text-sm font-semibold text-surface-950">{selectedCheckpoint.name}</h3>
               </div>
-              <button onClick={() => setSelectedCheckpoint(null)} aria-label="Cerrar detalle del checkpoint" className="rounded-xl p-1 text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
+              <button onClick={() => setSelectedCheckpoint(null)} aria-label="Cerrar detalle del punto de control" className="rounded-xl p-1 text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
                 <X size={16} strokeWidth={2.2} />
               </button>
             </div>

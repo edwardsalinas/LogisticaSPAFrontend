@@ -342,7 +342,7 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
         {/* Checkpoints */}
         <div className="flex flex-col gap-3">
           <div className="flex justify-between items-center">
-            <label className="text-sm font-medium text-surface-900">Checkpoints</label>
+            <label className="text-sm font-medium text-surface-900">Puntos de control</label>
             <Button type="button" variant="secondary" size="sm"
               onClick={() => setForm({ ...form, checkpoints: [...form.checkpoints, { name: '', lat: '', lng: '', sequence_order: form.checkpoints.length + 1 }] })}
             >+ Agregar parada</Button>
@@ -385,7 +385,7 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
           </div>
           {form.checkpoints.length === 0 && (
             <div className="text-center py-4 rounded-xl border border-dashed border-surface-200 bg-white/50">
-              <p className="text-xs text-surface-500">Sin checkpoints. Usa el mapa o agrégalos manualmente.</p>
+              <p className="text-xs text-surface-500">Sin puntos de control. Usa el mapa o agrégalos manualmente.</p>
             </div>
           )}
         </div>

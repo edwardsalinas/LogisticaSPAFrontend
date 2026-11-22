@@ -657,7 +657,7 @@ function DriverDashboardPage() {
 
                   {isActive && (activeRouteData?.checkpoints?.length > 0) && (
                     <div className="pt-0">
-                      <p className="text-xs font-bold text-surface-500 uppercase tracking-[0.2em] mb-3 px-1">Checkpoints de Control</p>
+                      <p className="text-xs font-bold text-surface-500 uppercase tracking-[0.2em] mb-3 px-1">Puntos de control</p>
                       <div className="space-y-2.5 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
                         {[...(activeRouteData?.checkpoints || [])]
                           .sort((a,b) => (a.sequence_order || 0) - (b.sequence_order || 0))

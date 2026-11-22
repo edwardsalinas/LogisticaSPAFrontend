@@ -641,7 +641,7 @@ function RoutesPage() {
             <EmptyState
               eyebrow="Mapa en espera"
               title="Selecciona un viaje para abrir el mapa"
-              description="Al elegir un viaje mostraremos checkpoints, progreso, ETA y lectura espacial del recorrido."
+              description="Al elegir un viaje mostraremos puntos de control, progreso, ETA y lectura espacial del recorrido."
               className="h-full min-h-[42rem] border-0 bg-transparent"
             />
           )}

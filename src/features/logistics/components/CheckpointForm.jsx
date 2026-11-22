@@ -61,7 +61,7 @@ function CheckpointForm({ routeId, checkpoint, nextOrder = 1, onSuccess, onCance
       }
       onSuccess();
     } catch (err) {
-      setError(err.message || 'Error al guardar checkpoint');
+      setError(err.message || 'No se pudo guardar el punto de control');
     } finally {
       setLoading(false);
     }
@@ -70,7 +70,7 @@ function CheckpointForm({ routeId, checkpoint, nextOrder = 1, onSuccess, onCance
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
       <Input
-        label="Nombre del Checkpoint"
+        label="Nombre del punto de control"
         placeholder="Ej: Terminal La Paz"
         required
         error={errors.name?.message}
@@ -98,7 +98,7 @@ function CheckpointForm({ routeId, checkpoint, nextOrder = 1, onSuccess, onCance
           Cancelar
         </Button>
         <Button type="submit" disabled={loading}>
-          {loading ? 'Guardando...' : checkpoint ? 'Actualizar Checkpoint' : 'Crear Checkpoint'}
+          {loading ? 'Guardando...' : checkpoint ? 'Guardar cambios' : 'Crear punto de control'}
         </Button>
       </div>
     </form>

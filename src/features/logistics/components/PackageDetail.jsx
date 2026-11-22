@@ -102,7 +102,7 @@ function PackageDetail({ pkg }) {
           <EmptyState
             eyebrow="Sin eventos"
             title="Aun no hay trazabilidad registrada"
-            description="Cuando el paquete genere movimientos o checkpoints, aqui mostraremos el historial cronologico."
+            description="Cuando el paquete genere movimientos o puntos de control, aqui mostraremos el historial cronologico."
             className="min-h-[14rem] border-surface-100 bg-surface-50/60"
           />
         ) : (

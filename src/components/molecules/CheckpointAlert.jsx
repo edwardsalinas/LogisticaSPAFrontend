@@ -25,7 +25,7 @@ function CheckpointAlert({ checkpoint, onDismiss }) {
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-emerald-600">Checkpoint alcanzado</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-emerald-600">Punto de control alcanzado</p>
                 <h3 className="mt-1 text-sm font-semibold text-surface-950">{checkpoint.name}</h3>
               </div>
               <button onClick={() => { setIsVisible(false); onDismiss?.(); }} className="text-surface-500 transition-colors hover:text-surface-700">

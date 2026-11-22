@@ -16,10 +16,10 @@ describe('CheckpointForm (React Hook Form + Zod)', () => {
 
   it('rechaza coordenadas fuera de rango sin llamar al backend', async () => {
     render(<CheckpointForm routeId="r1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
-    await userEvent.type(screen.getByLabelText(/nombre del checkpoint/i), 'Terminal');
+    await userEvent.type(screen.getByLabelText(/nombre del punto de control/i), 'Terminal');
     await userEvent.type(screen.getByLabelText(/latitud/i), '95');
     await userEvent.type(screen.getByLabelText(/longitud/i), '-200');
-    await userEvent.click(screen.getByRole('button', { name: /crear checkpoint/i }));
+    await userEvent.click(screen.getByRole('button', { name: /crear punto de control/i }));
 
     expect(await screen.findByText('La latitud debe estar entre -90 y 90')).toBeInTheDocument();
     expect(screen.getByText('La longitud debe estar entre -180 y 180')).toBeInTheDocument();
@@ -30,10 +30,10 @@ describe('CheckpointForm (React Hook Form + Zod)', () => {
     apiService.createCheckpoint.mockResolvedValue({});
     const onSuccess = vi.fn();
     render(<CheckpointForm routeId="r1" onSuccess={onSuccess} onCancel={vi.fn()} />);
-    await userEvent.type(screen.getByLabelText(/nombre del checkpoint/i), 'Terminal La Paz');
+    await userEvent.type(screen.getByLabelText(/nombre del punto de control/i), 'Terminal La Paz');
     await userEvent.type(screen.getByLabelText(/latitud/i), '-16.5');
     await userEvent.type(screen.getByLabelText(/longitud/i), '-68.1193');
-    await userEvent.click(screen.getByRole('button', { name: /crear checkpoint/i }));
+    await userEvent.click(screen.getByRole('button', { name: /crear punto de control/i }));
 
     await waitFor(() => expect(apiService.createCheckpoint).toHaveBeenCalledTimes(1));
     expect(apiService.createCheckpoint).toHaveBeenCalledWith('r1', {
@@ -50,7 +50,7 @@ describe('CheckpointForm (React Hook Form + Zod)', () => {
     apiService.updateCheckpoint.mockResolvedValue({});
     const checkpoint = { id: 'c9', name: 'Puesto Viacha', lat: -16.65, lng: -68.31, radius_meters: 150, sequence_order: 3 };
     render(<CheckpointForm routeId="r1" checkpoint={checkpoint} onSuccess={vi.fn()} onCancel={vi.fn()} />);
-    await userEvent.click(screen.getByRole('button', { name: /actualizar checkpoint/i }));
+    await userEvent.click(screen.getByRole('button', { name: /guardar cambios/i }));
 
     await waitFor(() => expect(apiService.updateCheckpoint).toHaveBeenCalled());
     expect(apiService.updateCheckpoint).toHaveBeenCalledWith('r1', 'c9', {
@@ -62,8 +62,8 @@ describe('CheckpointForm (React Hook Form + Zod)', () => {
     apiService.createCheckpoint.mockResolvedValue({});
     render(<CheckpointForm routeId="r1" nextOrder={4} onSuccess={vi.fn()} onCancel={vi.fn()} />);
     await userEvent.selectOptions(screen.getByLabelText(/^ciudad/i), 'oruro');
-    expect(screen.getByLabelText(/nombre del checkpoint/i)).toHaveValue('Oruro');
-    await userEvent.click(screen.getByRole('button', { name: /crear checkpoint/i }));
+    expect(screen.getByLabelText(/nombre del punto de control/i)).toHaveValue('Oruro');
+    await userEvent.click(screen.getByRole('button', { name: /crear punto de control/i }));
 
     await waitFor(() => expect(apiService.createCheckpoint).toHaveBeenCalledTimes(1));
     expect(apiService.createCheckpoint).toHaveBeenCalledWith('r1', {
@@ -73,20 +73,20 @@ describe('CheckpointForm (React Hook Form + Zod)', () => {
 
   it('no pisa un nombre que el usuario ya escribió', async () => {
     render(<CheckpointForm routeId="r1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
-    await userEvent.type(screen.getByLabelText(/nombre del checkpoint/i), 'Peaje de Patacamaya');
+    await userEvent.type(screen.getByLabelText(/nombre del punto de control/i), 'Peaje de Patacamaya');
     await userEvent.selectOptions(screen.getByLabelText(/^ciudad/i), 'patacamaya');
-    expect(screen.getByLabelText(/nombre del checkpoint/i)).toHaveValue('Peaje de Patacamaya');
+    expect(screen.getByLabelText(/nombre del punto de control/i)).toHaveValue('Peaje de Patacamaya');
   });
 
   it('sin ubicación pide elegirla; fuera de Bolivia lo rechaza', async () => {
     render(<CheckpointForm routeId="r1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
-    await userEvent.type(screen.getByLabelText(/nombre del checkpoint/i), 'Punto');
-    await userEvent.click(screen.getByRole('button', { name: /crear checkpoint/i }));
+    await userEvent.type(screen.getByLabelText(/nombre del punto de control/i), 'Punto');
+    await userEvent.click(screen.getByRole('button', { name: /crear punto de control/i }));
     expect((await screen.findAllByText(/elige una ubicación/i)).length).toBeGreaterThan(0);
 
     await userEvent.type(screen.getByLabelText(/latitud/i), '40.4');
     await userEvent.type(screen.getByLabelText(/longitud/i), '-3.7');
-    await userEvent.click(screen.getByRole('button', { name: /crear checkpoint/i }));
+    await userEvent.click(screen.getByRole('button', { name: /crear punto de control/i }));
     expect(await screen.findByText(/queda fuera de bolivia/i)).toBeInTheDocument();
     expect(apiService.createCheckpoint).not.toHaveBeenCalled();
   });

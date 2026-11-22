@@ -29,7 +29,7 @@ export const heroImages = {
   },
   routeMap: {
     url: 'https://images.unsplash.com/photo-1500835556837-99ac94a94552?auto=format&fit=crop&w=1600&q=80',
-    alt: 'Vista territorial de ruta de transporte y checkpoints',
+    alt: 'Vista territorial de ruta de transporte y puntos de control',
   },
   packageDetail: {
     url: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1600&q=80',

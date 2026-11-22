@@ -67,11 +67,11 @@ function RouteMapPage() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100/85 backdrop-blur"><Route size={14} strokeWidth={2.2} />Mapa de ruta</div>
             <h1 className="mt-5 max-w-3xl font-display text-[clamp(2rem,4.5vw,3.8rem)] font-semibold tracking-[-0.06em] text-white">{route.origin} {' -> '} {route.destination}</h1>
-            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Vista operativa para checkpoints, distancia estimada y lectura espacial completa de la ruta.</p>
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Vista operativa para puntos de control, distancia estimada y lectura espacial completa de la ruta.</p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
             <Button variant="secondary" className="border-white/14 bg-white/8 text-white hover:bg-white/14" onClick={() => navigate('/logistics/routes')}><MoveLeft size={16} strokeWidth={2.2} />Volver</Button>
-            <Button size="lg" onClick={() => setShowCheckpointForm(true)}>+ Agregar checkpoint</Button>
+            <Button size="lg" onClick={() => setShowCheckpointForm(true)}>+ Agregar punto de control</Button>
           </div>
         </div>
       </section>
@@ -88,7 +88,7 @@ function RouteMapPage() {
             <p className="text-xs uppercase tracking-[0.24em] text-surface-500">Vista geoespacial</p>
             <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.04em] text-surface-950 sm:text-2xl">Mapa operativo</h2>
           </div>
-          <p className="max-w-xl text-sm text-surface-500">Selecciona un checkpoint dentro del mapa para ver detalles, secuencia y datos de radio.</p>
+          <p className="max-w-xl text-sm text-surface-500">Selecciona un punto de control dentro del mapa para ver detalles, secuencia y datos de radio.</p>
         </div>
         <div className="h-[55vh] min-h-[26rem] overflow-hidden rounded-[1.4rem] border border-surface-100 sm:h-[calc(100vh-24rem)] sm:min-h-[34rem] sm:rounded-[1.6rem]">
           <Suspense fallback={<MapCanvasFallback />}>
@@ -103,7 +103,7 @@ function RouteMapPage() {
           setShowCheckpointForm(false);
           setSelectedCheckpoint(null);
         }}
-        title={selectedCheckpoint ? 'Editar checkpoint' : 'Nuevo checkpoint'}
+        title={selectedCheckpoint ? 'Editar punto de control' : 'Nuevo punto de control'}
       >
         <CheckpointForm
           routeId={routeId}
