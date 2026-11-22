@@ -154,7 +154,7 @@ function LoginPage() {
 
           <div className="w-full max-w-[30rem] rounded-[2rem] border border-white/70 bg-white p-8 shadow-[0_28px_80px_-40px_rgba(15,23,42,0.28)] sm:p-10">
             <div className="mb-10 flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#0b4ea2_0%,#137fec_100%)] text-sm font-bold tracking-[0.18em] text-white shadow-[0_16px_34px_-20px_rgba(19,127,236,0.8)]">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-gradient text-sm font-bold tracking-[0.18em] text-white shadow-[0_16px_34px_-20px_rgba(19,127,236,0.8)]">
                 LS
               </div>
               <div>

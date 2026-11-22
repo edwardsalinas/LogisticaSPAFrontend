@@ -29,9 +29,9 @@ describe('Acciones en lote: resultado por paquete', () => {
     await userEvent.click(screen.getByRole('button', { name: /^confirmar$/i }));
 
     const list = await screen.findByRole('list', { name: /resultado por paquete/i });
-    expect(list).toHaveTextContent('✓ TRK-1');
-    expect(list).toHaveTextContent('✗ TRK-2 — Este paquete no pertenece a una de tus rutas');
-    expect(list).toHaveTextContent('✓ TRK-3');
+    expect(list).toHaveTextContent('Hecho: TRK-1');
+    expect(list).toHaveTextContent('Falló: TRK-2 — Este paquete no pertenece a una de tus rutas');
+    expect(list).toHaveTextContent('Hecho: TRK-3');
     expect(screen.getByText(/entregados 2 de 3 paquetes/i)).toBeInTheDocument();
   });
 

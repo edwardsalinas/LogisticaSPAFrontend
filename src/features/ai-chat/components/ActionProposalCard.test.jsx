@@ -78,13 +78,13 @@ describe('Acciones del asistente: tarjeta de confirmación', () => {
     expect(apiService.post).toHaveBeenCalledTimes(1);
   });
 
-  it('en el chat, la propuesta aparece como tarjeta dentro de la respuesta del asistente', () => {
+  it('en el chat, la propuesta aparece como tarjeta dentro de la respuesta del asistente', async () => {
     render(
       <MemoryRouter>
         <ChatBubble message={{ role: 'assistant', content: 'Preparé la entrega. **Confírmala** en la tarjeta.', attachments: [ACTION] }} role="admin" />
       </MemoryRouter>
     );
-    expect(screen.getByText('Confírmala', { selector: 'strong' })).toBeInTheDocument();
+    expect(await screen.findByText('Confírmala', { selector: 'strong' }, { timeout: 8000 })).toBeInTheDocument(); // el markdown se carga bajo demanda
     expect(screen.getByRole('button', { name: /^confirmar$/i })).toBeInTheDocument();
   });
 

@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Headphones, Mic, RotateCcw, Send, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { useAuth } from '../../../app/AuthContext';
 import useRole from '../../../app/useRole';
 import Skeleton from '../../../components/atoms/Skeleton';
+import Announcer from '../components/Announcer';
 import ChatBubble from '../components/ChatBubble';
 import VoiceMode from '../components/VoiceMode';
 import { useSpeechRecognition, useSpeechSynthesis } from '../useVoice';
-import { stripForSpeech } from '../voice';
+import { prefersReducedMotion, stripForSpeech } from '../voice';
 import useAssistantChat, { MAX_MESSAGE_LENGTH } from '../useAssistantChat';
 import { introForRole, suggestionsForRole } from '../suggestions';
 
@@ -44,7 +45,7 @@ function AssistantHome() {
   const empty = messages.length === 0;
 
   useEffect(() => {
-    endRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'end' });
+    endRef.current?.scrollIntoView?.({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'end' });
   }, [messages, loading]);
 
   // Si la respuesta tarda, se avisa para que no parezca que se colgó
@@ -54,12 +55,21 @@ function AssistantHome() {
     return () => clearTimeout(t);
   }, [loading]);
 
+  // `ask` es estable (no cambia al escribir): las burbujas memoizadas no se vuelven a dibujar por cada tecla
+  const latest = useRef({});
+  latest.current = { loading, speakReplies, synth };
+  const ask = useCallback(async (text) => {
+    const { loading: busy, speakReplies: speak, synth: voice } = latest.current;
+    if (!String(text).trim() || busy) return;
+    const result = await send(text);
+    // con "leer respuestas" activado, la respuesta también se escucha
+    if (speak && result?.ok) voice.speak(stripForSpeech(result.text));
+  }, [send]);
+
   const submit = async (text = input) => {
     if (!String(text).trim() || loading) return;
     setInput('');
-    const result = await send(text);
-    // con "leer respuestas" activado, la respuesta también se escucha
-    if (speakReplies && result?.ok) synth.speak(stripForSpeech(result.text));
+    await ask(text);
   };
 
   // Dictado: se habla una frase, se envía y, si la lectura está activada, se responde en voz alta
@@ -85,8 +95,11 @@ function AssistantHome() {
     }
   };
 
+  // Dos filas: arriba el campo y "Enviar"; debajo, las herramientas de voz. Así el campo conserva su ancho en un
+  // teléfono (antes tres botones de 48 px lo dejaban en ~40 px a 360 px de ancho) y todos los controles son táctiles.
+  const toolButton = 'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors disabled:opacity-40';
   const composer = (
-    <div className="rounded-[1.6rem] border border-surface-200 bg-white p-2 shadow-[0_20px_50px_-30px_rgba(15,23,42,0.35)] focus-within:border-primary-400">
+    <div className="rounded-[1.6rem] border border-surface-200 bg-white p-2 shadow-[0_20px_50px_-30px_rgba(15,23,42,0.35)] focus-within:border-primary-600 focus-within:ring-2 focus-within:ring-primary-200">
       <div className="flex items-end gap-2">
         <textarea
           value={dictation.listening && dictation.interim ? dictation.interim : input}
@@ -97,8 +110,20 @@ function AssistantHome() {
           placeholder={dictation.listening ? 'Te escucho…' : 'Pregunta lo que necesites: ¿dónde está mi paquete?'}
           rows={1}
           disabled={loading}
-          className="max-h-40 min-h-[3rem] flex-1 resize-none rounded-2xl bg-transparent px-4 py-3 text-base outline-none placeholder:text-surface-400 disabled:opacity-60"
+          className="max-h-40 min-h-[3rem] min-w-0 flex-1 resize-none rounded-2xl bg-transparent px-3 py-3 text-base outline-none placeholder:text-surface-500 disabled:opacity-60 sm:px-4"
         />
+        <button
+          type="button"
+          onClick={() => submit()}
+          disabled={loading || !input.trim()}
+          className="flex h-12 min-w-12 shrink-0 items-center justify-center gap-2 rounded-2xl bg-brand-gradient px-3 text-sm font-bold text-white shadow-sm transition-opacity disabled:opacity-40 sm:px-5"
+        >
+          <Send size={16} aria-hidden="true" />
+          <span className="sr-only sm:not-sr-only">Enviar</span>
+        </button>
+      </div>
+
+      <div className="mt-1 flex items-center gap-2 border-t border-surface-100 px-1 pt-2">
         {dictation.supported && (
           <button
             type="button"
@@ -107,7 +132,7 @@ function AssistantHome() {
             aria-label={dictation.listening ? 'Dejar de dictar' : 'Dictar con el micrófono'}
             aria-pressed={dictation.listening}
             title="Dictar con el micrófono"
-            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border transition-colors disabled:opacity-40 ${dictation.listening ? 'animate-pulse border-red-300 bg-red-50 text-red-600' : 'border-surface-200 bg-white text-surface-600 hover:bg-surface-50'}`}
+            className={`${toolButton} ${dictation.listening ? 'animate-pulse motion-reduce:animate-none border-red-300 bg-red-50 text-red-600' : 'border-surface-200 bg-white text-surface-600 hover:bg-surface-50'}`}
           >
             <Mic size={18} aria-hidden="true" />
           </button>
@@ -117,7 +142,7 @@ function AssistantHome() {
           onClick={openVoice}
           aria-label="Abrir el chat de voz"
           title={dictation.supported ? 'Chat de voz: habla y el asistente te responde en voz alta' : 'Tu navegador no permite reconocimiento de voz (usa Chrome o Edge)'}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary-200 bg-primary-50 text-primary-700 transition-colors hover:bg-primary-100"
+          className={`${toolButton} border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100`}
         >
           <Headphones size={18} aria-hidden="true" />
         </button>
@@ -129,19 +154,11 @@ function AssistantHome() {
             aria-checked={speakReplies}
             aria-label="Leer las respuestas en voz alta"
             title={speakReplies ? 'Las respuestas se leen en voz alta' : 'Leer las respuestas en voz alta'}
-            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border transition-colors ${speakReplies ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-surface-200 bg-white text-surface-500 hover:bg-surface-50'}`}
+            className={`${toolButton} ${speakReplies ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-surface-200 bg-white text-surface-500 hover:bg-surface-50'}`}
           >
             {speakReplies ? <Volume2 size={18} aria-hidden="true" /> : <VolumeX size={18} aria-hidden="true" />}
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => submit()}
-          disabled={loading || !input.trim()}
-          className="flex h-12 items-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#0b4ea2_0%,#137fec_100%)] px-5 text-sm font-bold text-white shadow-sm transition-opacity disabled:opacity-40"
-        >
-          <Send size={16} aria-hidden="true" /> Enviar
-        </button>
       </div>
     </div>
   );
@@ -151,7 +168,7 @@ function AssistantHome() {
       {voiceOpen && <VoiceMode chat={chat} onClose={() => setVoiceOpen(false)} />}
       {empty ? (
         <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">
-          <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-[linear-gradient(135deg,#0b4ea2_0%,#137fec_100%)] text-white shadow-lg shadow-primary-500/25">
+          <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-brand-gradient text-white shadow-lg shadow-primary-500/25">
             <Sparkles size={28} aria-hidden="true" />
           </span>
           <h2 className="mt-6 text-3xl font-bold tracking-tight text-surface-950 sm:text-4xl">{name ? `Hola, ${name}` : 'Hola'}</h2>
@@ -166,7 +183,7 @@ function AssistantHome() {
                 onClick={() => (s.prefill ? setInput(s.value) : submit(s.value))}
                 className="flex items-center gap-3 rounded-2xl border border-surface-200 bg-white px-4 py-3.5 text-left text-sm font-medium text-surface-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-md"
               >
-                <span className="text-xl" aria-hidden="true">{s.icon}</span>
+                <s.icon size={20} strokeWidth={2} aria-hidden="true" className="shrink-0 text-primary-600" />
                 <span>{s.label}</span>
               </button>
             ))}
@@ -175,19 +192,20 @@ function AssistantHome() {
       ) : (
         <div className="flex-1 space-y-5 pb-6 pt-2">
           <div className="flex justify-end">
-            <button type="button" onClick={() => { reset([]); setInput(''); }} className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 bg-white px-3 py-1.5 text-xs font-semibold text-surface-600 hover:bg-surface-50">
+            <button type="button" onClick={() => { reset([]); setInput(''); }} className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-surface-200 bg-white px-4 text-xs font-semibold text-surface-600 hover:bg-surface-50">
               <RotateCcw size={13} aria-hidden="true" /> Nueva conversación
             </button>
           </div>
-          <div className="space-y-5" aria-live="polite">
+          <Announcer messages={messages} loading={loading} />
+          <div className="space-y-5">
             {messages.map((m, i) => (
-              <ChatBubble key={i} message={m} role={role} onAsk={submit} showFollowUps={i === messages.length - 1 && !loading} />
+              <ChatBubble key={m.id ?? i} message={m} role={role} onAsk={ask} showFollowUps={i === messages.length - 1 && !loading} />
             ))}
             {loading && (
-              <div className="flex items-start gap-3" role="status">
-                <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Sparkles size={16} className="animate-pulse" /></span>
+              <div className="flex items-start gap-3">
+                <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Sparkles size={16} className="animate-pulse motion-reduce:animate-none" /></span>
                 <div className="w-72 rounded-[1.35rem] rounded-tl-md border border-surface-100 bg-white px-4 py-4 shadow-sm">
-                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-surface-500">Consultando…</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">Consultando…</p>
                   <Skeleton className="mt-3 h-3 w-11/12" />
                   <Skeleton className="mt-2 h-3 w-3/5" />
                   {slow && <p className="mt-3 text-xs text-surface-500">Sigo trabajando en tu consulta, puede tardar unos segundos más.</p>}
@@ -201,7 +219,7 @@ function AssistantHome() {
 
       <div className="sticky bottom-20 z-10 bg-gradient-to-t from-[#eef3f9] via-[#eef3f9]/95 to-transparent pb-2 pt-4 lg:bottom-4">
         {composer}
-        <p className="mt-2 text-center text-xs text-surface-400">Si te pido hacer algo, preparo la acción y solo se ejecuta cuando tú la confirmas. Verifica lo crítico antes de decidir.</p>
+        <p className="mt-2 text-center text-xs text-surface-600">Si te pido hacer algo, preparo la acción y solo se ejecuta cuando tú la confirmas. Verifica lo crítico antes de decidir.</p>
       </div>
     </div>
   );

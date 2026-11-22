@@ -92,3 +92,6 @@ export const plainText = (text) =>
     .replace(/\s*[\r\n]+\s*/g, ' ')
     .replace(/\s{2,}/g, ' ')
     .trim();
+
+/** ¿El usuario pidió menos movimiento? (el desplazamiento animado también cuenta) */
+export const prefersReducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;

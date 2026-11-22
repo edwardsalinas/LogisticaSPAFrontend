@@ -42,7 +42,7 @@ function Sidebar() {
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-[17rem] flex-col border-r border-white/6 bg-[#06111f] p-4 text-white shadow-[20px_0_60px_-40px_rgba(0,0,0,0.9)] lg:flex">
       <div className="rounded-[1.75rem] border border-white/7 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-5 motion-fade-in">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#0b4ea2_0%,#137fec_100%)] text-white shadow-[0_18px_36px_-22px_rgba(19,127,236,0.75)]">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-gradient text-white shadow-[0_18px_36px_-22px_rgba(19,127,236,0.75)]">
             <Truck size={18} strokeWidth={2.2} />
           </div>
           <div>

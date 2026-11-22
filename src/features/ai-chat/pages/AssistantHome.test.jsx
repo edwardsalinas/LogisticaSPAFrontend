@@ -113,7 +113,7 @@ describe('Vista del asistente (Modo IA)', () => {
     apiService.post.mockResolvedValue({ response: 'Hola <img src=x onerror="window.__xss=1"> <script>window.__xss=1</script>', attachments: [] });
     const { container } = renderHome();
     await ask('hola');
-    await screen.findByText(/Hola/);
+    await screen.findByText(/Hola/, { selector: '[data-role="assistant"] p' });
     expect(container.querySelector('img')).toBeNull();
     expect(container.querySelector('script')).toBeNull();
     expect(window.__xss).toBeUndefined();

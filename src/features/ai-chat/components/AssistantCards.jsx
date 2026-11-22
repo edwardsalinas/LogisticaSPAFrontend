@@ -1,26 +1,29 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Clock, MapPin, Package, ShieldAlert, Truck, User, XCircle } from 'lucide-react';
+import { Check, CheckCircle2, Clock, MapPin, Package, ShieldAlert, Truck, User, X, XCircle } from 'lucide-react';
 import apiService from '../../../services/apiService';
+import Badge from '../../../components/atoms/Badge';
+import Button from '../../../components/atoms/Button';
 
 /** Tarjetas con los datos estructurados que devuelven las herramientas del asistente. */
 
+// Estado de paquete/viaje -> texto y variante del átomo Badge (la app ya tenía el componente; no se reimplementa)
 const STATUS = {
-  pendiente: { label: 'Pendiente', tone: 'bg-slate-100 text-slate-700 border-slate-200' },
-  asignado: { label: 'Asignado', tone: 'bg-blue-50 text-blue-700 border-blue-200' },
-  en_transito: { label: 'En tránsito', tone: 'bg-amber-50 text-amber-700 border-amber-200' },
-  en_agencia: { label: 'En agencia', tone: 'bg-violet-50 text-violet-700 border-violet-200' },
-  entregado: { label: 'Entregado', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  siniestro: { label: 'Siniestro', tone: 'bg-red-50 text-red-700 border-red-200' },
-  devuelto: { label: 'Devuelto', tone: 'bg-orange-50 text-orange-700 border-orange-200' },
-  cancelado: { label: 'Cancelado', tone: 'bg-slate-100 text-slate-500 border-slate-200' },
-  planeada: { label: 'Planeada', tone: 'bg-blue-50 text-blue-700 border-blue-200' },
-  completada: { label: 'Completada', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  pendiente: { label: 'Pendiente', variant: 'neutral' },
+  asignado: { label: 'Asignado', variant: 'info' },
+  en_transito: { label: 'En tránsito', variant: 'warning' },
+  en_agencia: { label: 'En agencia', variant: 'info' },
+  entregado: { label: 'Entregado', variant: 'success' },
+  siniestro: { label: 'Siniestro', variant: 'danger' },
+  devuelto: { label: 'Devuelto', variant: 'warning' },
+  cancelado: { label: 'Cancelado', variant: 'neutral' },
+  planeada: { label: 'Planeada', variant: 'info' },
+  completada: { label: 'Completada', variant: 'success' },
 };
 
 export function StatusBadge({ status }) {
-  const s = STATUS[status] ?? { label: status ?? '—', tone: 'bg-slate-100 text-slate-700 border-slate-200' };
-  return <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[0.68rem] font-bold uppercase tracking-wider ${s.tone}`}>{s.label}</span>;
+  const s = STATUS[status] ?? { label: status ?? '—', variant: 'neutral' };
+  return <Badge variant={s.variant} size="lg">{s.label}</Badge>;
 }
 
 const TZ = 'America/La_Paz';
@@ -53,7 +56,7 @@ const Field = ({ icon: Icon, label, children }) => (
   <div className="flex items-start gap-2.5">
     <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600"><Icon size={14} strokeWidth={2.4} /></span>
     <div className="min-w-0">
-      <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-surface-500">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">{label}</p>
       <p className="text-sm font-medium text-surface-900">{children}</p>
     </div>
   </div>
@@ -98,7 +101,7 @@ export function PackageTrackingCard({ data, canOpenTracking = true }) {
 
       {timeline.length > 0 && (
         <div className="border-t border-surface-100 px-4 py-3">
-          <p className="mb-2 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-surface-500">Últimos eventos</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">Últimos eventos</p>
           <ol className="space-y-2">
             {timeline.slice(0, 4).map((e, i) => (
               <li key={`${e.at}-${i}`} className="flex items-start gap-2.5 text-sm">
@@ -107,7 +110,7 @@ export function PackageTrackingCard({ data, canOpenTracking = true }) {
                   {e.status}
                   {e.note && <span className="block text-xs text-surface-500">“{e.note}”</span>}
                 </span>
-                <span className="shrink-0 text-xs text-surface-400">{formatDateTime(e.at)}</span>
+                <span className="shrink-0 text-xs text-surface-500">{formatDateTime(e.at)}</span>
               </li>
             ))}
           </ol>
@@ -142,7 +145,7 @@ export function PackageListCard({ data, onAsk }) {
                 onClick={() => onAsk?.(`¿Dónde está el paquete ${p.tracking_code}?`)}
                 className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-primary-50/50"
               >
-                <Package size={16} className="shrink-0 text-surface-400" />
+                <Package size={16} aria-hidden="true" className="shrink-0 text-surface-500" />
                 <span className="min-w-0 flex-1">
                   <span className="block font-mono text-xs font-bold text-surface-700">{p.tracking_code}</span>
                   <span className="block truncate text-sm text-surface-900">{p.origen} → {p.destino}{p.recipient_name ? ` · ${p.recipient_name}` : ''}</span>
@@ -160,7 +163,7 @@ export function PackageListCard({ data, onAsk }) {
 
 const Kpi = ({ label, value, tone = 'text-surface-900' }) => (
   <div className="rounded-xl border border-surface-100 bg-surface-50 px-3 py-3">
-    <p className="text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-surface-500">{label}</p>
+    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">{label}</p>
     <p className={`mt-1 text-2xl font-bold tracking-tight ${tone}`}>{value ?? 0}</p>
   </div>
 );
@@ -265,7 +268,7 @@ export function ActionProposalCard({ data }) {
       <div className="flex items-center gap-2 border-b border-surface-100 bg-surface-50 px-4 py-3">
         {state.status === 'done' ? <CheckCircle2 size={16} className="text-emerald-600" /> : state.status === 'cancelled' ? <XCircle size={16} className="text-surface-500" /> : <ShieldAlert size={16} className="text-amber-600" />}
         <p className="text-sm font-bold text-surface-900">{action.title}</p>
-        <span className="ml-auto text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-surface-500">
+        <span className="ml-auto text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">
           {state.status === 'done' ? 'Hecho' : state.status === 'cancelled' ? 'Cancelada' : 'Requiere tu confirmación'}
         </span>
       </div>
@@ -276,12 +279,14 @@ export function ActionProposalCard({ data }) {
 
       {state.status === 'done' && (
         <div role="status" className="border-t border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          <p className="font-semibold">✅ {state.message}</p>
+          <p className="flex items-start gap-2 font-semibold"><CheckCircle2 size={16} aria-hidden="true" className="mt-0.5 shrink-0" /><span>{state.message}</span></p>
           {(state.results?.length ?? 0) > 1 && (
             <ul aria-label="Resultado por paquete" className="mt-2 space-y-1 text-xs">
               {state.results.map((r) => (
-                <li key={r.tracking_code} className={r.ok ? 'text-emerald-800' : 'font-semibold text-red-700'}>
-                  {r.ok ? '✓' : '✗'} <span className="font-mono">{r.tracking_code}</span>{r.ok ? '' : ` — ${r.error}`}
+                <li key={r.tracking_code} className={`flex items-center gap-1.5 ${r.ok ? 'text-emerald-800' : 'font-semibold text-red-700'}`}>
+                  {r.ok ? <Check size={14} aria-hidden="true" /> : <X size={14} aria-hidden="true" />}
+                  <span className="sr-only">{r.ok ? 'Hecho: ' : 'Falló: '}</span>
+                  <span className="font-mono">{r.tracking_code}</span>{r.ok ? '' : <span> — {r.error}</span>}
                 </li>
               ))}
             </ul>
@@ -292,13 +297,13 @@ export function ActionProposalCard({ data }) {
       {state.status === 'error' && <p role="alert" className="border-t border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{state.message}</p>}
 
       {!finished && state.status !== 'error' && (
-        <div className="flex items-center justify-between gap-3 border-t border-surface-100 px-4 py-3">
+        <div className="flex flex-col gap-3 border-t border-surface-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-surface-500">Nada se ha hecho todavía. Revisa los datos antes de confirmar.</p>
           <div className="flex shrink-0 gap-2">
-            <button type="button" onClick={() => call('cancel')} disabled={working} className="rounded-xl border border-surface-200 bg-white px-3.5 py-2 text-xs font-bold text-surface-700 hover:bg-surface-50 disabled:opacity-50">Cancelar</button>
-            <button type="button" onClick={() => call('confirm')} disabled={working} className="rounded-xl bg-[linear-gradient(135deg,#0b4ea2_0%,#137fec_100%)] px-4 py-2 text-xs font-bold text-white shadow-sm disabled:opacity-60">
+            <Button variant="secondary" onClick={() => call('cancel')} disabled={working} className="min-h-11 flex-1 sm:flex-none">Cancelar</Button>
+            <Button onClick={() => call('confirm')} disabled={working} className="min-h-11 flex-1 sm:flex-none">
               {working && state.verb === 'confirm' ? 'Ejecutando…' : 'Confirmar'}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -314,7 +319,7 @@ function TripRow({ trip, canSchedule, onAsk, weightKg }) {
     <li className="px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-surface-900">{trip.origin} → {trip.destination}</p>
-        <span className={`rounded-full border px-2.5 py-1 text-[0.68rem] font-bold uppercase tracking-wider ${fits === false ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+        <span className={`rounded-full border px-2.5 py-1 text-xs font-bold uppercase tracking-wider ${fits === false ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
           {fits === false ? 'No cabe' : trip.free_kg != null ? `${Number(trip.free_kg).toLocaleString('es-BO')} kg libres` : 'Con cupo'}
         </span>
       </div>
@@ -326,7 +331,7 @@ function TripRow({ trip, canSchedule, onAsk, weightKg }) {
         <button
           type="button"
           onClick={() => onAsk?.(`Quiero agendar un paquete${weightKg ? ` de ${weightKg} kg` : ''} en el viaje ${trip.ref}`)}
-          className="mt-2 rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-bold text-primary-700 hover:bg-primary-100"
+          className="mt-2 min-h-11 rounded-lg border border-primary-200 bg-primary-50 px-4 text-sm font-bold text-primary-700 hover:bg-primary-100"
         >
           Agendar un paquete aquí
         </button>
@@ -351,7 +356,7 @@ export function AvailableTripsCard({ data, onAsk }) {
           <p className="px-4 py-3 text-sm text-surface-600">No hay viajes en ese horario.</p>
           {alternatives.length > 0 && (
             <>
-              <p className="border-t border-surface-100 px-4 pt-3 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-surface-500">Los más cercanos</p>
+              <p className="border-t border-surface-100 px-4 pt-3 text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">Los más cercanos</p>
               <ul className="divide-y divide-surface-100">{alternatives.map((t) => <TripRow key={t.ref} trip={t} canSchedule={canSchedule} onAsk={onAsk} weightKg={query.weight_kg} />)}</ul>
             </>
           )}
@@ -366,8 +371,8 @@ export function FleetAvailabilityCard({ data }) {
   const { window: w = {}, vehicles_free: vf = [], vehicles_busy: vb = [], drivers_free: df = [], drivers_busy: db = [] } = data;
   const Col = ({ title, items, tone, label }) => (
     <div>
-      <p className={`text-[0.62rem] font-semibold uppercase tracking-[0.16em] ${tone}`}>{title} ({items.length})</p>
-      {items.length === 0 ? <p className="mt-1 text-sm text-surface-400">—</p> : <ul className="mt-1 space-y-1">{items.map((i) => <li key={label(i)} className="text-sm text-surface-800">{label(i)}</li>)}</ul>}
+      <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${tone}`}>{title} ({items.length})</p>
+      {items.length === 0 ? <p className="mt-1 text-sm text-surface-500">—</p> : <ul className="mt-1 space-y-1">{items.map((i) => <li key={label(i)} className="text-sm text-surface-800">{label(i)}</li>)}</ul>}
     </div>
   );
   return (
@@ -400,11 +405,11 @@ export function DailyBriefingCard({ data, onAsk }) {
       </div>
 
       <div className="px-4 pt-3">
-        <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-surface-500">Prioridades</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">Prioridades</p>
         <ol className="mt-1.5 space-y-1">
           {(data.priorities ?? []).map((p, i) => (
             <li key={p} className="flex gap-2 text-sm text-surface-900">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-50 text-[0.68rem] font-bold text-primary-700">{i + 1}</span>
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-50 text-xs font-bold text-primary-700">{i + 1}</span>
               {p}
             </li>
           ))}
@@ -420,7 +425,7 @@ export function DailyBriefingCard({ data, onAsk }) {
 
       {attention.length > 0 && (
         <div className="border-t border-surface-100">
-          <p className="px-4 pt-3 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-surface-500">Requieren atención</p>
+          <p className="px-4 pt-3 text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">Requieren atención</p>
           <ul className="divide-y divide-surface-100">
             {attention.map((a) => (
               <li key={`${a.tracking_code}-${a.reason}`}>
@@ -445,7 +450,7 @@ export function DailyBriefingCard({ data, onAsk }) {
 
       {departures.length > 0 && (
         <div className="border-t border-surface-100 px-4 py-3">
-          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-surface-500">Salen hoy</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">Salen hoy</p>
           <ul className="mt-1 space-y-0.5 text-sm text-surface-900">
             {departures.map((d, i) => <li key={`${d.departure_time}-${i}`}>{d.origin} → {d.destination} · {formatDateTime(d.departure_time)}</li>)}
           </ul>
@@ -469,13 +474,13 @@ export function AnalyticsSummaryCard({ data }) {
       </div>
       <div className="grid grid-cols-2 gap-2.5 p-4 sm:grid-cols-4">
         <Kpi label="Envíos" value={t.shipments} />
-        <Kpi label="Variación" value={change == null ? '—' : `${change > 0 ? '+' : ''}${change}%`} tone={change == null ? 'text-surface-400' : change >= 0 ? 'text-emerald-700' : 'text-red-600'} />
+        <Kpi label="Variación" value={change == null ? '—' : `${change > 0 ? '+' : ''}${change}%`} tone={change == null ? 'text-surface-500' : change >= 0 ? 'text-emerald-700' : 'text-red-600'} />
         <Kpi label="A tiempo" value={t.onTimePct == null ? '—' : `${t.onTimePct}%`} />
         <Kpi label="Entrega prom." value={durationText(t.avgDeliveryHours)} />
       </div>
       {(data.top_drivers ?? []).length > 0 && (
         <div className="border-t border-surface-100 px-4 py-3">
-          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-surface-500">Conductores</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">Conductores</p>
           <ul className="mt-1 space-y-0.5 text-sm text-surface-900">
             {data.top_drivers.map((d) => <li key={d.name}>{d.name} · {d.deliveries} {d.deliveries === 1 ? 'entrega' : 'entregas'}{d.efficiency_pct != null ? ` · ${d.efficiency_pct}% a tiempo` : ''}</li>)}
           </ul>
@@ -483,7 +488,7 @@ export function AnalyticsSummaryCard({ data }) {
       )}
       {(data.busiest_days ?? []).length > 0 && (
         <div className="flex flex-wrap items-center gap-2 border-t border-surface-100 px-4 py-3">
-          <span className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-surface-500">Más movimiento</span>
+          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">Más movimiento</span>
           {data.busiest_days.map((d) => <span key={d.date} className="rounded-full border border-surface-200 bg-surface-50 px-2.5 py-1 text-xs text-surface-700">{d.date}: {d.packages}</span>)}
         </div>
       )}

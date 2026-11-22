@@ -42,7 +42,7 @@ function Pagination({
               onClick={() => onPageChange(pageNum)}
               className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm font-semibold transition-all ${
                 currentPage === pageNum
-                  ? 'bg-[linear-gradient(135deg,#0b4ea2_0%,#137fec_100%)] text-white shadow-[0_14px_32px_-20px_rgba(19,127,236,0.7)]'
+                  ? 'bg-brand-gradient text-white shadow-[0_14px_32px_-20px_rgba(19,127,236,0.7)]'
                   : 'border border-transparent text-surface-600 hover:border-surface-200 hover:bg-white'
               }`}
             >

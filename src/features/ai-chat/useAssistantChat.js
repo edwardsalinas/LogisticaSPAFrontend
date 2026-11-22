@@ -18,6 +18,8 @@ export function useChatState(initialMessages = []) {
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
   const loadingRef = useRef(false);
+  const idRef = useRef(0);
+  const nextId = () => { idRef.current += 1; return idRef.current; }; // clave estable de lista (no el índice)
 
   /**
    * Envía un mensaje. `voice: true` pide una respuesta corta y hablada (se leerá en voz alta).
@@ -34,19 +36,19 @@ export function useChatState(initialMessages = []) {
 
     loadingRef.current = true;
     setLoading(true);
-    setMessages((prev) => [...prev, { role: 'user', content: text }]);
+    setMessages((prev) => [...prev, { id: nextId(), role: 'user', content: text }]);
 
     try {
       const res = await apiService.post('/ai-agent/chat', { message: text, history, ...(voice ? { voice: true } : {}) });
       const attachments = res.attachments ?? [];
-      setMessages((prev) => [...prev, { role: 'assistant', content: res.response, attachments }]);
+      setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', content: res.response, attachments }]);
       return { ok: true, text: res.response, attachments, isError: false };
     } catch (err) {
       const content =
         err.status === 429 || err.status === 503
           ? 'El asistente está recibiendo muchas consultas. Espera un minuto e inténtalo de nuevo.'
           : 'No pude procesar tu consulta en este momento. Inténtalo nuevamente.';
-      setMessages((prev) => [...prev, { role: 'assistant', content, isError: true }]);
+      setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', content, isError: true }]);
       return { ok: false, text: content, attachments: [], isError: true };
     } finally {
       loadingRef.current = false;

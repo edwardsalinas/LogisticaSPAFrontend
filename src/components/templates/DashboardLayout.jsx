@@ -86,7 +86,7 @@ function DashboardLayout() {
               aria-expanded={isAiOpen}
               aria-controls={aiPanelId}
             >
-              <div className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-transform duration-300 ${isAiOpen ? 'bg-sky-400 text-[#06203b] rotate-[10deg]' : 'bg-[linear-gradient(135deg,#0b4ea2_0%,#137fec_100%)] text-white'}`}>
+              <div className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-transform duration-300 ${isAiOpen ? 'bg-sky-400 text-[#06203b] rotate-[10deg]' : 'bg-brand-gradient text-white'}`}>
                 <Sparkles size={18} strokeWidth={2.2} />
               </div>
               <div className="hidden min-w-0 sm:block">
