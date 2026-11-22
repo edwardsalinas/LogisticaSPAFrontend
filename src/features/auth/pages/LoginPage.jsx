@@ -69,7 +69,10 @@ function LoginPage() {
     } catch (err) {
       // Mensajes específicos para límite de intentos y captcha; credenciales inválidas en otro caso
       const isGuardError = err.status === 429 || String(err.code || '').startsWith('CAPTCHA');
-      setError(isGuardError ? err.message : 'Credenciales invalidas. Verifica tus datos e intenta nuevamente.');
+      if (isGuardError) setError(err.message);
+      else if (err.isNetworkError) setError('No se pudo conectar con el servidor. Revisa tu conexión o inténtalo en unos minutos.');
+      else if (err.status >= 500) setError('El servidor tuvo un problema. Inténtalo de nuevo en unos minutos.');
+      else setError('Credenciales invalidas. Verifica tus datos e intenta nuevamente.');
     } finally {
       // Los tokens de captcha son de un solo uso
       captchaRef.current?.reset();

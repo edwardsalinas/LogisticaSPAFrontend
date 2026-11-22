@@ -1,5 +1,5 @@
 import { isRouteActive } from '../../../constants/status';
-import { Suspense, lazy, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { MapPinned, MoveLeft, Route, Ruler, TimerReset } from 'lucide-react';
 import Button from '../../../components/atoms/Button';

@@ -75,4 +75,18 @@ describe('LoginPage (React Hook Form + Zod)', () => {
 
     expect(await screen.findByText(/demasiados intentos/i)).toBeInTheDocument();
   });
+
+  it.each([
+    ['sin conexión con el servidor', { isNetworkError: true }, /no se pudo conectar con el servidor/i],
+    ['error interno del servidor (500)', { status: 500 }, /el servidor tuvo un problema/i],
+  ])('no culpa a la contraseña cuando hay %s', async (_n, props, texto) => {
+    loginMock.mockRejectedValue(Object.assign(new Error('x'), props));
+    renderPage();
+    await userEvent.type(screen.getByLabelText(/correo electrónico/i), 'ana@logistica.bo');
+    await userEvent.type(screen.getByLabelText(/^contraseña$/i), 'Secreto123!');
+    await userEvent.click(screen.getByRole('button', { name: /ingresar al panel/i }));
+
+    expect(await screen.findByText(texto)).toBeInTheDocument();
+    expect(screen.queryByText(/credenciales invalidas/i)).not.toBeInTheDocument();
+  });
 });
