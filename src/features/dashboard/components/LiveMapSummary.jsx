@@ -9,7 +9,7 @@ export default function LiveMapSummary({ stats }) {
           <MapPinned size={14} strokeWidth={2.2} />Mapa vivo
         </div>
         <h3 className="mt-4 font-display text-[2rem] font-semibold tracking-[-0.05em]">
-          Cobertura lista para lectura inmediata.
+          Flota en la calle ahora
         </h3>
         <p className="mt-3 max-w-sm text-sm leading-relaxed text-slate-300">
           La interfaz destaca zonas activas, alertas y flujo operativo sin depender solo del mapa tecnico.
@@ -17,15 +17,15 @@ export default function LiveMapSummary({ stats }) {
         <div className="mt-8 rounded-[1.5rem] border border-white/10 bg-white/6 p-4 backdrop-blur-sm">
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-2xl border border-white/8 bg-white/6 p-3">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-300">En ruta</p>
+              <p className="text-xs font-semibold tracking-normal text-slate-200">En ruta</p>
               <p className="mt-2 font-display text-2xl font-semibold">{stats?.packagesInTransit || 0}</p>
             </div>
             <div className="rounded-2xl border border-white/8 bg-white/6 p-3">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Pendientes</p>
+              <p className="text-xs font-semibold tracking-normal text-slate-200">Pendientes</p>
               <p className="mt-2 font-display text-2xl font-semibold">{stats?.packagesPending || 0}</p>
             </div>
             <div className="rounded-2xl border border-white/8 bg-white/6 p-3">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Criticas</p>
+              <p className="text-xs font-semibold tracking-normal text-slate-200">Críticas</p>
               <p className="mt-2 font-display text-2xl font-semibold">{stats?.packagesDelayed || 0}</p>
             </div>
           </div>

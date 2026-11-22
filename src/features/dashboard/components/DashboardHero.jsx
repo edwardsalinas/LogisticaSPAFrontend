@@ -15,11 +15,11 @@ export default function DashboardHero({ stats }) {
             <Gauge size={14} strokeWidth={2.4} />
             Resumen ejecutivo
           </div>
-          <h1 className="mt-5 max-w-3xl font-display text-[clamp(2.2rem,5vw,4.25rem)] font-semibold tracking-[-0.06em] text-white">
-            Operacion con criterio visual, lectura rapida y foco.
+          <h1 className="mt-3 max-w-3xl sm:mt-5 font-display text-[clamp(1.65rem,5vw,3.4rem)] font-semibold tracking-[-0.06em] text-white">
+            Estado de la operación hoy
           </h1>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">
-            Unificamos entregas, flota, SLA y alertas en una superficie mas clara para que el equipo lea el estado del negocio sin pelear contra la interfaz.
+          <p className="mt-4 hidden max-w-2xl text-sm sm:block leading-relaxed text-slate-300 sm:text-base">
+            Entregas, flota y alertas en una sola vista, para detectar a tiempo qué requiere atención.
           </p>
         </div>
         <div className="flex flex-col gap-3 lg:gap-4">
@@ -27,21 +27,21 @@ export default function DashboardHero({ stats }) {
             
             <div className="group relative overflow-hidden rounded-[1.35rem] border border-white/20 bg-white/10 p-4 text-white transition-all duration-300 hover:bg-white/15 hover:shadow-lg hover:-translate-y-0.5">
               <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-sky-400/20 blur-2xl transition-all duration-500 group-hover:bg-sky-400/40"></div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/70">Flota activa</p>
+              <p className="text-xs font-semibold tracking-normal text-white/70">Flota activa</p>
               <p className="mt-2 font-display text-3xl font-bold tracking-[-0.04em]">{stats?.totalVehicles || 0}</p>
               <p className="mt-1 text-xs text-white/50">vehiculos vivos</p>
             </div>
             
             <div className="group relative overflow-hidden rounded-[1.35rem] border border-white/20 bg-white/10 p-4 text-white transition-all duration-300 hover:bg-white/15 hover:shadow-lg hover:-translate-y-0.5">
               <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-violet-400/20 blur-2xl transition-all duration-500 group-hover:bg-violet-400/40"></div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/70">Conductores</p>
+              <p className="text-xs font-semibold tracking-normal text-white/70">Conductores</p>
               <p className="mt-2 font-display text-3xl font-bold tracking-[-0.04em]">{stats?.totalDrivers || 0}</p>
               <p className="mt-1 text-xs text-white/50">equipos listos</p>
             </div>
             
             <div className="group relative overflow-hidden rounded-[1.35rem] border border-sky-400/30 bg-sky-400/15 p-4 text-white transition-all duration-300 hover:bg-sky-400/20 hover:shadow-lg hover:-translate-y-0.5">
               <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-sky-300/20 blur-2xl transition-all duration-500 group-hover:bg-sky-300/40"></div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-200">Rendimiento</p>
+              <p className="text-xs font-semibold tracking-normal text-sky-200">Rendimiento</p>
               <div className="mt-2 flex items-center gap-2 text-3xl font-bold tracking-[-0.04em]">
                 <span className="font-display">{stats?.performance || '+0%'}</span><ArrowUpRight size={20} className="text-sky-300" strokeWidth={2.4} />
               </div>
@@ -58,7 +58,7 @@ export default function DashboardHero({ stats }) {
                     <PackageCheck size={16} strokeWidth={2.4} />
                   </div>
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/70">Carga Hoy</p>
+                    <p className="text-xs font-semibold tracking-normal text-white/70">Carga de hoy</p>
                     <p className="mt-0.5 font-display text-lg font-bold tracking-[-0.04em]">{stats?.packagesToday || 0}</p>
                   </div>
                 </div>
@@ -70,7 +70,7 @@ export default function DashboardHero({ stats }) {
                     <Truck size={16} strokeWidth={2.4} />
                   </div>
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/70">En curso</p>
+                    <p className="text-xs font-semibold tracking-normal text-white/70">En curso</p>
                     <p className="mt-0.5 font-display text-lg font-bold tracking-[-0.04em]">{stats?.activeRoutes || 0}</p>
                   </div>
                 </div>
@@ -82,7 +82,7 @@ export default function DashboardHero({ stats }) {
                     <MapPinned size={16} strokeWidth={2.4} />
                   </div>
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/70">Distancia</p>
+                    <p className="text-xs font-semibold tracking-normal text-white/70">Km recorridos</p>
                     <p className="mt-0.5 font-display text-lg font-bold tracking-[-0.04em]">{stats?.totalDistance?.toLocaleString() || 0}k</p>
                   </div>
                 </div>
@@ -94,7 +94,7 @@ export default function DashboardHero({ stats }) {
                     <ShieldCheck size={16} strokeWidth={2.4} />
                   </div>
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/70">SLA Gbl</p>
+                    <p className="text-xs font-semibold tracking-normal text-white/70">A tiempo</p>
                     <p className="mt-0.5 font-display text-lg font-bold tracking-[-0.04em]">{stats?.sla || 0}%</p>
                   </div>
                 </div>
