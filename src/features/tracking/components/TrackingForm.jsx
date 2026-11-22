@@ -7,7 +7,8 @@ import Button from '../../../components/atoms/Button';
 import Select from '../../../components/atoms/Select';
 import apiService from '../../../services/apiService';
 import { PACKAGE_STATUS } from '../../../constants/status';
-import { isInsideBolivia, matchCity } from '../../../constants/bolivia';
+import { matchCity } from '../../../constants/bolivia';
+import { latField, lngField, requireInsideBolivia } from '../../../constants/locationSchema';
 import LocationPicker from './LocationPicker';
 
 const STATUS_OPTIONS = [
@@ -20,25 +21,14 @@ const STATUS_OPTIONS = [
 ];
 
 // Reglas equivalentes a trackingEventSchema del backend (tracking.schema.js)
-const LOCATION_REQUIRED = 'Elige una ubicación (ciudad, tu posición o un punto en el mapa)';
-const coordinate = (range, label) =>
-  z.preprocess(
-    (v) => (v === '' || v == null ? undefined : v), // un campo vacío no debe convertirse en 0
-    z.coerce.number({ message: LOCATION_REQUIRED }).min(-range, `La ${label} debe estar entre -${range} y ${range}`).max(range, `La ${label} debe estar entre -${range} y ${range}`),
-  );
-
 export const trackingFormSchema = z
   .object({
     package_id: z.string().min(1, 'Selecciona un paquete'),
     status: z.string().min(1, 'Selecciona el estado'),
-    lat: coordinate(90, 'latitud'),
-    lng: coordinate(180, 'longitud'),
+    lat: latField(),
+    lng: lngField(),
   })
-  .superRefine((v, ctx) => {
-    if (!isInsideBolivia(v.lat, v.lng)) {
-      ctx.addIssue({ code: 'custom', path: ['lat'], message: 'Esa ubicación queda fuera de Bolivia. Revisa la ciudad o las coordenadas.' });
-    }
-  });
+  .superRefine(requireInsideBolivia);
 
 // Dónde suele estar el paquete según el estado: al asignarlo, en el origen; al entregarlo o dejarlo en agencia, en el destino.
 export const suggestedCityFor = (pkg, status) => {
@@ -92,7 +82,7 @@ function TrackingForm({ packages = [], onSuccess, onCancel }) {
             <Route size={18} strokeWidth={2.2} />
           </div>
           <div>
-            <p className="text-[0.64rem] uppercase tracking-[0.18em] text-surface-500">Nuevo evento</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-surface-500">Nuevo evento</p>
             <p className="text-sm text-surface-600">Asocia el paquete, define el estado y indica dónde está.</p>
           </div>
         </div>

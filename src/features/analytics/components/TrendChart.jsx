@@ -17,7 +17,7 @@ function CustomTooltip({ active, payload, label }) {
 
   return (
     <div className="rounded-[1.2rem] border border-white/70 bg-white/96 p-4 shadow-[0_24px_48px_-30px_rgba(15,23,42,0.28)] backdrop-blur-xl">
-      <p className="text-[0.64rem] font-semibold uppercase tracking-[0.18em] text-surface-500">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">{label}</p>
       <div className="mt-3 space-y-2">
         <div className="flex items-center justify-between gap-6 text-sm">
           <span className="text-surface-600">Este período</span>
@@ -37,18 +37,18 @@ function TrendChart({ title = 'Tendencia del volumen logistico', data = [], tota
     <section className="motion-card overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/90 p-6 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-surface-500">Tendencia principal</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-500">Tendencia principal</p>
           <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">{title}</h3>
           <p className="mt-2 max-w-2xl text-sm text-surface-500">Paquetes registrados por día en el rango elegido, frente a un período anterior de la misma duración.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:w-auto">
           <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 px-4 py-3">
-            <p className="text-[0.62rem] uppercase tracking-[0.18em] text-surface-500">Total del período</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-surface-500">Total del período</p>
             <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.04em] text-primary-700">{total}</p>
           </div>
           <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 px-4 py-3">
-            <p className="text-[0.62rem] uppercase tracking-[0.18em] text-surface-500">Variacion</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-surface-500">Variacion</p>
             {change === null ? (
               <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-400" title="El período anterior no tiene envíos para comparar">—</p>
             ) : (

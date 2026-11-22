@@ -98,7 +98,7 @@ function LoginPage() {
                 </div>
                 <div>
                   <p className="text-sm font-bold text-white">LogisticaSPA</p>
-                  <p className="text-[0.62rem] uppercase tracking-[0.24em] text-sky-100/60">
+                  <p className="text-xs uppercase tracking-[0.24em] text-sky-100/60">
                     Precision Global Logistics
                   </p>
                 </div>
@@ -106,7 +106,7 @@ function LoginPage() {
             </div>
 
             <div className="max-w-xl">
-              <p className="mb-4 text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-sky-100/75">
+              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.26em] text-sky-100/75">
                 Plataforma empresarial
               </p>
               <h1 className="max-w-lg text-5xl font-extrabold leading-[0.95] tracking-tight text-white lg:text-6xl">
@@ -133,19 +133,19 @@ function LoginPage() {
             <div className="grid max-w-lg grid-cols-3 gap-4">
               <div className="rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur-sm">
                 <p className="text-2xl font-bold text-white">{stats.efficiency}</p>
-                <p className="mt-1 text-[0.65rem] uppercase tracking-[0.16em] text-sky-100/70">
+                <p className="mt-1 text-xs uppercase tracking-[0.16em] text-sky-100/70">
                   Entregas a tiempo
                 </p>
               </div>
               <div className="rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur-sm">
                 <p className="text-2xl font-bold text-white">{stats.movements}</p>
-                <p className="mt-1 text-[0.65rem] uppercase tracking-[0.16em] text-sky-100/70">
+                <p className="mt-1 text-xs uppercase tracking-[0.16em] text-sky-100/70">
                   Movimientos hoy
                 </p>
               </div>
               <div className="rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur-sm">
                 <p className="text-2xl font-bold text-white">{stats.activeUnits}</p>
-                <p className="mt-1 text-[0.65rem] uppercase tracking-[0.16em] text-sky-100/70">
+                <p className="mt-1 text-xs uppercase tracking-[0.16em] text-sky-100/70">
                   Visibilidad
                 </p>
               </div>
@@ -162,7 +162,7 @@ function LoginPage() {
               </div>
               <div>
                 <p className="text-xl font-bold tracking-tight text-[#022448]">LogisticaSPA</p>
-                <p className="text-[0.62rem] uppercase tracking-[0.22em] text-surface-500">
+                <p className="text-xs uppercase tracking-[0.22em] text-surface-500">
                   Acceso corporativo
                 </p>
               </div>
@@ -182,7 +182,7 @@ function LoginPage() {
               <div className="space-y-2">
                 <label
                   htmlFor="email"
-                  className="block text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500"
+                  className="block text-xs font-semibold uppercase tracking-[0.18em] text-surface-500"
                 >
                   Correo electrónico
                 </label>
@@ -202,7 +202,7 @@ function LoginPage() {
                 <div className="flex items-center justify-between">
                   <label
                     htmlFor="password"
-                    className="block text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500"
+                    className="block text-xs font-semibold uppercase tracking-[0.18em] text-surface-500"
                   >
                     Contraseña
                   </label>
@@ -253,17 +253,17 @@ function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex h-12 w-full items-center justify-center rounded-xl bg-[linear-gradient(135deg,#163d70_0%,#0b4ea2_100%)] text-sm font-bold uppercase tracking-[0.12em] text-white shadow-[0_20px_40px_-24px_rgba(11,78,162,0.75)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_48px_-24px_rgba(11,78,162,0.85)] disabled:translate-y-0"
+                className="flex h-12 w-full items-center justify-center rounded-xl bg-[linear-gradient(135deg,#163d70_0%,#0b4ea2_100%)] text-sm font-bold text-white shadow-[0_20px_40px_-24px_rgba(11,78,162,0.75)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_48px_-24px_rgba(11,78,162,0.85)] disabled:translate-y-0"
               >
                 {loading ? <Spinner size="sm" className="mx-auto" /> : 'Ingresar al panel'}
               </button>
             </form>
 
             <div className="mt-8 border-t border-surface-100 pt-6 text-center">
-              <p className="text-[0.65rem] uppercase tracking-widest text-surface-400 font-bold mb-2">No tienes acceso todavía?</p>
+              <p className="text-xs uppercase tracking-widest text-surface-400 font-bold mb-2">No tienes acceso todavía?</p>
               <button
                 type="button"
-                className="text-sm font-bold uppercase tracking-[0.12em] text-primary-600 transition-colors hover:text-primary-800"
+                className="text-sm font-bold text-primary-600 transition-colors hover:text-primary-800"
               >
                 Solicitar acceso
               </button>

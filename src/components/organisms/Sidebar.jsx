@@ -47,12 +47,12 @@ function Sidebar() {
           </div>
           <div>
             <p className="text-[1.05rem] font-bold tracking-tight text-white">LogisticaSPA</p>
-            <p className="text-[0.6rem] uppercase tracking-[0.28em] text-sky-200/55">Enterprise Control</p>
+            <p className="text-xs uppercase tracking-[0.28em] text-sky-200/55">Enterprise Control</p>
           </div>
         </div>
 
         <div className="mt-5 rounded-2xl border border-white/7 bg-white/[0.03] px-4 py-3">
-          <p className="text-[0.58rem] uppercase tracking-[0.26em] text-slate-400">Centro de operaciones</p>
+          <p className="text-xs uppercase tracking-[0.26em] text-slate-400">Centro de operaciones</p>
           <p className="mt-2 text-sm leading-relaxed text-slate-200">
             Monitoreo de flota, rutas y entregas desde una sola interfaz.
           </p>
@@ -91,7 +91,7 @@ function Sidebar() {
                     <p className={`text-sm font-semibold ${isActive ? 'text-white' : 'text-slate-200'}`}>
                       {item.label}
                     </p>
-                    <p className="text-[0.58rem] uppercase tracking-[0.22em] text-slate-500">
+                    <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
                       {item.eyebrow}
                     </p>
                   </div>
@@ -105,9 +105,9 @@ function Sidebar() {
       <div className="space-y-3 border-t border-white/6 pt-4">
 
         <div className="rounded-2xl border border-white/7 bg-white/[0.03] p-3">
-          <p className="text-[0.58rem] uppercase tracking-[0.24em] text-slate-500">Sesion activa</p>
+          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Sesion activa</p>
           <div className="mt-3 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.08] text-sm font-bold uppercase text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.08] text-sm font-bold text-white">
               {user?.email?.substring(0, 2) || 'US'}
             </div>
             <div className="min-w-0">

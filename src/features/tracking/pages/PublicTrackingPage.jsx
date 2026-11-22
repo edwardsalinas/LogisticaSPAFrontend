@@ -74,7 +74,7 @@ function PublicTrackingPage() {
                <div className="h-10 w-10 rounded-xl bg-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20">
                   <Truck size={20} className="text-white" strokeWidth={2.5} />
                </div>
-               <span className="text-xl font-black tracking-tight text-white uppercase">Logistica<span className="text-primary-400">SPA</span></span>
+               <span className="text-xl font-bold tracking-tight text-white ">Logistica<span className="text-primary-400">SPA</span></span>
             </div>
             <button 
               onClick={() => navigate('/login')}
@@ -86,7 +86,7 @@ function PublicTrackingPage() {
         </header>
 
         <section className="text-center mb-16">
-           <h1 className="text-4xl lg:text-6xl font-black text-white tracking-tight mb-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
+           <h1 className="text-4xl lg:text-6xl font-bold text-white tracking-tight mb-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
               Rastreo de <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-blue-500">Carga Activa</span>
            </h1>
            <p className="text-slate-400 max-w-xl mx-auto text-lg font-medium leading-relaxed italic animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
@@ -112,7 +112,7 @@ function PublicTrackingPage() {
                  <button 
                    type="submit" 
                    disabled={loading}
-                   className="bg-primary-600 hover:bg-primary-500 disabled:opacity-50 text-white rounded-[1.6rem] px-8 py-4 font-black uppercase tracking-widest text-sm shadow-xl shadow-primary-500/20 transition-all active:scale-95 flex items-center gap-2"
+                   className="bg-primary-600 hover:bg-primary-500 disabled:opacity-50 text-white rounded-[1.6rem] px-8 py-4 font-bold text-sm shadow-xl shadow-primary-500/20 transition-all active:scale-95 flex items-center gap-2"
                  >
                     {loading ? <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Search size={18} strokeWidth={3} />}
                     <span className="hidden sm:inline">Rastrear</span>
@@ -137,7 +137,7 @@ function PublicTrackingPage() {
                     <UserRound size={18} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Remitente</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Remitente</p>
                     <p className="text-sm font-semibold text-white">{trackingData.package.sender_name || 'Cliente Registrado'}</p>
                   </div>
                 </div>
@@ -146,7 +146,7 @@ function PublicTrackingPage() {
                     <ShieldCheck size={18} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Destinatario</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Destinatario</p>
                     <p className="text-sm font-semibold text-white">{trackingData.package.recipient_name || 'No especificado'}</p>
                   </div>
                 </div>
@@ -156,15 +156,15 @@ function PublicTrackingPage() {
               <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 backdrop-blur-xl shadow-2xl">
                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-8 border-b border-white/5">
                   <div className="space-y-1">
-                     <p className="text-[0.65rem] uppercase tracking-[0.3em] text-primary-400 font-black">Estado del Envío</p>
+                     <p className="text-xs uppercase tracking-[0.3em] text-primary-400 font-bold">Estado del Envío</p>
                      <div className="flex items-center gap-4">
-                        <h2 className="text-3xl font-black text-white">{statusMapValue[trackingData.package.status.trim().toLowerCase()]?.label || trackingData.package.status}</h2>
+                        <h2 className="text-3xl font-bold text-white">{statusMapValue[trackingData.package.status.trim().toLowerCase()]?.label || trackingData.package.status}</h2>
                         <div className="h-2 w-2 rounded-full bg-success-500 animate-pulse shadow-[0_0_12px_rgba(34,197,94,0.5)]" />
                      </div>
                   </div>
                   <div className="bg-white/5 px-6 py-4 rounded-3xl border border-white/10">
-                     <p className="text-[0.6rem] uppercase tracking-widest text-slate-500 mb-1 font-bold">Código de Rastreo</p>
-                     <p className="text-xl font-mono font-black text-primary-400 tracking-tighter italic">{trackingData.package.tracking_code}</p>
+                     <p className="text-xs uppercase tracking-widest text-slate-500 mb-1 font-bold">Código de Rastreo</p>
+                     <p className="text-xl font-mono font-bold text-primary-400 tracking-tighter italic">{trackingData.package.tracking_code}</p>
                   </div>
                </div>
 
@@ -174,7 +174,7 @@ function PublicTrackingPage() {
                         <MapPin size={28} />
                      </div>
                      <div>
-                        <p className="text-[0.65rem] uppercase tracking-widest text-slate-500 font-black mb-1">Ruta</p>
+                        <p className="text-xs uppercase tracking-widest text-slate-500 font-bold mb-1">Ruta</p>
                         <p className="text-xl font-bold text-white tracking-tight">{trackingData.package.origen} <span className="text-slate-600 mx-2">→</span> {trackingData.package.destino}</p>
                      </div>
                   </div>
@@ -183,7 +183,7 @@ function PublicTrackingPage() {
                         <Boxes size={28} />
                      </div>
                      <div>
-                        <p className="text-[0.65rem] uppercase tracking-widest text-slate-500 font-black mb-1">Carga</p>
+                        <p className="text-xs uppercase tracking-widest text-slate-500 font-bold mb-1">Carga</p>
                         <p className="text-xl font-bold text-white tracking-tight">{trackingData.package.peso} kg <span className="text-xs text-slate-600 ml-2 uppercase tracking-widest">Peso Bruto</span></p>
                      </div>
                   </div>
@@ -196,7 +196,7 @@ function PublicTrackingPage() {
                   <Clock size={120} />
                </div>
                
-               <h3 className="text-xl font-black text-white tracking-tight mb-8 flex items-center gap-3">
+               <h3 className="text-xl font-bold text-white tracking-tight mb-8 flex items-center gap-3">
                   <Clock size={20} className="text-primary-400" />
                   Línea de Tiempo Operativa
                </h3>

@@ -1,5 +1,6 @@
 import { Boxes, MapPinned, PackagePlus } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { routeName } from '../../../utils/routeLabel';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -33,6 +34,20 @@ const packageFormSchema = z.object({
   }
 });
 
+function SectionTitle({ step, icon: Icon, title, hint }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-700" aria-hidden="true">
+        {Icon ? <Icon size={16} strokeWidth={2.2} /> : step}
+      </span>
+      <div>
+        <p className="text-base font-semibold text-surface-900">{step}. {title}</p>
+        <p className="text-sm text-surface-600">{hint}</p>
+      </div>
+    </div>
+  );
+}
+
 function PackageForm({ onSuccess, onCancel, initialRouteId = '', initialOrigin = '', initialDestination = '' }) {
   const {
     handleSubmit,
@@ -60,6 +75,16 @@ function PackageForm({ onSuccess, onCancel, initialRouteId = '', initialOrigin =
   const isGuest = form.is_guest;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const formRef = useRef(null);
+
+  // Con el formulario largo, el error puede quedar fuera de pantalla: se lleva el foco al primer campo con problema
+  const focusFirstError = () => {
+    requestAnimationFrame(() => {
+      const bad = formRef.current?.querySelector('[aria-invalid="true"], [role="alert"]');
+      bad?.scrollIntoView?.({ block: 'center', behavior: 'auto' });
+      if (bad && 'focus' in bad && bad.getAttribute('role') !== 'alert') bad.focus();
+    });
+  };
 
   const [clients, setClients] = useState([]);
   const [predefinedRoutes, setPredefinedRoutes] = useState([]);
@@ -143,18 +168,10 @@ function PackageForm({ onSuccess, onCancel, initialRouteId = '', initialOrigin =
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6 max-h-[75vh] overflow-y-auto px-1 custom-scrollbar">
+    <form ref={formRef} onSubmit={handleSubmit(onSubmit, focusFirstError)} noValidate className="space-y-6 max-h-[75vh] overflow-y-auto px-1 custom-scrollbar">
       {/* SECCION 1: ORIGEN Y DESTINO */}
       <div className="rounded-[1.4rem] border border-surface-100 bg-surface-50/80 p-5 space-y-4">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
-            <MapPinned size={18} strokeWidth={2.2} />
-          </div>
-          <div>
-            <p className="text-[0.64rem] uppercase tracking-[0.18em] text-surface-500 font-bold">Ruta y Logística</p>
-            <p className="text-xs text-surface-600">Define el trayecto y la asignación operativa.</p>
-          </div>
-        </div>
+        <SectionTitle step={1} icon={MapPinned} title="Trayecto" hint="De dónde sale y a dónde llega el paquete." />
 
         <div className="grid gap-4 md:grid-cols-2">
           <Select
@@ -182,7 +199,8 @@ function PackageForm({ onSuccess, onCancel, initialRouteId = '', initialOrigin =
         </div>
 
         <Select
-          label="Asignar a Ruta (Opcional)"
+          label="Viaje (opcional)"
+          hint="Si todavía no sabes en qué viaje irá, déjalo vacío: se asigna después."
           name="route_id"
           value={form.route_id}
           onChange={handleChange}
@@ -193,45 +211,42 @@ function PackageForm({ onSuccess, onCancel, initialRouteId = '', initialOrigin =
             const driver = r.driver?.full_name ? ` - ${r.driver.full_name}` : ' (Sin conductor)';
             return {
               value: r.id,
-              label: `${r.route_code || 'Ruta'} ${date} ${time}${driver}`
+              label: `${routeName(r)} · ${date} ${time}${driver}`
             };
           })}
           placeholder={
             !form.origen || !form.destino
-              ? "-- Escoge origen y destino para ver rutas --"
+              ? "Elige origen y destino para ver los viajes"
               : validRoutes.length === 0
-                ? "-- No hay rutas activas para este trayecto --"
-                : "-- Seleccionar ruta opcional --"
+                ? "No hay viajes programados para este trayecto"
+                : "Elegir un viaje (opcional)"
           }
         />
       </div>
 
       {/* SECCION 2: REMITENTE */}
       <div className="rounded-[1.4rem] border border-surface-100 bg-white p-5 space-y-4 shadow-sm">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
-             <div className="h-2 w-2 rounded-full bg-primary-500" />
-             <p className="text-[0.64rem] uppercase tracking-[0.18em] text-surface-500 font-bold">Datos del Remitente</p>
-          </div>
-          <label className="flex items-center gap-2 cursor-pointer group">
-             <span className="text-[10px] font-bold uppercase text-surface-400 group-hover:text-primary-600 transition-colors">Modo Invitado</span>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <SectionTitle step={2} title="Quién envía" hint="El cliente que entrega el paquete." />
+          <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl px-2 text-sm text-surface-700">
              <input
                type="checkbox"
-               className="h-4 w-4 rounded border-surface-300 text-primary-600 focus:ring-primary-500"
+               className="h-5 w-5 rounded border-surface-300 text-primary-600 focus:ring-primary-500"
                checked={isGuest}
                onChange={(e) => setValue('is_guest', e.target.checked, { shouldValidate: isSubmitted })}
              />
+             <span>No tiene cuenta (modo invitado)</span>
           </label>
         </div>
 
         {isGuest ? (
           <div className="grid gap-4 md:grid-cols-2 animate-in fade-in slide-in-from-top-2 duration-300">
-             <Input label="Nombre del Remitente" name="sender_name" value={form.sender_name} onChange={handleChange} placeholder="Ej: Juan Perez" required={isGuest} error={errors.sender_name?.message} />
-             <Input label="Teléfono" name="sender_phone" value={form.sender_phone} onChange={handleChange} placeholder="Ej: 71223344" />
+             <Input label="Nombre de quien envía" name="sender_name" value={form.sender_name} onChange={handleChange} placeholder="Ej: Juan Perez" required={isGuest} error={errors.sender_name?.message} />
+             <Input label="Teléfono (opcional)" name="sender_phone" value={form.sender_phone} onChange={handleChange} placeholder="Ej: 71223344" />
           </div>
         ) : (
           <Autocomplete
-            label="Seleccionar Cliente Registrado"
+            label="Cliente"
             name="sender_id"
             value={form.sender_id}
             onChange={handleChange}
@@ -248,37 +263,26 @@ function PackageForm({ onSuccess, onCancel, initialRouteId = '', initialOrigin =
 
       {/* SECCION 3: DESTINATARIO */}
       <div className="rounded-[1.4rem] border border-surface-100 bg-white p-5 space-y-4 shadow-sm">
-         <div className="flex items-center gap-3 mb-2">
-            <div className="h-2 w-2 rounded-full bg-success-500" />
-            <p className="text-[0.64rem] uppercase tracking-[0.18em] text-surface-500 font-bold">Datos del Destinatario</p>
-         </div>
+         <SectionTitle step={3} title="Quién recibe" hint="La persona que recogerá el paquete en el destino." />
          <div className="grid gap-4 md:grid-cols-2">
-            <Input label="Nombre del Destinatario" name="recipient_name" value={form.recipient_name} onChange={handleChange} placeholder="Ej: Maria Lopez" required error={errors.recipient_name?.message} />
-            <Input label="Teléfono" name="recipient_phone" value={form.recipient_phone} onChange={handleChange} placeholder="Ej: 60113322" />
+            <Input label="Nombre de quien recibe" name="recipient_name" value={form.recipient_name} onChange={handleChange} placeholder="Ej: Maria Lopez" required error={errors.recipient_name?.message} />
+            <Input label="Teléfono (opcional)" name="recipient_phone" value={form.recipient_phone} onChange={handleChange} placeholder="Ej: 60113322" />
          </div>
-         <Input label="Email para Notificaciones" name="recipient_email" type="email" value={form.recipient_email} onChange={handleChange} placeholder="maria.lopez@ejemplo.com" error={errors.recipient_email?.message} />
+         <Input label="Correo (opcional)" name="recipient_email" hint="Le avisamos por correo cuando el paquete cambie de estado." type="email" value={form.recipient_email} onChange={handleChange} placeholder="maria.lopez@ejemplo.com" error={errors.recipient_email?.message} />
       </div>
 
       {/* SECCION 4: CARGA */}
       <div className="rounded-[1.4rem] border border-white/40 bg-surface-100/30 p-5 space-y-4">
-        <div className="flex items-center gap-3 mb-2">
-           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-surface-200 text-surface-700">
-             <Boxes size={18} strokeWidth={2.2} />
-           </div>
-           <div>
-             <p className="text-[0.64rem] uppercase tracking-[0.18em] text-surface-500 font-bold">Detalles de la Carga</p>
-             <p className="text-xs text-surface-600">Especificaciones físicas y notas operativas.</p>
-           </div>
-        </div>
+        <SectionTitle step={4} icon={Boxes} title="El paquete" hint="Peso y contenido." />
         <div className="grid gap-4 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
           <Input label="Peso (kg)" name="peso" type="number" step="0.1" value={form.peso} onChange={handleChange} placeholder="Ej: 15.5" required error={errors.peso?.message} />
-          <Input label="Descripcion" name="description" value={form.description} onChange={handleChange} placeholder="Contenido o referencia" />
+          <Input label="Contenido (opcional)" name="description" value={form.description} onChange={handleChange} placeholder="Ej: documentos, repuestos…" />
         </div>
       </div>
 
       {error && <p className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600 font-bold">{error}</p>}
 
-      <div className="flex justify-end gap-3 pt-4 border-t border-surface-100">
+      <div className="sticky bottom-0 -mx-1 flex justify-end gap-3 border-t border-surface-100 bg-white/95 px-1 py-4 backdrop-blur">
         <Button variant="secondary" onClick={onCancel} type="button">Cancelar</Button>
         <Button type="submit" disabled={loading}>{loading ? 'Registrando...' : 'Registrar paquete'}</Button>
       </div>

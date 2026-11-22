@@ -14,7 +14,7 @@ const BTN = 'inline-flex min-h-11 items-center gap-2 rounded-xl border px-4 text
  * Elegir dónde está el paquete sin saber coordenadas: por ciudad, con el GPS del dispositivo o marcando el mapa.
  * Las coordenadas exactas quedan en un apartado avanzado. El valor vive en el formulario (campos lat/lng).
  */
-export default function LocationPicker({ register, errors, setValue, lat, lng, suggestion }) {
+export default function LocationPicker({ register, errors, setValue, lat, lng, suggestion, onPlace }) {
   const [cityKey, setCityKey] = useState('');
   const [showMap, setShowMap] = useState(false);
   const [showExact, setShowExact] = useState(false);
@@ -24,6 +24,7 @@ export default function LocationPicker({ register, errors, setValue, lat, lng, s
     setValue('lat', String(round(la)), { shouldValidate: true, shouldDirty: true });
     setValue('lng', String(round(ln)), { shouldValidate: true, shouldDirty: true });
     setCityKey(key);
+    if (key) onPlace?.(cityByKey(key)?.name);
   };
 
   const onCity = (e) => {
@@ -57,7 +58,7 @@ export default function LocationPicker({ register, errors, setValue, lat, lng, s
   const ln = Number.parseFloat(lng);
   const has = Number.isFinite(la) && Number.isFinite(ln);
   const near = has ? nearestCity(la, ln) : null;
-  const locationError = errors.lat?.message || errors.lng?.message;
+  const locationErrors = [...new Set([errors.lat?.message, errors.lng?.message].filter(Boolean))];
 
   let placeLabel = 'punto marcado';
   if (cityKey) placeLabel = cityByKey(cityKey)?.name;
@@ -107,7 +108,7 @@ export default function LocationPicker({ register, errors, setValue, lat, lng, s
           <span>Ubicación elegida: <strong>{placeLabel}</strong></span>
         </p>
       )}
-      {locationError && <p role="alert" className="text-sm text-red-600">{locationError}</p>}
+      {locationErrors.map((m) => <p key={m} role="alert" className="text-sm text-red-600">{m}</p>)}
 
       <details open={showExact || undefined} onToggle={(e) => setShowExact(e.currentTarget.open)} className="rounded-xl border border-surface-100 bg-surface-50/60 px-4 py-3">
         <summary className="min-h-6 cursor-pointer text-sm font-semibold text-surface-700">Coordenadas exactas (opcional)</summary>

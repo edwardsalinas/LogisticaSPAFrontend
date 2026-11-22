@@ -4,25 +4,31 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Input from '../../../components/atoms/Input';
 import Button from '../../../components/atoms/Button';
+import LocationPicker from '../../tracking/components/LocationPicker';
+import { latField, lngField, requireInsideBolivia } from '../../../constants/locationSchema';
 import apiService from '../../../services/apiService';
 
 // Reglas de validación (React Hook Form + Zod); coinciden con las del backend (checkpoints.service.js)
-export const checkpointFormSchema = z.object({
-  name: z.string().trim().min(2, 'El nombre es requerido (mínimo 2 caracteres)'),
-  lat: z.coerce.number({ message: 'Ingresa una latitud válida' }).min(-90, 'La latitud debe estar entre -90 y 90').max(90, 'La latitud debe estar entre -90 y 90'),
-  lng: z.coerce.number({ message: 'Ingresa una longitud válida' }).min(-180, 'La longitud debe estar entre -180 y 180').max(180, 'La longitud debe estar entre -180 y 180'),
-  radius_meters: z.coerce.number({ message: 'Ingresa un radio válido' }).int('El radio debe ser un número entero').min(10, 'El radio mínimo es 10 m').max(1000, 'El radio máximo es 1000 m'),
-  sequence_order: z.coerce.number({ message: 'Ingresa el orden' }).int('El orden debe ser un número entero').min(1, 'El orden mínimo es 1'),
-});
+export const checkpointFormSchema = z
+  .object({
+    name: z.string().trim().min(2, 'El nombre es requerido (mínimo 2 caracteres)'),
+    lat: latField(),
+    lng: lngField(),
+    radius_meters: z.coerce.number({ message: 'Ingresa un radio válido' }).int('El radio debe ser un número entero').min(10, 'El radio mínimo es 10 m').max(1000, 'El radio máximo es 1000 m'),
+    sequence_order: z.coerce.number({ message: 'Ingresa la posición' }).int('La posición debe ser un número entero').min(1, 'La posición mínima es 1'),
+  })
+  .superRefine(requireInsideBolivia);
 
 /**
  * Formulario para crear/editar un checkpoint
  */
-function CheckpointForm({ routeId, checkpoint, onSuccess, onCancel }) {
+function CheckpointForm({ routeId, checkpoint, nextOrder = 1, onSuccess, onCancel }) {
   const {
     register,
     handleSubmit,
     setValue,
+    getValues,
+    watch,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(checkpointFormSchema),
@@ -31,31 +37,16 @@ function CheckpointForm({ routeId, checkpoint, onSuccess, onCancel }) {
       lat: checkpoint?.lat ?? '',
       lng: checkpoint?.lng ?? '',
       radius_meters: checkpoint?.radius_meters || 100,
-      sequence_order: checkpoint?.sequence_order || 1,
+      sequence_order: checkpoint?.sequence_order || nextOrder, // el siguiente punto de la ruta, sin que el usuario cuente
     },
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [useCurrentLocation, setUseCurrentLocation] = useState(false);
+  const [lat, lng] = watch(['lat', 'lng']);
 
-  const handleGetCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setError('La geolocalización no es soportada por este navegador');
-      return;
-    }
-    setUseCurrentLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setValue('lat', position.coords.latitude.toFixed(6), { shouldValidate: true });
-        setValue('lng', position.coords.longitude.toFixed(6), { shouldValidate: true });
-        setUseCurrentLocation(false);
-      },
-      (geoError) => {
-        console.error('Error obteniendo ubicación:', geoError);
-        setError('No se pudo obtener la ubicación actual');
-        setUseCurrentLocation(false);
-      }
-    );
+  // Al elegir una ciudad, si el punto aún no tiene nombre, se lo pone la ciudad
+  const nameFromPlace = (place) => {
+    if (!getValues('name')?.trim()) setValue('name', place, { shouldValidate: true });
   };
 
   const onSubmit = async (values) => {
@@ -86,25 +77,15 @@ function CheckpointForm({ routeId, checkpoint, onSuccess, onCancel }) {
         {...register('name')}
       />
 
-      <div className="grid grid-cols-2 gap-4">
-        <Input label="Latitud" type="number" step="any" placeholder="-16.500000" required error={errors.lat?.message} {...register('lat')} />
-        <Input label="Longitud" type="number" step="any" placeholder="-68.119300" required error={errors.lng?.message} {...register('lng')} />
-      </div>
+      <LocationPicker register={register} errors={errors} setValue={setValue} lat={lat} lng={lng} onPlace={nameFromPlace} />
 
-      <Button
-        type="button"
-        variant="secondary"
-        onClick={handleGetCurrentLocation}
-        disabled={useCurrentLocation}
-        className="text-sm"
-      >
-        {useCurrentLocation ? 'Obteniendo ubicación...' : '📍 Usar mi ubicación actual'}
-      </Button>
-
-      <div className="grid grid-cols-2 gap-4">
-        <Input label="Radio (metros)" type="number" placeholder="100" required error={errors.radius_meters?.message} {...register('radius_meters')} />
-        <Input label="Orden en la ruta" type="number" placeholder="1" required error={errors.sequence_order?.message} {...register('sequence_order')} />
-      </div>
+      <details className="rounded-xl border border-surface-100 bg-surface-50/60 px-4 py-3">
+        <summary className="min-h-6 cursor-pointer text-sm font-semibold text-surface-700">Opciones avanzadas</summary>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          <Input label="Radio de llegada (metros)" type="number" hint="A qué distancia se considera que el vehículo llegó al punto." required error={errors.radius_meters?.message} {...register('radius_meters')} />
+          <Input label="Posición en la ruta" type="number" hint="1 es el primer punto. Se asigna sola." required error={errors.sequence_order?.message} {...register('sequence_order')} />
+        </div>
+      </details>
 
       {error && (
         <div role="alert" className="bg-danger/10 border border-danger text-danger px-3 py-2 rounded-lg text-sm">

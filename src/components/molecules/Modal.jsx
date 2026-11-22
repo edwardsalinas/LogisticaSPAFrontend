@@ -71,7 +71,7 @@ function Modal({ isOpen, onClose, title, children, footer }) {
       >
         <div className="flex items-start justify-between gap-4 border-b border-surface-100 px-6 py-5 sm:px-7">
           <div>
-            <p className="text-[0.64rem] uppercase tracking-[0.2em] text-surface-500">Panel contextual</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-surface-500">Panel contextual</p>
             <h3 id={titleId} className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">{title}</h3>
           </div>
           <button

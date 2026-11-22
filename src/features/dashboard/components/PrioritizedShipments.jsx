@@ -44,7 +44,7 @@ export default function PrioritizedShipments() {
     <article className="overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/85 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.32)] backdrop-blur-xl">
       <div className="flex flex-col gap-4 border-b border-surface-100 px-6 py-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-surface-500">Despachos prioritarios</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-500">Despachos prioritarios</p>
           <h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Lectura rapida de lo que requiere seguimiento hoy.</h2>
         </div>
         <button className="inline-flex items-center gap-2 text-sm font-semibold text-primary-700 transition-colors hover:text-primary-800">
@@ -55,12 +55,12 @@ export default function PrioritizedShipments() {
         <table className="w-full border-separate border-spacing-y-3">
           <thead>
             <tr>
-              <th className="px-4 py-3 text-left text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500">Despacho</th>
-              <th className="px-4 py-3 text-left text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500">Destino</th>
-              <th className="px-4 py-3 text-left text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500">Operador</th>
-              <th className="px-4 py-3 text-left text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500">Estado</th>
-              <th className="px-4 py-3 text-left text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500">ETA</th>
-              <th className="px-4 py-3 text-left text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500">Progreso</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">Despacho</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">Destino</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">Operador</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">Estado</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">ETA</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">Progreso</th>
             </tr>
           </thead>
           <tbody>

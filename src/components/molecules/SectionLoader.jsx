@@ -31,7 +31,7 @@ function SectionLoader({
         ))}
       </div>
 
-      <div className="mt-8 flex items-center gap-3 text-[0.64rem] uppercase tracking-[0.2em] text-surface-500">
+      <div className="mt-8 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-surface-500">
         <span>{eyebrow}</span>
         <span className="h-px w-12 bg-surface-200" />
         <span>{title}</span>

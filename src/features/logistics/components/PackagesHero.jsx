@@ -11,7 +11,7 @@ export default function PackagesHero({ totalPackages, deliveredCount, transitCou
       </div>
       <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.95fr)] lg:items-end">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-sky-100/90 backdrop-blur-md">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-sky-100/90 backdrop-blur-md">
             <PackageCheck size={14} strokeWidth={2.4} />
             Gestion de paquetes
           </div>
@@ -28,7 +28,7 @@ export default function PackagesHero({ totalPackages, deliveredCount, transitCou
                 <div className="relative mx-auto flex h-8 w-8 items-center justify-center rounded-xl bg-sky-400/20 text-sky-300 mb-1.5">
                   <Boxes size={16} strokeWidth={2.4} />
                 </div>
-                <p className="mt-1 text-[0.45rem] font-bold uppercase tracking-[0.15em] text-white/70">Total</p>
+                <p className="mt-1 text-xs font-semibold tracking-normal text-white/80">Total</p>
                 <p className="relative font-display text-xl sm:text-2xl font-bold tracking-[-0.04em]">{totalPackages}</p>
               </div>
 
@@ -37,7 +37,7 @@ export default function PackagesHero({ totalPackages, deliveredCount, transitCou
                 <div className="relative mx-auto flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-400/20 text-emerald-300 mb-1.5">
                   <PackageCheck size={16} strokeWidth={2.4} />
                 </div>
-                <p className="mt-1 text-[0.45rem] font-bold uppercase tracking-[0.15em] text-white/70">Entreg</p>
+                <p className="mt-1 text-xs font-semibold tracking-normal text-white/80">Entregas</p>
                 <p className="relative font-display text-xl sm:text-2xl font-bold tracking-[-0.04em]">{deliveredCount}</p>
               </div>
 
@@ -46,7 +46,7 @@ export default function PackagesHero({ totalPackages, deliveredCount, transitCou
                 <div className="relative mx-auto flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400/20 text-amber-300 mb-1.5">
                   <Truck size={16} strokeWidth={2.4} />
                 </div>
-                <p className="mt-1 text-[0.45rem] font-bold uppercase tracking-[0.15em] text-white/70">Trans</p>
+                <p className="mt-1 text-xs font-semibold tracking-normal text-white/80">En ruta</p>
                 <p className="relative font-display text-xl sm:text-2xl font-bold tracking-[-0.04em]">{transitCount}</p>
               </div>
 
@@ -55,7 +55,7 @@ export default function PackagesHero({ totalPackages, deliveredCount, transitCou
                 <div className="relative mx-auto flex h-8 w-8 items-center justify-center rounded-xl bg-violet-400/20 text-violet-300 mb-1.5">
                   <MapPinned size={16} strokeWidth={2.4} />
                 </div>
-                <p className="mt-1 text-[0.45rem] font-bold uppercase tracking-[0.15em] text-white/70">Pendit</p>
+                <p className="mt-1 text-xs font-semibold tracking-normal text-white/80">Pendiente</p>
                 <p className="relative font-display text-xl sm:text-2xl font-bold tracking-[-0.04em]">{pendingCount}</p>
               </div>
 

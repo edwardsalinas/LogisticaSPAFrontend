@@ -27,7 +27,7 @@ function CheckpointMarker({ checkpoint, isCompleted, onClick }) {
         <div className="min-w-[180px] p-1">
           <div className="flex items-center justify-between gap-2">
             <h3 className="text-sm font-semibold text-surface-900">{checkpoint.name}</h3>
-            {isCompleted && <span className="text-[10px] font-bold text-emerald-600 uppercase">Completado</span>}
+            {isCompleted && <span className="text-xs font-bold text-emerald-600 uppercase">Completado</span>}
           </div>
           <p className="mt-1 text-xs text-surface-500">Checkpoint {checkpoint.sequence_order}</p>
           <div className="mt-3 space-y-1 text-xs text-surface-500">

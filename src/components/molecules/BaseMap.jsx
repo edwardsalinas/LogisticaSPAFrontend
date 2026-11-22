@@ -32,7 +32,7 @@ function BaseMap({
         />
         {children}
       </MapContainer>
-      <div className="pointer-events-none absolute bottom-3 right-3 z-[350] rounded-full border border-white/70 bg-white/90 px-3 py-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-surface-500 shadow-sm backdrop-blur-sm">
+      <div className="pointer-events-none absolute bottom-3 right-3 z-[350] rounded-full border border-white/70 bg-white/90 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-surface-500 shadow-sm backdrop-blur-sm">
         &copy; OpenStreetMap
       </div>
     </div>

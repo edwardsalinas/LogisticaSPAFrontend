@@ -1,6 +1,7 @@
 import { isPackageDelivered, isRouteFinished, isRouteActive, normalizeRouteStatus, ROUTE_STATUS } from '../../../constants/status';
 import { useEffect, useState, useRef, useMemo, useCallback, memo } from 'react';
 import { toast } from 'sonner';
+import { useConfirm } from '../../../components/molecules/ConfirmDialog';
 import { MapPinned, Route, Search, Truck, Calendar, List, User, MapPin, Flag, Layers, ChevronDown, Plus, Filter, X, CalendarRange, Clock, RotateCw } from 'lucide-react';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -104,7 +105,7 @@ const RoutesMap = memo(({
       <div className="relative z-10 flex h-full flex-col">
         <div className="flex items-start justify-between p-6 text-white">
           <div className="drop-shadow-sm">
-            <p className="text-[0.64rem] uppercase tracking-[0.24em] text-sky-100/70">{extendedSelectedRoute.type === 'schedule' ? 'Cronograma' : 'Despacho'} seleccionado</p>
+            <p className="text-xs uppercase tracking-[0.24em] text-sky-100/70">{extendedSelectedRoute.type === 'schedule' ? 'Cronograma' : 'Despacho'} seleccionado</p>
             <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em]">{extendedSelectedRoute.origin} - {extendedSelectedRoute.destination}</h2>
             <p className="mt-2 text-sm text-white/72">{extendedSelectedRoute.route_code} - {extendedSelectedRoute.driver_name || 'Sin conductor'}</p>
           </div>
@@ -113,9 +114,9 @@ const RoutesMap = memo(({
         <div className="pointer-events-none mt-auto flex flex-wrap items-end justify-between gap-4 p-6">
           <div className="pointer-events-auto rounded-[1.5rem] border border-white/40 bg-white/80 p-4 shadow-xl backdrop-blur-xl">
             <div className="flex gap-5">
-              <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">Progreso</p><p className="mt-2 text-lg font-bold text-primary-700">{realProgress}%</p></div>
-              <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">ETA</p><p className="mt-2 text-lg font-bold text-primary-700">{extendedSelectedRoute.eta || '--'}</p></div>
-              <div className="min-w-[5rem]"><p className="text-[0.6rem] uppercase tracking-[0.18em] text-surface-500">Distancia</p><p className="mt-2 text-lg font-bold text-primary-700">{realRemainingDistance || '--'} km</p></div>
+              <div className="min-w-[5rem]"><p className="text-xs uppercase tracking-[0.18em] text-surface-500">Progreso</p><p className="mt-2 text-lg font-bold text-primary-700">{realProgress}%</p></div>
+              <div className="min-w-[5rem]"><p className="text-xs uppercase tracking-[0.18em] text-surface-500">ETA</p><p className="mt-2 text-lg font-bold text-primary-700">{extendedSelectedRoute.eta || '--'}</p></div>
+              <div className="min-w-[5rem]"><p className="text-xs uppercase tracking-[0.18em] text-surface-500">Distancia</p><p className="mt-2 text-lg font-bold text-primary-700">{realRemainingDistance || '--'} km</p></div>
             </div>
           </div>
           <div className="pointer-events-auto"><MapLegend /></div>
@@ -208,21 +209,30 @@ function RoutesPage() {
 
   const loading = loadingRoutes;
 
+  const [askConfirm, confirmDialog] = useConfirm();
+
   const handleDelete = useCallback(async (route) => {
-    if (window.confirm(`¿Estás seguro de que deseas eliminar ${route.type === 'schedule' ? 'el cronograma' : 'la ruta'} ${route.route_code}?`)) {
-      try {
-        if (route.type === 'schedule') {
-          await apiService.deleteSchedule(route.id);
-        } else {
-          await apiService.deleteRoute(route.id);
-        }
-        if (selectedRoute?.id === route.id) setSelectedRoute(null);
-        queryClient.invalidateQueries({ queryKey: ['adminRoutes'] });
-      } catch (err) {
-        alert(err.message || 'Error al eliminar. Verifica si hay dependencias activas.');
+    const isSchedule = route.type === 'schedule';
+    const ok = await askConfirm({
+      title: isSchedule ? 'Eliminar cronograma' : 'Eliminar ruta',
+      message: `Se eliminará ${isSchedule ? 'el cronograma' : 'la ruta'} ${route.route_code}. Esta acción no se puede deshacer.`,
+      confirmLabel: 'Eliminar',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    try {
+      if (isSchedule) {
+        await apiService.deleteSchedule(route.id);
+      } else {
+        await apiService.deleteRoute(route.id);
       }
+      if (selectedRoute?.id === route.id) setSelectedRoute(null);
+      queryClient.invalidateQueries({ queryKey: ['adminRoutes'] });
+      toast.success(isSchedule ? 'Cronograma eliminado' : 'Ruta eliminada');
+    } catch (err) {
+      toast.error('No se pudo eliminar', { description: err.message || 'Verifica si hay dependencias activas (viajes o paquetes asignados).' });
     }
-  }, [selectedRoute, queryClient]);
+  }, [selectedRoute, queryClient, askConfirm]);
 
   const handleEdit = useCallback(async (route) => {
     try {
@@ -376,7 +386,7 @@ function RoutesPage() {
       return (
         <div className={`w-full overflow-hidden flex items-center gap-1 px-1 py-0.5 rounded-md ${isPast && status === 'planeada' ? 'opacity-60' : ''}`} style={isEstimated ? { maskImage: 'linear-gradient(to right, black 80%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, black 80%, transparent 100%)' } : {}}>
           <span className="font-bold text-[8px] text-white/90 whitespace-nowrap">{eventInfo.timeText.split(' - ')[0]}</span>
-          <span className="text-[9px] font-semibold text-white truncate max-w-[60px]">{event.title.split('|')[0].trim()}</span>
+          <span className="text-xs font-semibold text-white truncate max-w-[60px]">{event.title.split('|')[0].trim()}</span>
           {(status === 'active' || status === 'en_transito') && <Truck size={8} className="animate-pulse text-white ml-auto shrink-0" />}
         </div>
       );
@@ -388,7 +398,7 @@ function RoutesPage() {
         style={isEstimated ? { maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)' } : {}}
       >
         <div className="flex justify-between items-center mb-1">
-          <div className="flex items-center gap-1 min-w-0 font-black text-[9px] text-white/90">
+          <div className="flex items-center gap-1 min-w-0 font-bold text-xs text-white/90">
              {(['active', 'en_transito'].includes(status)) ? (
               <Truck size={10} className="animate-pulse text-white shrink-0" />
             ) : (
@@ -405,7 +415,7 @@ function RoutesPage() {
         </div>
         
         <div className="min-w-0 flex-1 flex flex-col justify-center">
-          <p className="text-[10px] font-black text-white leading-tight truncate">
+          <p className="text-xs font-bold text-white leading-tight truncate">
             {event.title.split('|')[0].trim()}
           </p>
           <p className="text-[8px] font-bold text-white/50 truncate uppercase tracking-tighter mt-0.5">
@@ -414,11 +424,11 @@ function RoutesPage() {
         </div>
 
         <div className="mt-1 flex items-center justify-between gap-1 border-t border-white/10 pt-1 shrink-0">
-          <span className="text-[7px] font-black text-white/30 uppercase tracking-tighter">
+          <span className="text-[7px] font-bold text-white/30 uppercase tracking-tighter">
             {isEstimated ? 'EST.' : 'REAL'}
           </span>
           <div className="flex items-center gap-1 min-w-0">
-            <span className="text-[9px] font-black text-white/90 truncate">
+            <span className="text-xs font-bold text-white/90 truncate">
                {['completed', 'finalizada', 'completada'].includes(status) 
                  ? `✓ ${new Date(route.arrival_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
                  : `→ ${eventInfo.timeText.split(' - ')[1] || ''}`}
@@ -492,8 +502,8 @@ function RoutesPage() {
                   <Truck size={22} strokeWidth={2.5} />
                 </div>
                 <div>
-                  <h2 className="font-display text-xl font-black tracking-tight text-surface-950 leading-tight">Control de Rutas</h2>
-                  <p className="text-[9px] font-black text-surface-400 uppercase tracking-[0.2em] mt-0.5">Operativa Logística</p>
+                  <h2 className="font-display text-xl font-bold tracking-tight text-surface-950 leading-tight">Control de Rutas</h2>
+                  <p className="text-xs font-bold text-surface-400 uppercase tracking-[0.2em] mt-0.5">Operativa Logística</p>
                 </div>
               </div>
               
@@ -654,6 +664,7 @@ function RoutesPage() {
         />
       </Modal>
 
+      {confirmDialog}
     </div>
   );
 }

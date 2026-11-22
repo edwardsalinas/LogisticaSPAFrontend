@@ -16,7 +16,7 @@ function DataTable({ columns, data, loading = false, onRowClick, emptyMessage = 
         <thead>
           <tr>
             {columns.map((col) => (
-              <th key={col.key} scope="col" className="px-4 py-3 text-left text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-surface-500">
+              <th key={col.key} scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">
                 {col.label}
               </th>
             ))}

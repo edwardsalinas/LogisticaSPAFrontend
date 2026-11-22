@@ -64,7 +64,7 @@ function PackageMapPage() {
         </div>
         <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.95fr)] lg:items-end">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-sky-100/85 backdrop-blur"><Activity size={14} strokeWidth={2.2} />Tracking en mapa</div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100/85 backdrop-blur"><Activity size={14} strokeWidth={2.2} />Tracking en mapa</div>
             <h1 className="mt-5 max-w-3xl font-display text-[clamp(2rem,4.5vw,3.8rem)] font-semibold tracking-[-0.06em] text-white break-all sm:break-normal">{pkg.tracking_code}</h1>
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Seguimiento espacial del envio con checkpoint, ultima posicion conocida y lectura activa sobre el mapa.</p>
           </div>
@@ -85,7 +85,7 @@ function PackageMapPage() {
       <section className="rounded-[1.6rem] border border-white/70 bg-white/88 p-4 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:rounded-[1.8rem] sm:p-5">
         <div className="mb-4 flex flex-col gap-3 border-b border-surface-100 px-1 pb-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-[0.64rem] uppercase tracking-[0.24em] text-surface-500">Mapa en vivo</p>
+            <p className="text-xs uppercase tracking-[0.24em] text-surface-500">Mapa en vivo</p>
             <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.04em] text-surface-950 sm:text-2xl">Ruta completa del paquete</h2>
           </div>
           <div className="flex flex-wrap gap-2">

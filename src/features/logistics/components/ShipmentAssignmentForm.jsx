@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { routeName } from '../../../utils/routeLabel';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -107,14 +108,14 @@ function ShipmentAssignmentForm({ pkg, onSuccess, onCancel }) {
                 const date = r.departure_time ? new Date(r.departure_time).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit' }) : '';
                 return {
                     value: r.id,
-                    label: `${r.route_code || 'Ruta'} (${date}) • ${r.driver?.full_name || 'Sin conductor'}`
+                    label: `${routeName(r)} (${date}) • ${r.driver?.full_name || 'Sin conductor'}`
                 };
             })}
             placeholder="Selecciona un despacho activo..."
           />
           
           <div className="pt-2">
-            <p className="text-[0.65rem] text-surface-400 font-medium px-1 mb-4 italic">
+            <p className="text-xs text-surface-400 font-medium px-1 mb-4 italic">
               Solo se muestran despachos con origen y destino coincidentes.
             </p>
             <div className="flex justify-end gap-3">

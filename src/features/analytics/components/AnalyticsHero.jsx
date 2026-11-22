@@ -25,7 +25,7 @@ export default function AnalyticsHero({ totals }) {
       </div>
       <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.95fr)] lg:items-end">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-sky-100/85 backdrop-blur">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100/85 backdrop-blur">
             <CalendarRange size={14} strokeWidth={2.2} />
             Inteligencia operativa
           </div>
@@ -42,22 +42,22 @@ export default function AnalyticsHero({ totals }) {
             <div className="grid grid-cols-4 gap-2.5">
               <div className="rounded-[1.35rem] border border-white/10 bg-white/8 p-4 text-white">
                 <PackageCheck size={18} className="text-sky-300" strokeWidth={2.2} />
-                <p className="mt-2 text-[0.6rem] uppercase tracking-[0.18em] text-slate-300">Envios totales</p>
+                <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-300">Envios totales</p>
                 <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.05em]">{dash(totals?.shipments ?? 0)}</p>
               </div>
               <div className="rounded-[1.35rem] border border-white/10 bg-white/8 p-4 text-white">
                 <ShieldCheck size={18} className="text-emerald-300" strokeWidth={2.2} />
-                <p className="mt-2 text-[0.6rem] uppercase tracking-[0.18em] text-slate-300">A tiempo</p>
+                <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-300">A tiempo</p>
                 <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.05em]">{dash(totals?.onTimePct, '%')}</p>
               </div>
               <div className="rounded-[1.35rem] border border-white/10 bg-white/8 p-4 text-white">
                 <TimerReset size={18} className="text-amber-300" strokeWidth={2.2} />
-                <p className="mt-2 text-[0.6rem] uppercase tracking-[0.18em] text-slate-300">Entrega prom.</p>
+                <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-300">Entrega prom.</p>
                 <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.05em]">{formatDuration(totals?.avgDeliveryHours)}</p>
               </div>
               <div className="rounded-[1.35rem] border border-white/10 bg-white/8 p-4 text-white">
                 <AlertTriangle size={18} className="text-violet-300" strokeWidth={2.2} />
-                <p className="mt-2 text-[0.6rem] uppercase tracking-[0.18em] text-slate-300">Siniestros</p>
+                <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-300">Siniestros</p>
                 <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.05em]">{dash(totals?.incidents ?? 0)}</p>
               </div>
             </div>

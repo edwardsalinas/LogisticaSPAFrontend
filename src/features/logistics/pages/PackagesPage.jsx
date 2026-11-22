@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { routeName } from '../../../utils/routeLabel';
 import { Boxes, MapPinned, PackageCheck, PackageSearch, Search, Truck, Link, PackagePlus, ChevronRight, ChevronDown, Package, Clock, Plus, Filter, Calendar as CalendarIcon, RefreshCw } from 'lucide-react';
 import api from '../../../services/api';
 import Badge from '../../../components/atoms/Badge';
@@ -198,12 +199,12 @@ function PackagesPage() {
       label: 'Paquete',
       render: (val, row) => (
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-700 font-mono text-[10px] font-bold ring-1 ring-primary-100">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-700 font-mono text-xs font-bold ring-1 ring-primary-100">
             {val.substring(0, 4)}
           </div>
           <div>
             <p className="font-bold text-surface-900 text-sm">{val}</p>
-            <p className="text-[10px] text-surface-400 font-medium truncate max-w-[150px]">{row.description || 'Sin descripción'}</p>
+            <p className="text-xs text-surface-400 font-medium truncate max-w-[150px]">{row.description || 'Sin descripción'}</p>
           </div>
         </div>
       ),
@@ -238,12 +239,12 @@ function PackagesPage() {
                 <Truck size={24} strokeWidth={2.5} />
               </div>
               <div>
-                <h2 className="font-display text-2xl font-black text-surface-950 tracking-tight">
+                <h2 className="font-display text-2xl font-bold text-surface-950 tracking-tight">
                    {activeTab === 'delivered' ? 'Historial de Despachos' : 'Panel de Despachos'}
                 </h2>
                
                {isRefreshing && (
-                 <div className="mt-4 flex items-center gap-2 px-3 py-1 bg-primary-100/50 text-primary-700 text-[10px] font-black rounded-full w-fit animate-pulse">
+                 <div className="mt-4 flex items-center gap-2 px-3 py-1 bg-primary-100/50 text-primary-700 text-xs font-bold rounded-full w-fit animate-pulse">
                    <Clock size={12} />
                    ACTUALIZANDO DATOS...
                  </div>
@@ -261,7 +262,7 @@ function PackagesPage() {
                     
                     <div className="px-4 py-1 flex flex-col items-center min-w-[140px]">
                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-black text-surface-950">
+                          <span className="text-sm font-bold text-surface-950">
                              {selectedDate.toLocaleDateString('es-BO', { day: '2-digit', month: 'long' })}
                           </span>
                           {selectedDate.toDateString() === new Date().toDateString() && (
@@ -269,11 +270,11 @@ function PackagesPage() {
                           )}
                        </div>
                        {selectedDate.toDateString() !== new Date().toDateString() ? (
-                          <button onClick={resetToToday} className="text-[9px] font-black text-primary-600 bg-primary-50 px-2 py-0.5 rounded-md hover:bg-primary-100 transition-all uppercase tracking-tighter">
+                          <button onClick={resetToToday} className="text-xs font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-md hover:bg-primary-100 transition-all uppercase tracking-tighter">
                              Volver a hoy
                           </button>
                        ) : (
-                          <span className="text-[9px] font-black text-surface-300 uppercase tracking-tighter -mt-0.5">Vista Operativa</span>
+                          <span className="text-xs font-bold text-surface-300 uppercase tracking-tighter -mt-0.5">Vista Operativa</span>
                        )}
                     </div>
 
@@ -309,12 +310,12 @@ function PackagesPage() {
                <thead>
                  <tr className="bg-surface-50/50 border-b border-surface-100">
                    <th className="w-14 px-4 py-5"></th>
-                   <th className="px-4 py-5 text-left text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Viaje / Ruta</th>
-                   <th className="px-4 py-5 text-left text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest text-center">Fecha</th>
-                   <th className="px-4 py-5 text-left text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Responsable</th>
-                   <th className="px-4 py-5 text-center text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Estado</th>
-                   <th className="px-4 py-5 text-center text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest">Manifiesto</th>
-                   <th className="px-4 py-5 text-right text-[0.68rem] font-bold text-surface-400 uppercase tracking-widest pr-10">Acciones</th>
+                   <th className="px-4 py-5 text-left text-xs font-bold text-surface-400 uppercase tracking-widest">Viaje / Ruta</th>
+                   <th className="px-4 py-5 text-left text-xs font-bold text-surface-400 uppercase tracking-widest text-center">Fecha</th>
+                   <th className="px-4 py-5 text-left text-xs font-bold text-surface-400 uppercase tracking-widest">Responsable</th>
+                   <th className="px-4 py-5 text-center text-xs font-bold text-surface-400 uppercase tracking-widest">Estado</th>
+                   <th className="px-4 py-5 text-center text-xs font-bold text-surface-400 uppercase tracking-widest">Manifiesto</th>
+                   <th className="px-4 py-5 text-right text-xs font-bold text-surface-400 uppercase tracking-widest pr-10">Acciones</th>
                  </tr>
                </thead>
                <tbody className="divide-y divide-surface-100">
@@ -336,8 +337,8 @@ function PackagesPage() {
                                <span className="font-bold text-surface-900 group-hover:text-primary-700 transition-colors">
                                  {route.origin} → {route.destination}
                                </span>
-                               <span className="text-[10px] font-mono font-black text-primary-500 tracking-tighter uppercase">
-                                 {route.route_code || route.id.substring(0, 8)}
+                               <span className="text-xs font-mono font-bold text-primary-500 tracking-tighter uppercase">
+                                 {routeName(route)}
                                </span>
                             </div>
                          </td>
@@ -346,7 +347,7 @@ function PackagesPage() {
                                <span className="font-bold text-surface-900 text-sm">
                                  {route.departure_time ? new Date(route.departure_time).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit' }) : '--'}
                                </span>
-                               <span className="text-[10px] font-black text-primary-500 uppercase tracking-tighter">
+                               <span className="text-xs font-bold text-primary-500 uppercase tracking-tighter">
                                  {route.departure_time ? new Date(route.departure_time).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }) : 'S/H'}
                                </span>
                             </div>
@@ -368,7 +369,7 @@ function PackagesPage() {
                             {ship.packages.length}
                          </td>
                          <td className="px-4 py-5 text-right pr-8">
-                            <Button variant="secondary" size="xs" className="h-8 px-4 rounded-xl text-[10px] font-black uppercase tracking-tight gap-1.5 border-primary-200 text-primary-700 bg-white hover:bg-primary-600 hover:text-white transition-all shadow-sm disabled:opacity-30 disabled:grayscale disabled:pointer-events-none" disabled={(isPast && activeTab !== 'delivered') || ['completada', 'finalizada', 'completed', 'entregado'].includes(route.status?.toLowerCase())} onClick={(e) => { e.stopPropagation(); handleOpenContextualForm(route); }}>
+                            <Button variant="secondary" size="xs" className="h-8 px-4 rounded-xl text-xs font-bold uppercase tracking-tight gap-1.5 border-primary-200 text-primary-700 bg-white hover:bg-primary-600 hover:text-white transition-all shadow-sm disabled:opacity-30 disabled:grayscale disabled:pointer-events-none" disabled={(isPast && activeTab !== 'delivered') || ['completada', 'finalizada', 'completed', 'entregado'].includes(route.status?.toLowerCase())} onClick={(e) => { e.stopPropagation(); handleOpenContextualForm(route); }}>
                                <PackagePlus size={14} strokeWidth={2.5} /> {['completada', 'finalizada', 'completed', 'entregado'].includes(route.status?.toLowerCase()) ? 'Cerrado' : 'Cargar'}
                             </Button>
                          </td>
@@ -416,7 +417,7 @@ function PackagesPage() {
                   <Package size={24} strokeWidth={2.5} />
                 </div>
                 <div>
-                  <h2 className="font-display text-2xl font-black text-surface-950 tracking-tight">Carga Suelta</h2>
+                  <h2 className="font-display text-2xl font-bold text-surface-950 tracking-tight">Carga Suelta</h2>
                   <p className="text-xs text-surface-500 font-medium">Pendiente de asignación</p>
                 </div>
               </div>
@@ -424,7 +425,7 @@ function PackagesPage() {
            </div>
            
            <div className="rounded-[2.2rem] border border-surface-100 bg-white p-5 shadow-xl shadow-surface-200/20 h-fit max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
-              <Button size="lg" className="w-full h-14 mb-6 gap-3 text-sm font-black uppercase tracking-wider shadow-xl shadow-primary-500/25 rounded-2xl" onClick={() => setShowForm(true)}>
+              <Button size="lg" className="w-full h-14 mb-6 gap-3 text-sm font-bold shadow-xl shadow-primary-500/25 rounded-2xl" onClick={() => setShowForm(true)}>
                 <PackagePlus size={20} strokeWidth={2.5} /> Nuevo Registro Global
               </Button>
 
@@ -433,22 +434,22 @@ function PackagesPage() {
                   groupedData.loose.map(pkg => (
                     <div key={pkg.id} className="group p-5 bg-surface-50 rounded-[1.8rem] border border-surface-100 hover:border-primary-400 hover:bg-white transition-all cursor-pointer shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300" onClick={() => setSelectedPackage(pkg)}>
                        <div className="flex items-center justify-between mb-3">
-                          <span className="font-mono text-[10px] font-black text-primary-600 bg-primary-100/50 px-3 py-1 rounded-lg ring-1 ring-primary-200 uppercase tracking-tighter italic">
+                          <span className="font-mono text-xs font-bold text-primary-600 bg-primary-100/50 px-3 py-1 rounded-lg ring-1 ring-primary-200 uppercase tracking-tighter italic">
                              {pkg.tracking_code}
                           </span>
-                          <span className="text-[11px] font-black text-surface-900 bg-white px-2 py-1 rounded-md shadow-sm border border-surface-100">
+                          <span className="text-xs font-bold text-surface-900 bg-white px-2 py-1 rounded-md shadow-sm border border-surface-100">
                              {pkg.peso} kg
                           </span>
                        </div>
-                       <p className="font-black text-surface-950 text-base mb-1 tracking-tight">{pkg.origen} → {pkg.destino}</p>
+                       <p className="font-bold text-surface-950 text-base mb-1 tracking-tight">{pkg.origen} → {pkg.destino}</p>
                        <p className="text-xs text-surface-500 truncate italic font-medium">{pkg.description || 'Sin detalles adicionales'}</p>
                        
                        <div className="mt-4 flex items-center justify-between pt-4 border-t border-surface-100/80">
                           <div className="flex items-center gap-2">
                              <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                             <span className="text-[10px] font-black uppercase text-surface-400 tracking-widest">En Almacén</span>
+                             <span className="text-xs font-bold uppercase text-surface-400 tracking-widest">En Almacén</span>
                           </div>
-                          <Button variant="secondary" size="xs" className="h-8 px-4 text-[10px] font-black uppercase gap-2 opacity-0 group-hover:opacity-100 transition-all rounded-xl border-primary-200 text-primary-700 bg-white hover:bg-primary-50" onClick={(e) => { e.stopPropagation(); setAssignPackage(pkg); setShowAssignModal(true); }}>
+                          <Button variant="secondary" size="xs" className="h-8 px-4 text-xs font-bold uppercase gap-2 opacity-0 group-hover:opacity-100 transition-all rounded-xl border-primary-200 text-primary-700 bg-white hover:bg-primary-50" onClick={(e) => { e.stopPropagation(); setAssignPackage(pkg); setShowAssignModal(true); }}>
                              <Link size={12} strokeWidth={2.5} /> Vincular
                           </Button>
                        </div>
@@ -457,7 +458,7 @@ function PackagesPage() {
                 ) : (
                   <div className="py-20 text-center opacity-20 flex flex-col items-center gap-4">
                     <Boxes size={56} strokeWidth={1} />
-                    <p className="text-sm font-bold uppercase tracking-[0.2em]">Almacén Vacío</p>
+                    <p className="text-sm font-bold ">Almacén Vacío</p>
                   </div>
                 )}
               </div>

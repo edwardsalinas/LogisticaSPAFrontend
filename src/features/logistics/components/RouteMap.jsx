@@ -68,18 +68,18 @@ function RouteMap({ routeId, initialPosition, showControls = false }) {
         <div className="pointer-events-auto rounded-[1.5rem] border border-white/70 bg-white/92 p-4 shadow-[0_24px_60px_-38px_rgba(15,23,42,0.3)] backdrop-blur-xl motion-fade-in">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[0.62rem] uppercase tracking-[0.2em] text-surface-500">Lectura del mapa</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-surface-500">Lectura del mapa</p>
               <h3 className="mt-1 font-display text-xl font-semibold tracking-[-0.04em] text-surface-950">Ruta y checkpoints</h3>
             </div>
             <Badge variant="info" dot>{checkpoints.length} puntos</Badge>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="rounded-2xl border border-surface-100 bg-surface-50 p-3">
-              <p className="text-[0.62rem] uppercase tracking-[0.16em] text-surface-500">Cobertura</p>
+              <p className="text-xs uppercase tracking-[0.16em] text-surface-500">Cobertura</p>
               <p className="mt-1 text-sm font-semibold text-surface-900">{totalRadius} m</p>
             </div>
             <div className="rounded-2xl border border-surface-100 bg-surface-50 p-3">
-              <p className="text-[0.62rem] uppercase tracking-[0.16em] text-surface-500">Unidad</p>
+              <p className="text-xs uppercase tracking-[0.16em] text-surface-500">Unidad</p>
               <p className="mt-1 text-sm font-semibold text-surface-900">{initialPosition ? 'Visible' : 'No visible'}</p>
             </div>
           </div>
@@ -91,7 +91,7 @@ function RouteMap({ routeId, initialPosition, showControls = false }) {
           <div className="pointer-events-auto rounded-[1.5rem] border border-white/70 bg-white/94 p-4 shadow-[0_24px_60px_-38px_rgba(15,23,42,0.3)] backdrop-blur-xl motion-fade-up">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[0.62rem] uppercase tracking-[0.18em] text-surface-500">Checkpoint seleccionado</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-surface-500">Checkpoint seleccionado</p>
                 <h3 className="mt-1 text-sm font-semibold text-surface-950">{selectedCheckpoint.name}</h3>
               </div>
               <button onClick={() => setSelectedCheckpoint(null)} aria-label="Cerrar detalle del checkpoint" className="rounded-xl p-1 text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
@@ -99,9 +99,9 @@ function RouteMap({ routeId, initialPosition, showControls = false }) {
               </button>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-surface-100 bg-surface-50 p-3"><p className="text-[0.62rem] uppercase tracking-[0.16em] text-surface-500">Secuencia</p><p className="mt-1 text-sm font-semibold text-surface-900">#{selectedCheckpoint.sequence_order}</p></div>
-              <div className="rounded-2xl border border-surface-100 bg-surface-50 p-3"><p className="text-[0.62rem] uppercase tracking-[0.16em] text-surface-500">Radio</p><p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-surface-900"><Ruler size={13} strokeWidth={2.2} /> {selectedCheckpoint.radius_meters} m</p></div>
-              <div className="rounded-2xl border border-surface-100 bg-surface-50 p-3 sm:col-span-2"><p className="text-[0.62rem] uppercase tracking-[0.16em] text-surface-500">Ubicacion</p><p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-surface-900"><MapPinned size={13} strokeWidth={2.2} /> {selectedCheckpoint.lat.toFixed(6)}, {selectedCheckpoint.lng.toFixed(6)}</p></div>
+              <div className="rounded-2xl border border-surface-100 bg-surface-50 p-3"><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Secuencia</p><p className="mt-1 text-sm font-semibold text-surface-900">#{selectedCheckpoint.sequence_order}</p></div>
+              <div className="rounded-2xl border border-surface-100 bg-surface-50 p-3"><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Radio</p><p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-surface-900"><Ruler size={13} strokeWidth={2.2} /> {selectedCheckpoint.radius_meters} m</p></div>
+              <div className="rounded-2xl border border-surface-100 bg-surface-50 p-3 sm:col-span-2"><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Ubicacion</p><p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-surface-900"><MapPinned size={13} strokeWidth={2.2} /> {selectedCheckpoint.lat.toFixed(6)}, {selectedCheckpoint.lng.toFixed(6)}</p></div>
             </div>
             {showControls && <div className="mt-4 flex gap-2"><Button size="sm" variant="secondary"><PenLine size={14} strokeWidth={2.2} />Editar</Button><Button size="sm" variant="danger">Eliminar</Button></div>}
           </div>

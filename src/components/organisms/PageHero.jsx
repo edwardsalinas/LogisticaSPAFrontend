@@ -19,7 +19,7 @@ function PageHero({
 
       <div className="relative grid gap-6 p-6 sm:p-8 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)] lg:items-end">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-sky-100/90 backdrop-blur">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100/90 backdrop-blur">
             {Icon ? <Icon size={14} strokeWidth={2.2} /> : null}
             {eyebrow}
           </div>

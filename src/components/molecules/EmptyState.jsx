@@ -15,7 +15,7 @@ function EmptyState({
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-surface-100 text-surface-500 shadow-sm">
           <Inbox size={22} strokeWidth={2.2} />
         </div>
-        <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-surface-200 bg-white/85 px-3 py-1 text-[0.64rem] uppercase tracking-[0.2em] text-surface-500">
+        <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-surface-200 bg-white/85 px-3 py-1 text-xs uppercase tracking-[0.2em] text-surface-500">
           <Sparkles size={12} strokeWidth={2.2} />
           {eyebrow}
         </div>

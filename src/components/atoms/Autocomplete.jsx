@@ -51,8 +51,8 @@ function Autocomplete({
   return (
     <div className="flex flex-col gap-1.5" ref={wrapperRef}>
       {label && (
-        <label className="text-xs font-semibold uppercase tracking-wider text-surface-500">
-          {label} {required && <span className="text-sky-500">*</span>}
+        <label className="text-sm font-medium text-surface-700">
+          {label} {required && <span className="text-danger" aria-hidden="true">*</span>}
         </label>
       )}
 

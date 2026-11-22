@@ -73,7 +73,7 @@ function VehicleForm({ onSuccess, onCancel }) {
             <Truck size={18} strokeWidth={2.2} />
           </div>
           <div>
-            <p className="text-[0.64rem] uppercase tracking-[0.18em] text-surface-500">Ficha de unidad</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-surface-500">Ficha de unidad</p>
             <p className="text-sm text-surface-600">Define placa, capacidad y estado de la unidad.</p>
           </div>
         </div>

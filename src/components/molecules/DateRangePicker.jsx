@@ -29,14 +29,14 @@ function DateRangePicker({ value = { from: null, to: null }, onChange }) {
           <CalendarRange size={18} strokeWidth={2.2} />
         </div>
         <div>
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-surface-500">Rango de analisis</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-500">Rango de analisis</p>
           <p className="text-sm font-semibold text-surface-900">Filtra el periodo de lectura</p>
         </div>
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
         <div className="flex-1">
-          <label className="mb-2 block text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-surface-500">Desde</label>
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">Desde</label>
           <input
             type="date"
             value={fromDate}
@@ -50,7 +50,7 @@ function DateRangePicker({ value = { from: null, to: null }, onChange }) {
         </div>
 
         <div className="flex-1">
-          <label className="mb-2 block text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-surface-500">Hasta</label>
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">Hasta</label>
           <input
             type="date"
             value={toDate}

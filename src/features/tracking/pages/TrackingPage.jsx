@@ -131,10 +131,10 @@ function TrackingPage() {
                         <Navigation size={20} strokeWidth={2.5} />
                      </div>
                      <div>
-                        <h2 className="font-display text-xl font-black text-surface-950 tracking-tight">Trazabilidad</h2>
+                        <h2 className="font-display text-xl font-bold text-surface-950 tracking-tight">Trazabilidad</h2>
                         <div className="flex items-center gap-1.5">
                            <div className="h-1.5 w-1.5 rounded-full bg-success-500 animate-pulse" />
-                           <span className="text-[10px] font-bold text-surface-400 uppercase tracking-widest">Sistema Operativo</span>
+                           <span className="text-xs font-bold text-surface-400 uppercase tracking-widest">Sistema Operativo</span>
                         </div>
                      </div>
                   </div>
@@ -188,7 +188,7 @@ function TrackingPage() {
                             {pkg.origen} → {pkg.destino}
                          </p>
                          <div className={`mt-2 flex items-center justify-between ${isSelected ? 'text-white/70' : 'text-surface-400'}`}>
-                            <span className="text-[10px] font-bold">Peso: {pkg.peso} kg</span>
+                            <span className="text-xs font-bold">Peso: {pkg.peso} kg</span>
                             <ChevronRight size={14} className={`transition-transform duration-300 ${isSelected ? 'translate-x-1' : 'group-hover:translate-x-1'}`} />
                          </div>
                          
@@ -201,7 +201,7 @@ function TrackingPage() {
                ) : (
                  <div className="py-20 text-center opacity-40 italic">
                     <PackageSearch size={40} className="mx-auto mb-3" />
-                    <p className="text-sm font-bold uppercase tracking-tight">Sin resultados</p>
+                    <p className="text-sm font-bold tracking-tight">Sin resultados</p>
                  </div>
                )}
             </div>
@@ -210,13 +210,13 @@ function TrackingPage() {
             {!isClient && (
               <div className="p-5 bg-primary-600/5 border-t border-primary-100 flex items-center justify-around">
                  <div className="text-center">
-                    <p className="text-[10px] font-black uppercase text-surface-400 tracking-tighter">Activos</p>
-                    <p className="text-lg font-black text-primary-700">{activeCount}</p>
+                    <p className="text-xs font-bold uppercase text-surface-400 tracking-tighter">Activos</p>
+                    <p className="text-lg font-bold text-primary-700">{activeCount}</p>
                  </div>
                  <div className="h-8 w-px bg-primary-100" />
                  <div className="text-center">
-                    <p className="text-[10px] font-black uppercase text-surface-400 tracking-tighter">Total Hoy</p>
-                    <p className="text-lg font-black text-primary-700">{packages.length}</p>
+                    <p className="text-xs font-bold uppercase text-surface-400 tracking-tighter">Total Hoy</p>
+                    <p className="text-lg font-bold text-primary-700">{packages.length}</p>
                  </div>
               </div>
             )}
@@ -226,7 +226,7 @@ function TrackingPage() {
       {/* 3. LAYER: FLOATING ACTION BUTTONS (TOP RIGHT) */}
       <div className="absolute top-6 right-6 z-10 flex flex-col gap-3">
          {!isClient && (
-           <Button size="lg" className="h-14 px-8 rounded-2xl shadow-xl shadow-primary-500/25 gap-3 font-black uppercase tracking-wider text-sm" onClick={() => setShowForm(true)}>
+           <Button size="lg" className="h-14 px-8 rounded-2xl shadow-xl shadow-primary-500/25 gap-3 font-bold text-sm" onClick={() => setShowForm(true)}>
              <Activity size={20} strokeWidth={2.5} /> Registrar Evento
            </Button>
          )}

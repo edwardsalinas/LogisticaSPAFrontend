@@ -16,8 +16,8 @@ function Badge({ children, variant = 'neutral', size = 'md', dot = false, classN
   };
 
   const sizes = {
-    sm: 'px-2.5 py-1 text-[0.62rem]',
-    md: 'px-3 py-1.5 text-[0.68rem]',
+    sm: 'px-2.5 py-1 text-xs',
+    md: 'px-3 py-1.5 text-xs',
     lg: 'px-3 py-1.5 text-xs', // 12 px: el tamaño mínimo cómodo para estados que se leen de un vistazo
   };
 

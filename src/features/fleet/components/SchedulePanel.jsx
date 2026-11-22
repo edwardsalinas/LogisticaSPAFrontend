@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { CalendarRange, Clock, Trash2, Zap, Loader2 } from 'lucide-react';
 import Button from '../../../components/atoms/Button';
+import { toast } from 'sonner';
+import { useConfirm } from '../../../components/molecules/ConfirmDialog';
 import apiService from '../../../services/apiService';
 import clsx from 'clsx';
 
@@ -26,13 +28,22 @@ export default function SchedulePanel() {
 
   useEffect(() => { fetchSchedules(); }, []);
 
+  const [askConfirm, confirmDialog] = useConfirm();
+
   const handleDelete = async (id) => {
-    if (!confirm('¿Eliminar este cronograma?')) return;
+    const ok = await askConfirm({
+      title: 'Eliminar cronograma',
+      message: 'Se eliminará este cronograma y dejará de generar viajes. Esta acción no se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await apiService.deleteSchedule(id);
+      toast.success('Cronograma eliminado');
       fetchSchedules();
     } catch (err) {
-      alert('Error al eliminar: ' + err.message);
+      toast.error('No se pudo eliminar el cronograma', { description: err.message });
     }
   };
 
@@ -110,6 +121,7 @@ export default function SchedulePanel() {
           })}
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 }

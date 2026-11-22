@@ -63,7 +63,7 @@ export default function AlertsPanel({ stats }) {
     <article className="rounded-[1.8rem] border border-white/70 bg-white/85 p-6 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.32)] backdrop-blur-xl">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-surface-500">Alertas y foco</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-500">Alertas y foco</p>
           <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Supervision curada.</h3>
         </div>
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">

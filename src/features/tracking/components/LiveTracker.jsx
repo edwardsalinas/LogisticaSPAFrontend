@@ -90,10 +90,10 @@ function LiveTracker({ packageId, routeId }) {
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-[0.62rem] uppercase tracking-[0.18em] text-surface-500">Tracking en vivo</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-surface-500">Tracking en vivo</p>
                   <h3 className="mt-1 text-sm font-semibold text-surface-950">Senal operativa activa</h3>
                 </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Live
                 </span>
               </div>

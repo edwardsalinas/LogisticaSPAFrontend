@@ -6,7 +6,7 @@
           {Icon ? <Icon size={18} strokeWidth={2.2} /> : null}
         </div>
         <div className="min-w-0">
-          <p className="text-[0.62rem] uppercase tracking-[0.2em] text-surface-500">{eyebrow}</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-surface-500">{eyebrow}</p>
           <h3 className="mt-1 font-display text-base sm:text-lg font-semibold tracking-[-0.03em] text-surface-950">{title}</h3>
         </div>
       </div>

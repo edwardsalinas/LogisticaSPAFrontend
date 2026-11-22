@@ -25,7 +25,7 @@ function OriginDestMarker({ type, position, title, subtitle }) {
     <Marker position={position} icon={createIcon(type)}>
       <Popup>
         <div className="p-1 min-w-[140px]">
-          <p className="text-[0.65rem] font-bold uppercase tracking-wider text-surface-500">{type === 'origin' ? 'Origen' : 'Destino'}</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-surface-500">{type === 'origin' ? 'Origen' : 'Destino'}</p>
           <h3 className="mt-1 text-sm font-semibold text-surface-900 leading-tight">{title}</h3>
           {subtitle && <p className="mt-[2px] text-xs text-surface-600">{subtitle}</p>}
         </div>

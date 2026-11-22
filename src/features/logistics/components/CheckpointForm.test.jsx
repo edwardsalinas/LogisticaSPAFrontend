@@ -57,4 +57,43 @@ describe('CheckpointForm (React Hook Form + Zod)', () => {
       name: 'Puesto Viacha', lat: -16.65, lng: -68.31, radius_meters: 150, sequence_order: 3,
     });
   });
+
+  it('se puede crear eligiendo solo una ciudad: el nombre y la posición se ponen solos', async () => {
+    apiService.createCheckpoint.mockResolvedValue({});
+    render(<CheckpointForm routeId="r1" nextOrder={4} onSuccess={vi.fn()} onCancel={vi.fn()} />);
+    await userEvent.selectOptions(screen.getByLabelText(/^ciudad/i), 'oruro');
+    expect(screen.getByLabelText(/nombre del checkpoint/i)).toHaveValue('Oruro');
+    await userEvent.click(screen.getByRole('button', { name: /crear checkpoint/i }));
+
+    await waitFor(() => expect(apiService.createCheckpoint).toHaveBeenCalledTimes(1));
+    expect(apiService.createCheckpoint).toHaveBeenCalledWith('r1', {
+      name: 'Oruro', lat: -17.9647, lng: -67.1061, radius_meters: 100, sequence_order: 4,
+    });
+  });
+
+  it('no pisa un nombre que el usuario ya escribió', async () => {
+    render(<CheckpointForm routeId="r1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+    await userEvent.type(screen.getByLabelText(/nombre del checkpoint/i), 'Peaje de Patacamaya');
+    await userEvent.selectOptions(screen.getByLabelText(/^ciudad/i), 'patacamaya');
+    expect(screen.getByLabelText(/nombre del checkpoint/i)).toHaveValue('Peaje de Patacamaya');
+  });
+
+  it('sin ubicación pide elegirla; fuera de Bolivia lo rechaza', async () => {
+    render(<CheckpointForm routeId="r1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+    await userEvent.type(screen.getByLabelText(/nombre del checkpoint/i), 'Punto');
+    await userEvent.click(screen.getByRole('button', { name: /crear checkpoint/i }));
+    expect((await screen.findAllByText(/elige una ubicación/i)).length).toBeGreaterThan(0);
+
+    await userEvent.type(screen.getByLabelText(/latitud/i), '40.4');
+    await userEvent.type(screen.getByLabelText(/longitud/i), '-3.7');
+    await userEvent.click(screen.getByRole('button', { name: /crear checkpoint/i }));
+    expect(await screen.findByText(/queda fuera de bolivia/i)).toBeInTheDocument();
+    expect(apiService.createCheckpoint).not.toHaveBeenCalled();
+  });
+
+  it('el radio y la posición están en "Opciones avanzadas", con explicación', () => {
+    render(<CheckpointForm routeId="r1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+    expect(screen.getByText(/opciones avanzadas/i)).toBeInTheDocument();
+    expect(screen.getByText(/se considera que el vehículo llegó/i)).toBeInTheDocument();
+  });
 });

@@ -7,7 +7,7 @@ function DriversRankingTable({ title = 'Ranking de conductores', data = [] }) {
     <div className="rounded-[1.8rem] border border-white/70 bg-white/88 p-6 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-surface-500">Equipo</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-500">Equipo</p>
           <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">{title}</h3>
           <p className="mt-2 text-sm text-surface-500">Entregas del rango por conductor; el porcentaje es de entregas antes de la llegada estimada de la ruta.</p>
         </div>

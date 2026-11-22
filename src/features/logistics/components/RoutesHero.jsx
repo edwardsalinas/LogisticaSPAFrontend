@@ -11,7 +11,7 @@ export default function RoutesHero({ active, pending, completed }) {
       </div>
       <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.95fr)] lg:items-end">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-sky-100/90 backdrop-blur-md">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-sky-100/90 backdrop-blur-md">
             <Route size={14} strokeWidth={2.4} />
             Monitoreo de rutas
           </div>
@@ -32,7 +32,7 @@ export default function RoutesHero({ active, pending, completed }) {
                   <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-400/20 text-sky-300">
                     <Route size={16} strokeWidth={2.4} />
                   </div>
-                  <p className="text-[0.45rem] font-bold uppercase tracking-[0.15em] text-white/70">En Curso</p>
+                  <p className="text-xs font-semibold tracking-normal text-white/80">En curso</p>
                 </div>
                 <p className="relative mt-1 text-center font-display text-2xl sm:text-3xl font-bold tracking-[-0.04em]">{active}</p>
               </div>
@@ -43,7 +43,7 @@ export default function RoutesHero({ active, pending, completed }) {
                   <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400/20 text-amber-300">
                     <Search size={16} strokeWidth={2.4} />
                   </div>
-                  <p className="text-[0.45rem] font-bold uppercase tracking-[0.15em] text-white/70">Planeados</p>
+                  <p className="text-xs font-semibold tracking-normal text-white/80">Planeados</p>
                 </div>
                 <p className="relative mt-1 text-center font-display text-2xl sm:text-3xl font-bold tracking-[-0.04em]">{pending}</p>
               </div>
@@ -54,7 +54,7 @@ export default function RoutesHero({ active, pending, completed }) {
                   <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-400/20 text-emerald-300">
                     <MapPinned size={16} strokeWidth={2.4} />
                   </div>
-                  <p className="text-[0.45rem] font-bold uppercase tracking-[0.15em] text-white/70">Finalizados</p>
+                  <p className="text-xs font-semibold tracking-normal text-white/80">Finalizados</p>
                 </div>
                 <p className="relative mt-1 text-center font-display text-2xl sm:text-3xl font-bold tracking-[-0.04em]">{completed}</p>
               </div>

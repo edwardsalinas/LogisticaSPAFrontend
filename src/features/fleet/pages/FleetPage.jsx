@@ -130,7 +130,7 @@ function FleetPage() {
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.82fr)]">
         <div className="rounded-[1.8rem] border border-white/70 bg-white/88 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
           <div className="flex flex-col gap-4 border-b border-surface-100 p-6 lg:flex-row lg:items-center lg:justify-between">
-            <div><p className="text-[0.64rem] uppercase tracking-[0.24em] text-surface-500">Centro de datos</p><h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Vehiculos y conductores</h2></div>
+            <div><p className="text-xs uppercase tracking-[0.24em] text-surface-500">Centro de datos</p><h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Vehiculos y conductores</h2></div>
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
               <div className="rounded-2xl bg-surface-100 p-1 flex"><button onClick={() => { setActiveTab('vehicles'); setCurrentPage(1); }} className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all sm:flex-none ${activeTab === 'vehicles' ? 'bg-white text-primary-700 shadow-sm' : 'text-surface-500'}`}>Vehiculos</button><button onClick={() => { setActiveTab('drivers'); setCurrentPage(1); }} className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all sm:flex-none ${activeTab === 'drivers' ? 'bg-white text-primary-700 shadow-sm' : 'text-surface-500'}`}>Conductores</button></div>
               <div className="w-full xl:w-80"><SearchInput value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder={`Buscar ${activeTab === 'vehicles' ? 'vehiculo o placa' : 'conductor o licencia'}`} /></div>
@@ -143,7 +143,7 @@ function FleetPage() {
 
         <aside className="space-y-5">
           <div className="rounded-[1.6rem] border border-white/70 bg-white/88 p-6 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
-            <p className="text-[0.64rem] uppercase tracking-[0.24em] text-surface-500">Resumen de la flota</p>
+            <p className="text-xs uppercase tracking-[0.24em] text-surface-500">Resumen de la flota</p>
             <div className="mt-5 space-y-3">
               {[
                 { label: 'Vehiculos registrados', value: vehicles.length },
@@ -159,7 +159,7 @@ function FleetPage() {
             </div>
           </div>
           <div className="rounded-[1.6rem] border border-sky-100 bg-sky-50 p-6">
-            <p className="text-[0.64rem] uppercase tracking-[0.24em] text-sky-700">Alta de conductores</p>
+            <p className="text-xs uppercase tracking-[0.24em] text-sky-700">Alta de conductores</p>
             <p className="mt-2 text-sm leading-relaxed text-surface-600">Los conductores se registran como usuarios con rol <strong>driver</strong> en Supabase Auth y sus datos se sincronizan automaticamente con la flota.</p>
           </div>
         </aside>

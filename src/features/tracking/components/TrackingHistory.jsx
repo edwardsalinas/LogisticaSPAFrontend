@@ -53,7 +53,7 @@ function TrackingHistory({ packageId, className }) {
       <div className="mb-5 flex items-center gap-3">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700"><PackageSearch size={18} strokeWidth={2.2} /></div>
         <div>
-          <p className="text-[0.64rem] uppercase tracking-[0.18em] text-surface-500">Seguimiento</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-surface-500">Seguimiento</p>
           <h3 className="font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Historial de eventos</h3>
         </div>
       </div>

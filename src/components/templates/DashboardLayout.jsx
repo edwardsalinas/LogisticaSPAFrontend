@@ -90,7 +90,7 @@ function DashboardLayout() {
                 <Sparkles size={18} strokeWidth={2.2} />
               </div>
               <div className="hidden min-w-0 sm:block">
-                <p className={`text-[0.62rem] uppercase tracking-[0.24em] ${isAiOpen ? 'text-sky-100/70' : 'text-surface-500'}`}>
+                <p className={`text-xs uppercase tracking-[0.24em] ${isAiOpen ? 'text-sky-100/70' : 'text-surface-500'}`}>
                   Copiloto operativo
                 </p>
                 <p className="text-sm font-semibold">

@@ -53,8 +53,8 @@ describe('PackageForm (React Hook Form + Zod)', () => {
     await userEvent.selectOptions(screen.getByLabelText(/^origen/i), 'La Paz');
     await userEvent.selectOptions(screen.getByLabelText(/^destino/i), 'Oruro');
     await userEvent.click(screen.getByLabelText(/modo invitado/i));
-    await userEvent.type(screen.getByLabelText(/nombre del remitente/i), 'Juan Perez');
-    await userEvent.type(screen.getByLabelText(/nombre del destinatario/i), 'Maria Lopez');
+    await userEvent.type(screen.getByLabelText(/nombre de quien envía/i), 'Juan Perez');
+    await userEvent.type(screen.getByLabelText(/nombre de quien recibe/i), 'Maria Lopez');
     await userEvent.type(screen.getByLabelText(/peso/i), '15.5');
     await submit();
 
@@ -83,8 +83,8 @@ describe('PackageForm (React Hook Form + Zod)', () => {
     await userEvent.selectOptions(screen.getByLabelText(/^origen/i), 'La Paz');
     await userEvent.selectOptions(screen.getByLabelText(/^destino/i), 'Oruro');
     await userEvent.click(screen.getByLabelText(/modo invitado/i));
-    await userEvent.type(screen.getByLabelText(/nombre del remitente/i), 'Juan Perez');
-    await userEvent.type(screen.getByLabelText(/nombre del destinatario/i), 'Maria Lopez');
+    await userEvent.type(screen.getByLabelText(/nombre de quien envía/i), 'Juan Perez');
+    await userEvent.type(screen.getByLabelText(/nombre de quien recibe/i), 'Maria Lopez');
     await userEvent.type(screen.getByLabelText(/peso/i), '3');
     await submit();
 
