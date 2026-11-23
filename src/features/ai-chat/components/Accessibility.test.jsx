@@ -126,6 +126,20 @@ describe('Quién habla y qué se anuncia', () => {
   });
 });
 
+describe('Guiones en los códigos de las respuestas del asistente', () => {
+  it('un código escrito con guiones no separables se muestra con guiones normales (se puede copiar y buscar)', async () => {
+    const raro = 'TRK\u20111795472368902\u20115D17BA23';
+    render(<MemoryRouter><ChatBubble message={{ role: 'assistant', content: `Tu paquete ${raro} está en tránsito.` }} /></MemoryRouter>);
+    expect(await screen.findByText(/TRK-1795472368902-5D17BA23/, {}, { timeout: 8000 })).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain('\u2011');
+  });
+
+  it('no toca los guiones que no están entre letras o números', async () => {
+    render(<MemoryRouter><ChatBubble message={{ role: 'assistant', content: 'Ruta La Paz – Oruro y 5 \u2212 3' }} /></MemoryRouter>);
+    expect(await screen.findByText(/La Paz – Oruro/, {}, { timeout: 8000 })).toBeInTheDocument();
+  });
+});
+
 describe('Tablas en las respuestas del asistente', () => {
   const TABLE = `| Viaje | Paquetes |
 |---|---|

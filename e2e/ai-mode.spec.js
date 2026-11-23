@@ -111,10 +111,14 @@ test('3. un cliente activa el Modo IA, consulta sus paquetes y ubica uno', async
 test('4. el conductor ve su agenda con el asistente', async ({ page }) => {
   await login(page, 'driver');
   await enableAiMode(page);
-  await expect(page.getByRole('button', { name: /¿qué entregas tengo hoy\?/i })).toBeVisible();
-  await page.getByRole('button', { name: /¿qué entregas tengo hoy\?/i }).click();
+  // la primera coincidencia es el atajo de la pantalla de inicio (luego aparecen también las filas del historial)
+  await expect(page.getByRole('button', { name: /¿qué entregas tengo hoy\?/i }).first()).toBeVisible();
+  await page.getByRole('button', { name: /¿qué entregas tengo hoy\?/i }).first().click();
   await expect(page.locator('p:not(.sr-only)').filter({ hasText: /consultando…/i })).toBeHidden({ timeout: 120_000 });
-  const answer = await page.locator('[data-role="assistant"]').last().innerText();
+  // el texto se pinta un instante después de que termina la respuesta en vivo: se espera a que tenga contenido
+  const reply = page.locator('[data-role="assistant"]').last();
+  await expect.poll(async () => (await reply.innerText()).replace(/Asistente:/i, '').replace(/[·\s]/g, '').length, { timeout: 60_000 }).toBeGreaterThan(10);
+  const answer = await reply.innerText();
   expect(answer).not.toMatch(/No pude procesar|error técnico/i);
   await shot(page, 'ia_6_agenda_conductor');
 });

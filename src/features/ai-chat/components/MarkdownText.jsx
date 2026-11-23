@@ -22,6 +22,10 @@ const mdComponents = {
   td: (props) => <td className="border-b border-surface-100 px-3 py-2 align-top text-surface-800" {...props} />,
 };
 
+// Algunos modelos escriben guiones "especiales" (U+2010, U+2011, U+2012, U+2212) dentro de los códigos (TRK\u20111795\u2011AB):
+// se ven iguales, pero al copiar el código y buscarlo no coincide con el real. Entre letras o números se vuelven un guion normal.
+export const normalizeHyphens = (text) => text.replace(/(?<=[A-Za-z0-9])[\u2010\u2011\u2012\u2212](?=[A-Za-z0-9])/g, '-');
+
 export default function MarkdownText({ children }) {
-  return <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{String(children ?? '')}</ReactMarkdown>;
+  return <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{normalizeHyphens(String(children ?? ''))}</ReactMarkdown>;
 }

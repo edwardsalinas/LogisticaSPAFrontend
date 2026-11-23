@@ -270,6 +270,7 @@ test('11. el administrador busca por nombre con el asistente (HU01)', async ({ p
   await login(page, 'admin');
   await page.goto('/');
   await page.waitForLoadState('networkidle').catch(() => {});
-  const answer = await askAssistant(page, `¿Dónde está la caja a nombre de ${TAG} Destinatario?`);
-  expect(answer, 'respuesta del asistente').toContain(state.trackingCode);
+  await askAssistant(page, `¿Dónde está la caja a nombre de ${TAG} Destinatario?`);
+  // la burbuja se pinta un instante después de que termina la respuesta: se espera a que contenga el código
+  await expect(page.locator('[data-role="assistant"]').last(), 'respuesta del asistente').toContainText(state.trackingCode, { timeout: 30_000 });
 });
