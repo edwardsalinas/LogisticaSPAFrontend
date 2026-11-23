@@ -11,11 +11,13 @@ export default function DashboardHero({ stats }) {
       stats={[
         { label: 'Carga de hoy', value: orDash(stats?.packagesToday ?? 0) },
         { label: 'En curso', value: orDash(stats?.activeRoutes ?? 0) },
-        { label: 'A tiempo', value: orDash(stats?.sla), suffix: '%', tone: 'success' },
+        // sla = entregados / total de paquetes (no mide puntualidad), por eso se llama "Entregados"
+        { label: 'Entregados', value: orDash(stats?.sla), suffix: '%', hint: 'del total de paquetes', tone: 'success' },
         { label: 'Flota activa', value: orDash(stats?.totalVehicles ?? 0), hint: 'vehículos' },
         { label: 'Conductores', value: orDash(stats?.totalDrivers ?? 0) },
         { label: 'Km recorridos', value: orDash(stats?.totalDistance, (v) => `${v.toLocaleString()}k`) },
-        { label: 'Rendimiento', value: orDash(stats?.performance), hint: 'frente al corte' },
+        // performance = paquetes registrados hoy frente a ayer
+        { label: 'Nuevos', value: orDash(stats?.performance), hint: 'paquetes frente a ayer' },
       ]}
     />
   );

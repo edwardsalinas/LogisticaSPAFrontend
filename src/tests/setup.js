@@ -20,3 +20,15 @@ if (typeof globalThis.IntersectionObserver === 'undefined') {
     takeRecords() { return []; }
   };
 }
+
+// jsdom no trae ResizeObserver ni scrollIntoView (los usan cmdk y Radix)
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}

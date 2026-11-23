@@ -129,7 +129,7 @@ function LoginPage() {
               <div className="border-l border-white/20 pl-4">
                 <p className="text-2xl font-bold text-white">{stats.efficiency}</p>
                 <p className="mt-1 text-xs text-sky-100/75">
-                  Entregas a tiempo
+                  Paquetes entregados
                 </p>
               </div>
               <div className="border-l border-white/20 pl-4">

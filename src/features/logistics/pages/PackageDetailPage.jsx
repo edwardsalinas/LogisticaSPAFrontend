@@ -111,7 +111,7 @@ function PackageDetailPage() {
       />
 
       <section className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-4">
-        <InfoCard title="Remitente" icon={UserRound} eyebrow="Actor origen">
+        <InfoCard title="Remitente" icon={UserRound}>
           <div className="space-y-2 text-sm">
             <p className="font-semibold text-surface-900">
               {pkg.sender?.full_name || pkg.sender_name || 'Invitado'}
@@ -124,7 +124,7 @@ function PackageDetailPage() {
           </div>
         </InfoCard>
 
-        <InfoCard title="Destinatario" icon={ShieldCheck} eyebrow="Actor destino">
+        <InfoCard title="Destinatario" icon={ShieldCheck}>
           <div className="space-y-2 text-sm">
             <p className="font-semibold text-surface-900">
               {pkg.recipient_name || 'No especificado'}
@@ -137,13 +137,13 @@ function PackageDetailPage() {
             </p>
           </div>
         </InfoCard>
-        <InfoCard title="Especificaciones" icon={Package} eyebrow="Ficha técnica"><div className="grid grid-cols-2 gap-3 text-sm"><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Peso</p><p className="mt-1 font-semibold text-surface-900">{pkg.peso || 0} kg</p></div><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Dimensiones</p><p className="mt-1 font-semibold text-surface-900">{pkg.dimensions?.length || 60}x{pkg.dimensions?.width || 40}x{pkg.dimensions?.height || 40} cm</p></div><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Contenido</p><p className="mt-1 font-semibold text-surface-900">{pkg.content_type || pkg.description || 'General'}</p></div><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Prioridad</p><div className="mt-1"><Badge variant={priorityVariant}>{pkg.priority || 'Estandar'}</Badge></div></div></div></InfoCard>
-        <InfoCard title="Entrega" icon={Clock3} eyebrow="Resumen"><div className="space-y-3"><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Fecha estimada</p><p className="mt-1 text-sm font-semibold text-surface-900">{pkg.estimated_delivery || 'No disponible'}</p></div><div><div className="mb-1 flex items-center justify-between"><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Progreso</p><p className="text-xs font-semibold text-surface-900">{pkg.progress || 65}%</p></div><ProgressBar value={pkg.progress || 65} size="md" variant="primary" /></div><div><Badge variant={status.variant} dot>{status.label}</Badge></div></div></InfoCard>
+        <InfoCard title="Especificaciones" icon={Package}><div className="grid grid-cols-2 gap-3 text-sm"><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Peso</p><p className="mt-1 font-semibold text-surface-900">{pkg.peso || 0} kg</p></div><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Dimensiones</p><p className="mt-1 font-semibold text-surface-900">{pkg.dimensions?.length || 60}x{pkg.dimensions?.width || 40}x{pkg.dimensions?.height || 40} cm</p></div><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Contenido</p><p className="mt-1 font-semibold text-surface-900">{pkg.content_type || pkg.description || 'General'}</p></div><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Prioridad</p><div className="mt-1"><Badge variant={priorityVariant}>{pkg.priority || 'Estandar'}</Badge></div></div></div></InfoCard>
+        <InfoCard title="Entrega" icon={Clock3}><div className="space-y-3"><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Fecha estimada</p><p className="mt-1 text-sm font-semibold text-surface-900">{pkg.estimated_delivery || 'No disponible'}</p></div><div><div className="mb-1 flex items-center justify-between"><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Progreso</p><p className="text-xs font-semibold text-surface-900">{pkg.progress || 65}%</p></div><ProgressBar value={pkg.progress || 65} size="md" variant="primary" /></div><div><Badge variant={status.variant} dot>{status.label}</Badge></div></div></InfoCard>
       </section>
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
         <div className="rounded-[1.6rem] border border-white/70 bg-white/88 p-4 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:rounded-[1.8rem] sm:p-5">
-          <div className="mb-4 flex flex-col gap-3 border-b border-surface-100 pb-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-xs uppercase tracking-[0.24em] text-surface-500">Localización</p><h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.04em] text-surface-950 sm:text-2xl">Ubicación actual del envío</h2></div><div className="flex flex-wrap gap-2"><Badge variant="info" dot>{pkg.origen} {' -> '} {pkg.destino}</Badge><Badge variant={status.variant} dot>{status.label}</Badge></div></div>
+          <div className="mb-4 flex flex-col gap-3 border-b border-surface-100 pb-4 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.04em] text-surface-950 sm:text-2xl">Ubicación actual del envío</h2></div><div className="flex flex-wrap gap-2"><Badge variant="info" dot>{pkg.origen} {' -> '} {pkg.destino}</Badge><Badge variant={status.variant} dot>{status.label}</Badge></div></div>
           <div className="h-[24rem] overflow-hidden rounded-[1.4rem] border border-surface-100 sm:h-[28rem] sm:rounded-[1.5rem]">
             <Suspense fallback={<MapCanvasFallback />}>
               <PackageLocationMap position={pkg.current_location ? [pkg.current_location.lat, pkg.current_location.lng] : null} title={pkg.tracking_code} subtitle="Ubicación actual" />
@@ -152,15 +152,15 @@ function PackageDetailPage() {
         </div>
 
         <div className="rounded-[1.6rem] border border-white/70 bg-white/88 p-4 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:rounded-[1.8rem] sm:p-5">
-          <div className="mb-4 flex items-center gap-3 border-b border-surface-100 pb-4"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700"><Route size={18} strokeWidth={2.2} /></div><div><p className="text-xs uppercase tracking-[0.18em] text-surface-500">Cronograma</p><h3 className="font-display text-xl font-semibold tracking-[-0.04em] text-surface-950 sm:text-2xl">Secuencia de entrega</h3></div></div>
+          <div className="mb-4 flex items-center gap-3 border-b border-surface-100 pb-4"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700"><Route size={18} strokeWidth={2.2} /></div><div><h3 className="font-display text-xl font-semibold tracking-[-0.04em] text-surface-950 sm:text-2xl">Secuencia de entrega</h3></div></div>
           <StatusTimeline steps={timeline} />
         </div>
       </section>
 
       <section className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-3">
-        <InfoCard title="Ruta" icon={MapPinned} eyebrow="Trayecto"><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.origen} {' -> '} {pkg.destino}</p><p className="text-surface-500">Movimiento principal configurado para esta entrega.</p></div></InfoCard>
-        <InfoCard title="Estado actual" icon={Radar} eyebrow="Monitoreo"><div className="space-y-2 text-sm"><div><Badge variant={status.variant} dot>{status.label}</Badge></div><p className="text-surface-500">La lectura refleja el último estado operativo disponible.</p></div></InfoCard>
-        <InfoCard title="Observación" icon={Package} eyebrow="Descripción"><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.description || 'Sin descripción adicional'}</p><p className="text-surface-500">Contenido declarado por el equipo de despacho.</p></div></InfoCard>
+        <InfoCard title="Ruta" icon={MapPinned}><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.origen} {' -> '} {pkg.destino}</p><p className="text-surface-500">Movimiento principal configurado para esta entrega.</p></div></InfoCard>
+        <InfoCard title="Estado actual" icon={Radar}><div className="space-y-2 text-sm"><div><Badge variant={status.variant} dot>{status.label}</Badge></div><p className="text-surface-500">La lectura refleja el último estado operativo disponible.</p></div></InfoCard>
+        <InfoCard title="Observación" icon={Package}><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.description || 'Sin descripción adicional'}</p><p className="text-surface-500">Contenido declarado por el equipo de despacho.</p></div></InfoCard>
       </section>
     </div>
   );

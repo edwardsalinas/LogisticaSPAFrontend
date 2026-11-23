@@ -86,7 +86,7 @@ export default function AiUsagePage() {
       )}
 
       {data && data.totals.queries === 0 && (
-        <EmptyState eyebrow="Sin consultas" title="Aún no hay consultas en este período" description="Cuando alguien use el asistente, aquí verás los tiempos, los aciertos y el modelo que respondió." />
+        <EmptyState title="Aún no hay consultas en este período" description="Cuando alguien use el asistente, aquí verás los tiempos, los aciertos y el modelo que respondió." />
       )}
 
       {data && data.totals.queries > 0 && (

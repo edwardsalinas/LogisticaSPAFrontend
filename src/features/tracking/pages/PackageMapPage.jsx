@@ -80,7 +80,6 @@ function PackageMapPage() {
       <section className="rounded-[1.6rem] border border-white/70 bg-white/88 p-4 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:rounded-[1.8rem] sm:p-5">
         <div className="mb-4 flex flex-col gap-3 border-b border-surface-100 px-1 pb-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-surface-500">Mapa en vivo</p>
             <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.04em] text-surface-950 sm:text-2xl">Ruta completa del paquete</h2>
           </div>
           <div className="flex flex-wrap gap-2">

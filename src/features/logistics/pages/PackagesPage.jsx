@@ -473,9 +473,10 @@ function PackagesPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="py-20 text-center opacity-20 flex flex-col items-center gap-4">
-                    <Boxes size={56} strokeWidth={1} />
-                    <p className="text-sm font-bold ">Almacén Vacío</p>
+                  <div className="py-10 text-center">
+                    <Boxes size={40} strokeWidth={1.5} className="mx-auto text-surface-400" aria-hidden="true" />
+                    <p className="mt-3 text-sm font-semibold text-surface-800">No hay carga suelta</p>
+                    <p className="mx-auto mt-1 max-w-xs text-sm text-surface-600">Los paquetes sin viaje aparecen aquí hasta que los cargues a uno.</p>
                   </div>
                 )}
               </div>

@@ -77,7 +77,6 @@ function RouteMapPage() {
       <section className="rounded-[1.6rem] border border-white/70 bg-white/88 p-4 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:rounded-[1.8rem] sm:p-5">
         <div className="mb-4 flex flex-col gap-2 border-b border-surface-100 px-1 pb-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-surface-500">Vista geoespacial</p>
             <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.04em] text-surface-950 sm:text-2xl">Mapa operativo</h2>
           </div>
           <p className="max-w-xl text-sm text-surface-500">Selecciona un punto de control dentro del mapa para ver detalles, secuencia y datos de radio.</p>

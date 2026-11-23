@@ -34,13 +34,12 @@ function RouteMap({ routeId, initialPosition, showControls = false }) {
   }, [routeId]);
 
   if (loading) {
-    return <SectionLoader eyebrow="Cargando mapa" title="Preparando puntos de control y ruta" description="Estamos organizando la geometria operativa y los puntos de control." className="min-h-[28rem] rounded-none border-none shadow-none" />;
+    return <SectionLoader title="Preparando puntos de control y ruta" description="Estamos organizando la geometria operativa y los puntos de control." className="min-h-[28rem] rounded-none border-none shadow-none" />;
   }
 
   if (checkpoints.length === 0) {
     return (
       <EmptyState
-        eyebrow="Sin puntos de control"
         title="Todavía no hay puntos de control"
         description="Agrega el primer punto de control para dibujar la ruta y habilitar el seguimiento geoespacial."
         action={showControls ? <Button>+ Agregar primer punto de control</Button> : null}

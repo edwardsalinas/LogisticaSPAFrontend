@@ -49,18 +49,18 @@ function AnalyticsPage() {
       )}
 
       {isLoading ? (
-        <SectionLoader eyebrow="Cargando analitica" title="Calculando indicadores" description="Estamos procesando los envios del rango elegido." />
+        <SectionLoader title="Calculando indicadores" description="Estamos procesando los envíos del rango elegido." />
       ) : (
         <>
-          <Suspense fallback={<SectionLoader eyebrow="Cargando analitica" title="Preparando tendencia principal" description="Estamos procesando la comparativa entre periodos." />}>
+          <Suspense fallback={<SectionLoader title="Preparando tendencia principal" description="Estamos procesando la comparativa entre periodos." />}>
             <TrendChart data={trend} total={data?.totals?.shipments ?? 0} change={data?.totals?.change ?? null} />
           </Suspense>
 
           <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
-            <Suspense fallback={<SectionLoader eyebrow="Cargando estados" title="Agrupando envios" description="Estamos contando los envios por estado." className="min-h-[28rem]" />}>
+            <Suspense fallback={<SectionLoader title="Agrupando envíos" description="Estamos contando los envíos por estado." className="min-h-[28rem]" />}>
               <DelayReasonsChart data={data?.statusBreakdown ?? []} />
             </Suspense>
-            <Suspense fallback={<SectionLoader eyebrow="Cargando ranking" title="Preparando rendimiento del equipo" description="Estamos calculando las entregas por conductor." className="min-h-[28rem]" />}>
+            <Suspense fallback={<SectionLoader title="Preparando rendimiento del equipo" description="Estamos calculando las entregas por conductor." className="min-h-[28rem]" />}>
               <DriversRankingTable data={data?.drivers ?? []} />
             </Suspense>
           </section>

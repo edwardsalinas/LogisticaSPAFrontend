@@ -615,7 +615,8 @@ function RoutesPage() {
                   ))
                 )}
                 {!loading && filteredListRoutes.length === 0 && (
-                  <EmptyState eyebrow="Sin coincidencias" title="No encontramos viajes con ese criterio" description="Prueba ajustando conductor, código o destino para volver a poblar la vista." className="min-h-[15rem] border-surface-100 bg-surface-50/70" />
+                  <EmptyState title="No encontramos viajes con ese criterio" description="Prueba ajustando conductor, código o destino para volver a poblar la vista."
+                    action={anyFilterActive ? <Button variant="secondary" onClick={handleClearFilters}>Quitar los filtros</Button> : null} className="min-h-[15rem] border-surface-100 bg-surface-50/70" />
                 )}
               </div>
             )}
@@ -643,7 +644,6 @@ function RoutesPage() {
             </>
           ) : (
             <EmptyState
-              eyebrow="Mapa en espera"
               title="Selecciona un viaje para abrir el mapa"
               description="Al elegir un viaje mostraremos puntos de control, progreso, ETA y lectura espacial del recorrido."
               className="h-full min-h-[42rem] border-0 bg-transparent"

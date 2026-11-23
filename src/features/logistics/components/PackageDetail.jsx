@@ -100,9 +100,8 @@ function PackageDetail({ pkg }) {
           </div>
         ) : logs.length === 0 ? (
           <EmptyState
-            eyebrow="Sin eventos"
             title="Aún no hay trazabilidad registrada"
-            description="Cuando el paquete genere movimientos o puntos de control, aqui mostraremos el historial cronologico."
+            description="Cuando el paquete genere movimientos o puntos de control, aquí mostraremos el historial cronológico."
             className="min-h-[14rem] border-surface-100 bg-surface-50/60"
           />
         ) : (

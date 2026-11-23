@@ -12,16 +12,16 @@ function CustomTooltip({ active, payload }) {
   );
 }
 
-function DelayReasonsChart({ title = 'Estado de los envios', data = [] }) {
+function DelayReasonsChart({ title = 'Estado de los envíos', data = [] }) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
   const topReason = data[0];
 
   if (total === 0) {
     return (
       <section className="motion-card rounded-[1.8rem] border border-white/70 bg-white/88 p-6 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-500">Envios</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-500">Envíos</p>
         <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">{title}</h3>
-        <p className="mt-6 text-sm text-surface-500">No hay envios registrados en el rango elegido.</p>
+        <p className="mt-6 text-sm text-surface-500">No hay envíos registrados en el rango elegido.</p>
       </section>
     );
   }
@@ -30,9 +30,9 @@ function DelayReasonsChart({ title = 'Estado de los envios', data = [] }) {
     <section className="motion-card rounded-[1.8rem] border border-white/70 bg-white/88 p-6 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-500">Envios</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-500">Envíos</p>
           <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">{title}</h3>
-          <p className="mt-2 text-sm text-surface-500">Cuantos envios del rango estan en cada estado, incluidos los siniestros.</p>
+          <p className="mt-2 text-sm text-surface-500">Cuántos envíos del rango están en cada estado, incluidos los siniestros.</p>
         </div>
         <div className="rounded-2xl border border-surface-100 bg-surface-50 px-4 py-3 text-right">
           <p className="text-xs uppercase tracking-[0.18em] text-surface-500">Total</p>
@@ -52,7 +52,7 @@ function DelayReasonsChart({ title = 'Estado de los envios', data = [] }) {
         <div className="relative h-[260px]" role="img" aria-label="Gráfico circular con la distribución de los envíos por estado">
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <div className="rounded-full border border-surface-100 bg-white/85 px-5 py-4 text-center shadow-sm backdrop-blur-sm">
-              <p className="text-xs uppercase tracking-[0.18em] text-surface-500">Envios</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-surface-500">Envíos</p>
               <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">{total}</p>
             </div>
           </div>

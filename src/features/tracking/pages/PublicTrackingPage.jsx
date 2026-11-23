@@ -74,7 +74,7 @@ function PublicTrackingPage() {
                <div className="h-10 w-10 rounded-xl bg-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20">
                   <Truck size={20} className="text-white" strokeWidth={2.5} />
                </div>
-               <span className="text-xl font-bold tracking-tight text-white ">Logistica<span className="text-primary-400">SPA</span></span>
+               <span className="text-xl font-bold tracking-tight text-white ">Logística<span className="text-primary-400">SPA</span></span>
             </div>
             <button 
               onClick={() => navigate('/login')}

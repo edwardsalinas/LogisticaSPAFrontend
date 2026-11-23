@@ -1,7 +1,6 @@
 ﻿import Skeleton from '../atoms/Skeleton';
 
 function SectionLoader({
-  eyebrow = 'Cargando',
   title = 'Preparando contenido',
   description = 'Estamos reuniendo la información necesaria para esta vista.',
   className = '',
@@ -31,12 +30,8 @@ function SectionLoader({
         ))}
       </div>
 
-      <div className="mt-8 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-surface-500">
-        <span>{eyebrow}</span>
-        <span className="h-px w-12 bg-surface-200" />
-        <span>{title}</span>
-      </div>
-      <p className="mt-2 max-w-2xl text-sm text-surface-500">{description}</p>
+      <p className="mt-8 text-sm font-semibold text-surface-700">{title}</p>
+      <p className="mt-1 max-w-2xl text-sm text-surface-600">{description}</p>
     </div>
   );
 }

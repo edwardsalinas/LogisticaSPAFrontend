@@ -29,11 +29,11 @@ export default function AlertsPanel({ stats }) {
     });
   }
 
-  // Alerta de SLA
+  // Tasa de entrega: la cifra del backend es entregados / total de paquetes (no mide puntualidad)
   if (stats?.sla >= 95) {
     alerts.push({
-      title: 'Cumplimiento de SLA saludable',
-      detail: `La plataforma mantiene un ${stats.sla}% de entregas a tiempo hoy.`,
+      title: 'Tasa de entrega saludable',
+      detail: `El ${stats.sla}% de los paquetes registrados ya fue entregado.`,
       icon: ShieldCheck,
       tone: 'text-emerald-700 bg-emerald-50 border-emerald-100'
     });
