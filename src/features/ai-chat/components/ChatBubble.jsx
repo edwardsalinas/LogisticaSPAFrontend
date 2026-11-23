@@ -39,11 +39,19 @@ function ChatBubble({ message, onAsk, role, showFollowUps = false }) {
       <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600" aria-hidden="true"><Sparkles size={16} /></span>
       <div className={`min-w-0 max-w-[90%] flex-1 rounded-[1.35rem] rounded-tl-md border px-4 py-3 ${message.isError ? 'border-red-200 bg-red-50 text-red-800' : 'border-surface-100 bg-white text-surface-800 shadow-sm'}`}>
         <span className="sr-only">Asistente: </span>
+        {message.streaming ? (
+          // En vivo: texto plano (el markdown a medias, con ** sin cerrar, parpadea); al terminar se da formato
+          <p className="whitespace-pre-wrap text-sm leading-relaxed">
+            {plainText(message.content)}
+            <span aria-hidden="true" className="ml-0.5 inline-block h-4 w-0.5 translate-y-0.5 animate-pulse bg-primary-500 motion-reduce:animate-none" />
+          </p>
+        ) : (
         <Suspense fallback={<p className="whitespace-pre-wrap text-sm leading-relaxed">{plainText(message.content)}</p>}>
           <MarkdownText>{message.content}</MarkdownText>
         </Suspense>
-        {attachments.map((a, i) => <AttachmentCard key={`${a.kind}-${i}`} attachment={a} onAsk={onAsk} role={role} />)}
-        {showFollowUps && <AiSuggestionButtons suggestions={followUps(attachments)} onSelect={onAsk} />}
+        )}
+        {!message.streaming && attachments.map((a, i) => <AttachmentCard key={`${a.kind}-${i}`} attachment={a} onAsk={onAsk} role={role} />)}
+        {showFollowUps && !message.streaming && <AiSuggestionButtons suggestions={followUps(attachments)} onSelect={onAsk} />}
       </div>
     </div>
   );

@@ -88,12 +88,12 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role }) {
             <ChatBubble key={msg.id ?? idx} message={msg} role={role} onAsk={ask} showFollowUps={idx === messages.length - 1 && !loading} />
           ))}
 
-          {loading && (
+          {loading && !(messages.length > 0 && messages[messages.length - 1].streaming) && (
             <div className="flex justify-start">
               <div className="w-[17rem] rounded-[1.35rem] rounded-bl-md border border-surface-100 bg-surface-50 px-4 py-4">
                 <div className="flex items-center gap-2 text-xs uppercase tracking-[0.16em] text-surface-500">
                   <span className="h-2 w-2 animate-pulse motion-reduce:animate-none rounded-full bg-primary-400" />
-                  Pensando respuesta
+                  {chat.status || 'Pensando respuesta'}
                 </div>
                 <Skeleton className="mt-4 h-3 w-11/12" />
                 <Skeleton className="mt-2 h-3 w-4/5" />

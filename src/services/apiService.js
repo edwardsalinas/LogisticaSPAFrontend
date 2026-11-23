@@ -1,6 +1,9 @@
 import api from './api';
+import streamChat from './streamChat';
 
 const apiService = {
+  // Chat con el asistente con la respuesta en vivo (ver streamChat.js)
+  chatStream: (body, handlers) => streamChat(body, handlers),
   getRoutes: () => api.get('/logistics/routes'),
   getCheckpointsByRoute: (routeId) => api.get(`/logistics/routes/${routeId}/checkpoints`),
   getPackages: () => api.get('/logistics/packages'),

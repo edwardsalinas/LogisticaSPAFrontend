@@ -33,7 +33,8 @@ function AssistantHome() {
   const { user } = useAuth();
   const { role } = useRole();
   const chat = useAssistantChat();
-  const { messages, loading, send, reset } = chat;
+  const { messages, loading, status, send, reset } = chat;
+  const streaming = messages.length > 0 && !!messages[messages.length - 1].streaming; // ya hay texto en pantalla
   const [input, setInput] = useState('');
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [speakReplies, setSpeakReplies] = useState(readSpeakPref);
@@ -201,11 +202,11 @@ function AssistantHome() {
             {messages.map((m, i) => (
               <ChatBubble key={m.id ?? i} message={m} role={role} onAsk={ask} showFollowUps={i === messages.length - 1 && !loading} />
             ))}
-            {loading && (
+            {loading && !streaming && (
               <div className="flex items-start gap-3">
                 <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Sparkles size={16} className="animate-pulse motion-reduce:animate-none" /></span>
                 <div className="w-72 rounded-[1.35rem] rounded-tl-md border border-surface-100 bg-white px-4 py-4 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">Consultando…</p>
+                  <p className="text-xs font-semibold tracking-[0.04em] text-surface-600">{status || 'Consultando…'}</p>
                   <Skeleton className="mt-3 h-3 w-11/12" />
                   <Skeleton className="mt-2 h-3 w-3/5" />
                   {slow && <p className="mt-3 text-xs text-surface-500">Sigo trabajando en tu consulta, puede tardar unos segundos más.</p>}
