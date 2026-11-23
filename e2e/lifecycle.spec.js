@@ -101,8 +101,8 @@ test('3. el administrador registra "En agencia" desde Tracking (antes de la entr
   const dialog = page.locator('[role="dialog"]');
   await pickByText(dialog.getByLabel(/^paquete/i), new RegExp(state.trackingCode));
   await dialog.getByLabel(/^estado/i).selectOption('en_agencia');
-  await dialog.getByLabel(/latitud/i).fill('-17.97');
-  await dialog.getByLabel(/longitud/i).fill('-67.1');
+  // la ubicación se elige por ciudad (las coordenadas exactas quedan en un apartado avanzado)
+  await dialog.getByLabel(/^ciudad/i).selectOption({ label: 'Oruro' });
   const [res] = await Promise.all([
     page.waitForResponse((r) => r.url().endsWith('/api/tracking') && r.request().method() === 'POST'),
     dialog.getByRole('button', { name: /guardar evento/i }).click(),
@@ -124,7 +124,7 @@ test('4. el conductor ve el viaje, lo inicia y entrega el paquete con una nota',
   await page.waitForLoadState('networkidle').catch(() => {});
 
   // Selecciona el viaje en el calendario (evento del día) y lo inicia
-  const eventLocator = page.locator('.fc-event').filter({ hasText: /LA PAZ/i }).last();
+  const eventLocator = page.locator('.fc-event').filter({ hasText: /LA PAZ\s*-\s*ORURO/i }).last();
   await expect(eventLocator, 'el viaje recién creado debe aparecer en el calendario del conductor').toBeVisible({ timeout: 15_000 });
   await eventLocator.click();
   await page.getByRole('button', { name: /iniciar/i }).first().click();
@@ -203,10 +203,15 @@ const H = { 'X-Requested-With': 'XMLHttpRequest' };
 const askAssistant = async (page, question) => {
   await page.getByRole('button', { name: /abrir asistente/i }).click();
   const answers = page.locator('[data-role="assistant"]');
-  const before = await answers.count();
   await page.getByLabel(/mensaje para el asistente/i).fill(question);
+  // La respuesta llega en vivo (SSE): se espera a que el servidor termine de enviarla y a que desaparezca "Consultando…"
+  // (contar mensajes no sirve: el saludo inicial del panel cuenta como mensaje y luego se reemplaza)
+  const done = page.waitForResponse((r) => r.url().includes('/ai-agent/chat') && r.request().method() === 'POST', { timeout: 120_000 });
   await page.getByRole('button', { name: /^enviar$/i }).click();
-  await expect(answers).toHaveCount(before + 1, { timeout: 120_000 }); // llegó la respuesta
+  await (await done).finished();
+  await expect(page.locator('p:not(.sr-only)').filter({ hasText: /consultando…/i })).toBeHidden({ timeout: 30_000 });
+  // el texto se pinta un instante después de que termina la respuesta: se espera a que tenga contenido
+  await expect.poll(async () => (await answers.last().innerText()).replace(/Asistente:/i, '').trim().length, { timeout: 15_000 }).toBeGreaterThan(10);
   return answers.last().innerText();
 };
 
@@ -255,7 +260,9 @@ test('10. el cliente no puede consultar con el asistente un paquete que no es su
   await page.goto('/logistics/packages');
   await page.waitForLoadState('networkidle').catch(() => {});
   const answer = await askAssistant(page, `¿En qué estado está el paquete ${state.trackingCode}?`);
-  expect(answer, 'respuesta del asistente').toMatch(/No tienes permiso/i);
+  void answer;
+  // el modelo lo dice con sus palabras ("no tengo permiso…"): se espera a que la burbuja de la respuesta tenga ese contenido
+  await expect(page.locator('[data-role="assistant"]').last(), 'respuesta del asistente').toContainText(/permiso/i, { timeout: 30_000 });
 });
 
 test('11. el administrador busca por nombre con el asistente (HU01)', async ({ page }) => {

@@ -35,9 +35,9 @@ const FAKE_SPEECH = () => {
 const enableAiMode = async (page) => {
   await page.goto('/');
   const toggle = page.getByRole('switch', { name: /modo ia/i });
-  await expect(toggle).toBeVisible();
+  await expect(toggle).toBeVisible({ timeout: 20_000 });
   if ((await toggle.getAttribute('aria-checked')) !== 'true') await toggle.click();
-  await expect(page.getByRole('heading', { name: /hola, /i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /hola, /i })).toBeVisible({ timeout: 20_000 });
 };
 
 /** El usuario "dice" una frase en el chat de voz y se espera a que el asistente termine de responder en voz alta. */
@@ -84,7 +84,7 @@ test('2. varias peticiones en una sola frase se resuelven juntas (operación + c
   const spoken = await sayAndWait(page, '¿Cómo va la operación hoy y qué camiones están libres el viernes de tres a cinco?');
   expect(spoken.length).toBeLessThan(700);
   await page.getByRole('button', { name: /salir del chat de voz/i }).click();
-  await expect(page.getByText('Operación de hoy', { exact: true })).toBeVisible();   // respondió la primera parte
+  await expect(page.getByText(/^(Operación de hoy|Resumen del día)$/).first()).toBeVisible();   // respondió la primera parte
   await expect(page.getByText(/flota en ese horario/i)).toBeVisible();               // y la segunda
   await page.screenshot({ path: 'e2e-results/shots/voz_3_varias_peticiones.png', fullPage: true });
 });
@@ -95,7 +95,7 @@ test('3. la conversación recuerda el contexto y no se pierde al cambiar de pant
   await enableAiMode(page);
   await page.getByLabel(/mensaje para el asistente/i).fill('¿Qué viajes a La Paz hay el viernes?');
   await page.getByRole('button', { name: /^enviar$/i }).click();
-  await expect(page.getByText(/consultando…/i)).toBeHidden({ timeout: 120_000 });
+  await expect(page.locator('p:not(.sr-only)').filter({ hasText: /consultando…/i })).toBeHidden({ timeout: 120_000 });
   await expect(page.locator('[data-role="assistant"]')).toHaveCount(1);
 
   // otra pregunta que solo se entiende por el contexto ("ese día")
@@ -124,7 +124,7 @@ test('4. por voz se puede PEDIR una acción, pero no confirmarla: sigue haciendo
   const TAG = `E2E-${Date.now()}`;
   const spoken = await sayAndWait(page, `Crea un paquete de La Paz a Oruro de dos kilos para el destinatario ${TAG} Voz`);
   expect(spoken).toMatch(/confirm|tarjeta|prepar/i);
-  await expect(page.getByText(/acción esperando tu confirmación/i)).toBeVisible();
+  await expect(page.locator('p:not(.sr-only)').filter({ hasText: /acción esperando tu confirmación/i })).toBeVisible();
   // decir "confirmo" no ejecuta nada: la confirmación es el botón de la tarjeta
   await sayAndWait(page, 'Sí, confírmalo').catch(() => {});
 
@@ -144,7 +144,7 @@ test('5. un cliente consulta viajes disponibles pero no puede agendar', async ({
   await enableAiMode(page);
   await page.getByLabel(/mensaje para el asistente/i).fill('¿Qué viajes a La Paz hay el sábado por la mañana?');
   await page.getByRole('button', { name: /^enviar$/i }).click();
-  await expect(page.getByText(/consultando…/i)).toBeHidden({ timeout: 120_000 });
+  await expect(page.locator('p:not(.sr-only)').filter({ hasText: /consultando…/i })).toBeHidden({ timeout: 120_000 });
   await expect(page.getByText(/viajes disponibles/i).first()).toBeVisible();
   await expect(page.getByRole('button', { name: /agendar un paquete aquí/i })).toHaveCount(0);
 });

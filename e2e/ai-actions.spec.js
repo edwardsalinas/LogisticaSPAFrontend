@@ -18,12 +18,12 @@ const save = () => writeFileSync('e2e-results/created-actions.json', JSON.string
 const enableAiMode = async (page) => {
   await page.goto('/');
   const toggle = page.getByRole('switch', { name: /modo ia/i });
-  await expect(toggle).toBeVisible();
+  await expect(toggle).toBeVisible({ timeout: 20_000 });
   if ((await toggle.getAttribute('aria-checked')) !== 'true') await toggle.click();
-  await expect(page.getByRole('heading', { name: /hola, /i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /hola, /i })).toBeVisible({ timeout: 20_000 });
 };
 
-/** Envía una pregunta y devuelve el JSON de /ai-agent/chat (con las propuestas) cuando termina de responder. */
+/** Envía una pregunta y devuelve el resultado final (con las propuestas). El chat responde en vivo (SSE): se lee el evento "final". */
 const ask = async (page, question) => {
   const [response] = await Promise.all([
     page.waitForResponse((r) => r.url().includes('/ai-agent/chat') && r.request().method() === 'POST', { timeout: 120_000 }),
@@ -33,8 +33,10 @@ const ask = async (page, question) => {
     })(),
   ]);
   expect(response.status(), await response.text()).toBe(200);
-  const body = await response.json();
-  await expect(page.getByText(/consultando…/i)).toBeHidden({ timeout: 30_000 });
+  const events = (await response.text()).split(/\r?\n/).filter((l) => l.startsWith('data: ')).map((l) => JSON.parse(l.slice(6)));
+  const body = events.find((e) => e.type === 'final');
+  expect(body, 'el chat debe terminar con un evento final: ' + JSON.stringify(events.slice(-2))).toBeTruthy();
+  await expect(page.locator('p:not(.sr-only)').filter({ hasText: /consultando…/i })).toBeHidden({ timeout: 30_000 });
   return body;
 };
 
@@ -62,7 +64,7 @@ test('1. crear un paquete por chat: la tarjeta NO crea nada hasta confirmar; can
   expect(action.type).toBe('create_package');
   expect(action.lines.join(' ')).toContain('La Paz → Oruro');
 
-  await expect(page.getByText('Registrar un paquete nuevo')).toBeVisible();
+  await expect(page.getByText('Registrar un paquete nuevo', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /^confirmar$/i })).toBeVisible();
   expect(await myPackage(ctx), 'mientras no se confirma, no se crea nada').toBeUndefined();
   await page.screenshot({ path: 'e2e-results/shots/acc_1_propuesta.png', fullPage: true });

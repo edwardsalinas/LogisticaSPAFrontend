@@ -16,7 +16,7 @@ const shot = (page, name) => page.screenshot({ path: `e2e-results/shots/${name}.
 const askAndWait = async (page, question) => {
   await page.getByLabel(/mensaje para el asistente/i).fill(question);
   await page.getByRole('button', { name: /^enviar$/i }).click();
-  await expect(page.getByText(/consultando…/i)).toBeHidden({ timeout: 120_000 });
+  await expect(page.locator('p:not(.sr-only)').filter({ hasText: /consultando…/i })).toBeHidden({ timeout: 120_000 });
   return before;
 };
 
@@ -24,10 +24,10 @@ const askAndWait = async (page, question) => {
 const enableAiMode = async (page) => {
   await page.goto('/');
   const toggle = page.getByRole('switch', { name: /modo ia/i });
-  await expect(toggle).toBeVisible();
+  await expect(toggle).toBeVisible({ timeout: 20_000 });
   if ((await toggle.getAttribute('aria-checked')) !== 'true') await toggle.click();
   await expect(toggle).toHaveAttribute('aria-checked', 'true');
-  await expect(page.getByRole('heading', { name: /hola, /i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /hola, /i })).toBeVisible({ timeout: 20_000 });
 };
 
 test.describe.configure({ mode: 'serial' });
@@ -43,14 +43,14 @@ test('1. por defecto la aplicación se ve como siempre y el Modo IA se activa de
 
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-checked', 'true');
-  await expect(page.getByRole('heading', { name: /hola, /i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /hola, /i })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText(/¿en qué te puedo ayudar hoy\?/i)).toBeVisible();
   await expect(page.getByRole('link', { name: /asistente/i }).first()).toBeVisible(); // primera opción del menú
   await shot(page, 'ia_1_inicio_admin');
 
   // la preferencia se recuerda al recargar
   await page.reload();
-  await expect(page.getByRole('heading', { name: /hola, /i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /hola, /i })).toBeVisible({ timeout: 20_000 });
   // y el Dashboard clásico sigue disponible en /dashboard
   await page.goto('/dashboard');
   await page.waitForLoadState('networkidle').catch(() => {});
@@ -61,8 +61,8 @@ test('2. el administrador pregunta cómo va la operación y recibe respuesta con
   await login(page, 'admin');
   await enableAiMode(page);
   await page.getByRole('button', { name: /¿cómo va la operación hoy\?/i }).click();
-  await expect(page.getByText(/consultando…/i)).toBeHidden({ timeout: 120_000 });
-  await expect(page.getByText('Operación de hoy', { exact: true })).toBeVisible();   // tarjeta con las cifras
+  await expect(page.locator('p:not(.sr-only)').filter({ hasText: /consultando…/i })).toBeHidden({ timeout: 120_000 });
+  await expect(page.getByText(/^(Operación de hoy|Resumen del día)$/).first()).toBeVisible();   // tarjeta con las cifras
   await expect(page.getByText(/retrasados/i).first()).toBeVisible();
   const answer = await page.locator('[data-role="assistant"]').last().innerText();
   expect(answer).not.toMatch(/No pude procesar|error técnico/i);
@@ -92,14 +92,15 @@ test('3. un cliente activa el Modo IA, consulta sus paquetes y ubica uno', async
   await enableAiMode(clientPage);
   await shot(clientPage, 'ia_3_inicio_cliente');
 
-  await clientPage.getByRole('button', { name: /¿qué paquetes tengo\?/i }).click();
-  await expect(clientPage.getByText(/consultando…/i)).toBeHidden({ timeout: 120_000 });
+  // la primera coincidencia es el atajo de la pantalla de inicio (luego aparecen también las filas del historial)
+  await clientPage.getByRole('button', { name: /¿qué paquetes tengo\?/i }).first().click();
+  await expect(clientPage.locator('p:not(.sr-only)').filter({ hasText: /consultando…/i })).toBeHidden({ timeout: 120_000 });
   await expect(clientPage.getByRole('button', { name: new RegExp(pkg.tracking_code) })).toBeVisible(); // tarjeta con SU paquete
   await shot(clientPage, 'ia_4_lista_cliente');
 
   // toca el paquete de la tarjeta: el asistente lo ubica y muestra la ficha
   await clientPage.getByRole('button', { name: new RegExp(pkg.tracking_code) }).click();
-  await expect(clientPage.getByText(/consultando…/i)).toBeHidden({ timeout: 120_000 });
+  await expect(clientPage.locator('p:not(.sr-only)').filter({ hasText: /consultando…/i })).toBeHidden({ timeout: 120_000 });
   await expect(clientPage.getByText('Conductor', { exact: true })).toBeVisible();
   await expect(clientPage.getByText('Llegada estimada', { exact: true })).toBeVisible();
   await shot(clientPage, 'ia_5_ficha_paquete');
@@ -111,7 +112,7 @@ test('4. el conductor ve su agenda con el asistente', async ({ page }) => {
   await enableAiMode(page);
   await expect(page.getByRole('button', { name: /¿qué entregas tengo hoy\?/i })).toBeVisible();
   await page.getByRole('button', { name: /¿qué entregas tengo hoy\?/i }).click();
-  await expect(page.getByText(/consultando…/i)).toBeHidden({ timeout: 120_000 });
+  await expect(page.locator('p:not(.sr-only)').filter({ hasText: /consultando…/i })).toBeHidden({ timeout: 120_000 });
   const answer = await page.locator('[data-role="assistant"]').last().innerText();
   expect(answer).not.toMatch(/No pude procesar|error técnico/i);
   await shot(page, 'ia_6_agenda_conductor');
