@@ -4,6 +4,11 @@ import streamChat from './streamChat';
 const apiService = {
   // Chat con el asistente con la respuesta en vivo (ver streamChat.js)
   chatStream: (body, handlers) => streamChat(body, handlers),
+  // Historial de conversaciones del asistente (cada usuario ve solo las suyas) y uso de la IA (administradores)
+  getAiConversations: () => api.get('/ai-agent/conversations'),
+  getAiConversation: (id) => api.get(`/ai-agent/conversations/${id}`),
+  deleteAiConversation: (id) => api.delete(`/ai-agent/conversations/${id}`),
+  getAiUsage: (days = 7) => api.get('/ai-agent/usage', { params: { days } }),
   getRoutes: () => api.get('/logistics/routes'),
   getCheckpointsByRoute: (routeId) => api.get(`/logistics/routes/${routeId}/checkpoints`),
   getPackages: () => api.get('/logistics/packages'),

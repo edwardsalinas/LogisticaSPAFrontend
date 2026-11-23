@@ -15,6 +15,8 @@ export const ChatContext = createContext(null);
 export function useChatState(initialMessages = []) {
   const [messages, setMessages] = useState(initialMessages);
   const [loading, setLoading] = useState(false);
+  const [conversationId, setConversationId] = useState(null); // conversación guardada a la que pertenece este chat
+  const conversationRef = useRef(null);
   const [status, setStatus] = useState(''); // qué está consultando el asistente ("Buscando tu paquete…")
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
@@ -56,7 +58,7 @@ export function useChatState(initialMessages = []) {
       .filter((m) => !m.local && !m.isError && !m.streaming)
       .slice(-HISTORY_LIMIT)
       .map(({ role, content }) => ({ role, content }));
-    const body = { message: text, history, ...(voice ? { voice: true } : {}) };
+    const body = { message: text, history, ...(voice ? { voice: true } : {}), ...(conversationRef.current ? { conversation_id: conversationRef.current } : {}) };
 
     loadingRef.current = true;
     setLoading(true);
@@ -82,6 +84,7 @@ export function useChatState(initialMessages = []) {
 
     const finalize = (res) => {
       if (timer) { clearTimeout(timer); timer = null; }
+      if (res.conversation_id) { conversationRef.current = res.conversation_id; setConversationId(res.conversation_id); }
       const attachments = res.attachments ?? [];
       const reply = { role: 'assistant', content: res.response, attachments, streaming: false };
       if (streamId !== null) {
@@ -132,9 +135,29 @@ export function useChatState(initialMessages = []) {
     }
   }, []);
 
-  const reset = useCallback((nextMessages = []) => setMessages(nextMessages), []);
+  /** Empieza de cero: mensajes nuevos y sin conversación guardada asociada. */
+  const reset = useCallback((nextMessages = []) => {
+    conversationRef.current = null;
+    setConversationId(null);
+    setMessages(nextMessages);
+  }, []);
 
-  return { messages, loading, status, send, reset };
+  /** Abre una conversación guardada para continuarla. Devuelve false si no se pudo cargar. */
+  const openConversation = useCallback(async (id) => {
+    if (loadingRef.current) return false;
+    try {
+      const res = await apiService.getAiConversation(id);
+      const stored = res?.data?.messages ?? [];
+      conversationRef.current = id;
+      setConversationId(id);
+      setMessages(stored.map((m) => ({ id: nextId(), role: m.role, content: m.content, attachments: m.attachments ?? [], ...(m.is_error ? { isError: true } : {}) })));
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  return { messages, loading, status, conversationId, send, reset, openConversation };
 }
 
 /**

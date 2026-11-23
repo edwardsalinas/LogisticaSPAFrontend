@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Headphones, Mic, RotateCcw, Send, Sparkles, Volume2, VolumeX } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { BarChart3, Headphones, History, Mic, RotateCcw, Send, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { useAuth } from '../../../app/AuthContext';
 import useRole from '../../../app/useRole';
 import Skeleton from '../../../components/atoms/Skeleton';
 import Announcer from '../components/Announcer';
+import ConversationHistory, { refreshConversationList } from '../components/ConversationHistory';
 import ChatBubble from '../components/ChatBubble';
 import VoiceMode from '../components/VoiceMode';
 import { useSpeechRecognition, useSpeechSynthesis } from '../useVoice';
@@ -33,14 +35,32 @@ function AssistantHome() {
   const { user } = useAuth();
   const { role } = useRole();
   const chat = useAssistantChat();
-  const { messages, loading, status, send, reset } = chat;
+  const { messages, loading, status, conversationId, send, reset, openConversation } = chat;
   const streaming = messages.length > 0 && !!messages[messages.length - 1].streaming; // ya hay texto en pantalla
   const [input, setInput] = useState('');
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [speakReplies, setSpeakReplies] = useState(readSpeakPref);
   const synth = useSpeechSynthesis();
   const [slow, setSlow] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const endRef = useRef(null);
+
+  // Tras cada respuesta, el servidor guarda la conversación; se refresca la lista un instante después
+  const wasLoading = useRef(false);
+  useEffect(() => {
+    if (wasLoading.current && !loading) {
+      const t = setTimeout(refreshConversationList, 1500);
+      wasLoading.current = loading;
+      return () => clearTimeout(t);
+    }
+    wasLoading.current = loading;
+    return undefined;
+  }, [loading]);
+
+  const openFromHistory = async (id) => {
+    const ok = await openConversation(id);
+    if (ok) { setShowHistory(false); setInput(''); }
+  };
 
   const name = displayName(user);
   const empty = messages.length === 0;
@@ -189,14 +209,32 @@ function AssistantHome() {
               </button>
             ))}
           </div>
+
+          <div className="w-full text-left">
+            <ConversationHistory compact limit={4} activeId={conversationId} onOpen={openFromHistory} onDeleted={() => reset([])} />
+          </div>
+          {role === 'admin' && (
+            <Link to="/assistant/usage" className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-primary-700 hover:bg-primary-50">
+              <BarChart3 size={16} aria-hidden="true" /> Ver el uso de la IA
+            </Link>
+          )}
         </div>
       ) : (
         <div className="flex-1 space-y-5 pb-6 pt-2">
-          <div className="flex justify-end">
+          <div className="flex flex-wrap justify-end gap-2">
+            <button type="button" onClick={() => setShowHistory((v) => !v)} aria-expanded={showHistory} className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-surface-200 bg-white px-4 text-xs font-semibold text-surface-600 hover:bg-surface-50">
+              <History size={13} aria-hidden="true" /> Historial
+            </button>
+            {role === 'admin' && (
+              <Link to="/assistant/usage" className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-surface-200 bg-white px-4 text-xs font-semibold text-surface-600 hover:bg-surface-50">
+                <BarChart3 size={13} aria-hidden="true" /> Uso de la IA
+              </Link>
+            )}
             <button type="button" onClick={() => { reset([]); setInput(''); }} className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-surface-200 bg-white px-4 text-xs font-semibold text-surface-600 hover:bg-surface-50">
               <RotateCcw size={13} aria-hidden="true" /> Nueva conversación
             </button>
           </div>
+          {showHistory && <ConversationHistory activeId={conversationId} onOpen={openFromHistory} onDeleted={() => { reset([]); setShowHistory(false); }} />}
           <Announcer messages={messages} loading={loading} />
           <div className="space-y-5">
             {messages.map((m, i) => (

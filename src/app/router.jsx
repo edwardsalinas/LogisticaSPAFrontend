@@ -17,6 +17,7 @@ const PackageMapPage = lazy(() => import('../features/tracking/pages/PackageMapP
 const FleetPage = lazy(() => import('../features/fleet/pages/FleetPage'));
 const AssistantHome = lazy(() => import('../features/ai-chat/pages/AssistantHome'));
 const AnalyticsPage = lazy(() => import('../features/analytics/pages/AnalyticsPage'));
+const AiUsagePage = lazy(() => import('../features/ai-chat/pages/AiUsagePage'));
 const LoginPage = lazy(() => import('../features/auth/pages/LoginPage'));
 const PublicTrackingPage = lazy(() => import('../features/tracking/pages/PublicTrackingPage'));
 const DriverDashboardPage = lazy(() => import('../features/tracking/pages/DriverDashboardPage'));
@@ -89,6 +90,7 @@ function AppRouter() {
             <Route path="/fleet" element={<RoleRoute roles={['admin']}><FleetPage /></RoleRoute>} />
             {/* Asistente: siempre disponible; es la página de inicio cuando el Modo IA está activo */}
             <Route path="/assistant" element={<AssistantHome />} />
+            <Route path="/assistant/usage" element={<RoleRoute roles={['admin']}><AiUsagePage /></RoleRoute>} />
             <Route path="/ai-chat" element={<Navigate to="/assistant" replace />} />
             <Route path="/dashboard" element={<RoleRoute roles={['admin', 'logistics_operator']}><DashboardPage /></RoleRoute>} />
             <Route path="/analytics" element={<RoleRoute roles={['admin']}><AnalyticsPage /></RoleRoute>} />
