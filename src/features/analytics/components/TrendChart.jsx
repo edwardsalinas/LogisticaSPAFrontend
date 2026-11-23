@@ -32,7 +32,7 @@ function CustomTooltip({ active, payload, label }) {
   );
 }
 
-function TrendChart({ title = 'Tendencia del volumen logistico', data = [], total = 0, change = null }) {
+function TrendChart({ title = 'Tendencia del volumen logístico', data = [], total = 0, change = null }) {
   return (
     <section className="motion-card overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/90 p-6 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -48,7 +48,7 @@ function TrendChart({ title = 'Tendencia del volumen logistico', data = [], tota
             <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.04em] text-primary-700">{total}</p>
           </div>
           <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 px-4 py-3">
-            <p className="text-xs uppercase tracking-[0.18em] text-surface-500">Variacion</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-surface-500">Variación</p>
             {change === null ? (
               <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-500" title="El período anterior no tiene envíos para comparar">—</p>
             ) : (
@@ -63,7 +63,7 @@ function TrendChart({ title = 'Tendencia del volumen logistico', data = [], tota
         <div className="inline-flex items-center gap-2 rounded-full border border-surface-200 bg-surface-50 px-3 py-2 text-surface-700"><span className="h-2.5 w-2.5 rounded-full bg-surface-400" /> Período anterior</div>
       </div>
 
-      <div className="h-[320px] sm:h-[340px]" role="img" aria-label="Grafico de tendencia comparando este periodo y el periodo anterior">
+      <div className="h-[320px] sm:h-[340px]" role="img" aria-label="Gráfico de tendencia comparando este período y el período anterior">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
             <defs>

@@ -64,7 +64,7 @@ function RouteInfoPanel({ route, onClose, onEdit, onDelete, onAssign, realProgre
                   <MapPinned size={22} strokeWidth={2.2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-surface-900 truncate leading-none mb-2">{route.next_checkpoint || 'Centro logistico norte'}</p>
+                  <p className="text-sm font-bold text-surface-900 truncate leading-none mb-2">{route.next_checkpoint || 'Centro logístico norte'}</p>
                   <div className="flex items-center gap-3">
                     <span className="flex items-center gap-1.5 text-xs font-bold text-primary-700 bg-white px-2 py-1 rounded-lg border border-primary-100/50 shadow-sm"><Clock3 size={12} strokeWidth={2.5} /> ETA {route.eta || '14:30'}</span>
                     <span className="text-xs font-bold text-surface-400">{route.eta_minutes || '25'} min</span>

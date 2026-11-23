@@ -85,7 +85,7 @@ function FleetPage() {
   const vehicleColumns = [
     {
       key: 'vehicle',
-      label: 'Vehiculo',
+      label: 'Vehículo',
       render: (_, row) => (
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
@@ -114,7 +114,7 @@ function FleetPage() {
       label: 'Conductor',
       render: (_, row) => <div className="flex items-center gap-3"><Avatar name={row.full_name} size="md" /><div><p className="font-semibold text-surface-900">{row.full_name}</p><p className="text-xs text-surface-500">{row.email}</p></div></div>,
     },
-    { key: 'phone', label: 'Telefono' },
+    { key: 'phone', label: 'Teléfono' },
     { key: 'license_number', label: 'Licencia' },
     { key: 'status', label: 'Estado', render: (val) => <Badge variant={statusMap[val]?.variant || 'neutral'} dot>{statusMap[val]?.label || val}</Badge> },
   ];
@@ -133,7 +133,7 @@ function FleetPage() {
             <div><p className="text-xs uppercase tracking-[0.24em] text-surface-500">Centro de datos</p><h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Vehículos y conductores</h2></div>
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <div className="rounded-2xl bg-surface-100 p-1 flex"><button onClick={() => { setActiveTab('vehicles'); setCurrentPage(1); }} className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all sm:flex-none ${activeTab === 'vehicles' ? 'bg-white text-primary-700 shadow-sm' : 'text-surface-500'}`}>Vehículos</button><button onClick={() => { setActiveTab('drivers'); setCurrentPage(1); }} className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all sm:flex-none ${activeTab === 'drivers' ? 'bg-white text-primary-700 shadow-sm' : 'text-surface-500'}`}>Conductores</button></div>
-              <div className="w-full sm:w-72"><SearchInput value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder={`Buscar ${activeTab === 'vehicles' ? 'vehiculo o placa' : 'conductor o licencia'}`} /></div>
+              <div className="w-full sm:w-72"><SearchInput value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder={`Buscar ${activeTab === 'vehicles' ? 'vehículo o placa' : 'conductor o licencia'}`} /></div>
               {activeTab === 'vehicles' && <Button size="md" className="w-full sm:w-auto whitespace-nowrap" onClick={() => setShowVehicleForm(true)}>+ Agregar vehículo</Button>}
             </div>
           </div>

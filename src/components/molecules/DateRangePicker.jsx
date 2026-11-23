@@ -29,8 +29,8 @@ function DateRangePicker({ value = { from: null, to: null }, onChange }) {
           <CalendarRange size={18} strokeWidth={2.2} />
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-500">Rango de analisis</p>
-          <p className="text-sm font-semibold text-surface-900">Filtra el periodo de lectura</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-500">Rango de análisis</p>
+          <p className="text-sm font-semibold text-surface-900">Filtra el período de lectura</p>
         </div>
       </div>
 

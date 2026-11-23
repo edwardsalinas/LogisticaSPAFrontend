@@ -38,7 +38,7 @@ function PackageMapPage() {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-4 text-center">
         <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-surface-950">No encontramos el paquete</h2>
-        <p className="max-w-md text-sm text-surface-500">No fue posible cargar la vista de mapa para este envio. Podemos volver al modulo de tracking.</p>
+        <p className="max-w-md text-sm text-surface-500">No fue posible cargar la vista de mapa para este envío. Podemos volver al módulo de tracking.</p>
         <Button onClick={() => navigate('/tracking')}>Volver a tracking</Button>
       </div>
     );
@@ -66,7 +66,7 @@ function PackageMapPage() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100/85 backdrop-blur"><Activity size={14} strokeWidth={2.2} />Tracking en mapa</div>
             <h1 className="mt-5 max-w-3xl font-display text-[clamp(2rem,4.5vw,3.8rem)] font-semibold tracking-[-0.06em] text-white break-all sm:break-normal">{pkg.tracking_code}</h1>
-            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Seguimiento espacial del envio con puntos de control, ultima posicion conocida y lectura activa sobre el mapa.</p>
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Seguimiento espacial del envío con puntos de control, última posición conocida y lectura activa sobre el mapa.</p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
             <Button variant="secondary" className="border-white/14 bg-white/8 text-white hover:bg-white/14" onClick={() => navigate('/tracking')}><MoveLeft size={16} strokeWidth={2.2} />Volver</Button>
@@ -79,7 +79,7 @@ function PackageMapPage() {
         <StatCard label="Origen" value={pkg.origen} icon={MapPinned} caption="Ciudad de salida del paquete." tone="blue" />
         <StatCard label="Destino" value={pkg.destino} icon={PackageCheck} caption="Destino configurado para la entrega." tone="emerald" />
         <StatCard label="Puntos de control" value={checkpoints.length} icon={Route} caption="Puntos visibles a lo largo de la ruta." tone="amber" />
-        <StatCard label="Estado de ruta" value={routeStatus.label} icon={Activity} caption="Condicion operativa actual del movimiento." tone="violet" />
+        <StatCard label="Estado de ruta" value={routeStatus.label} icon={Activity} caption="Condición operativa actual del movimiento." tone="violet" />
       </section>
 
       <section className="rounded-[1.6rem] border border-white/70 bg-white/88 p-4 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:rounded-[1.8rem] sm:p-5">
@@ -90,7 +90,7 @@ function PackageMapPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Badge variant={routeStatus.variant} dot>{routeStatus.label}</Badge>
-            {latestPosition && <Badge variant="info" dot>Ultima posicion disponible</Badge>}
+            {latestPosition && <Badge variant="info" dot>Última posición disponible</Badge>}
           </div>
         </div>
         <div className="h-[55vh] min-h-[26rem] overflow-hidden rounded-[1.4rem] border border-surface-100 sm:h-[calc(100vh-24rem)] sm:min-h-[34rem] sm:rounded-[1.6rem]">

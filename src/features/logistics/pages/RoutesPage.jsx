@@ -616,7 +616,7 @@ function RoutesPage() {
                   ))
                 )}
                 {!loading && filteredListRoutes.length === 0 && (
-                  <EmptyState eyebrow="Sin coincidencias" title="No encontramos viajes con ese criterio" description="Prueba ajustando conductor, codigo o destino para volver a poblar la vista." className="min-h-[15rem] border-surface-100 bg-surface-50/70" />
+                  <EmptyState eyebrow="Sin coincidencias" title="No encontramos viajes con ese criterio" description="Prueba ajustando conductor, código o destino para volver a poblar la vista." className="min-h-[15rem] border-surface-100 bg-surface-50/70" />
                 )}
               </div>
             )}

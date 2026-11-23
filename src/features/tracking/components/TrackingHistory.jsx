@@ -45,7 +45,7 @@ function TrackingHistory({ packageId, className }) {
   };
 
   if (loading) {
-    return <SectionLoader eyebrow="Cargando historial" title="Preparando eventos de trazabilidad" description="Estamos recuperando los ultimos movimientos registrados para este paquete." className="min-h-[24rem]" />;
+    return <SectionLoader eyebrow="Cargando historial" title="Preparando eventos de trazabilidad" description="Estamos recuperando los últimos movimientos registrados para este paquete." className="min-h-[24rem]" />;
   }
 
   return (

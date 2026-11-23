@@ -3,7 +3,7 @@ import { TriangleAlert } from 'lucide-react';
 function ErrorState({
   eyebrow = 'Error',
   title = 'No pudimos completar esta carga',
-  description = 'Ocurrio un problema inesperado al recuperar la informacion.',
+  description = 'Ocurrió un problema inesperado al recuperar la información.',
   action = null,
   className = '',
 }) {

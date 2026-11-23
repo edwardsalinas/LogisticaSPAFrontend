@@ -3,7 +3,7 @@
 function SectionLoader({
   eyebrow = 'Cargando',
   title = 'Preparando contenido',
-  description = 'Estamos reuniendo la informacion necesaria para esta vista.',
+  description = 'Estamos reuniendo la información necesaria para esta vista.',
   className = '',
 }) {
   return (

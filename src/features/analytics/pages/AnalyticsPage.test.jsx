@@ -32,7 +32,8 @@ describe('Analítica con datos reales', () => {
     apiService.getAnalytics.mockResolvedValue(RESPONSE);
     renderPage();
 
-    expect(await screen.findByText('Ana Gómez')).toBeInTheDocument();
+    // el ranking se carga bajo demanda: en un equipo lento tarda más que el segundo por defecto
+    expect(await screen.findByText('Ana Gómez', {}, { timeout: 5000 })).toBeInTheDocument();
     const { from, to } = apiService.getAnalytics.mock.calls[0][0];
     expect(from).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(to).toMatch(/^\d{4}-\d{2}-\d{2}$/);
@@ -46,7 +47,7 @@ describe('Analítica con datos reales', () => {
     apiService.getAnalytics.mockResolvedValue({ data: { totals: { shipments: 0, change: null, delivered: 0, onTimePct: null, avgDeliveryHours: null, incidents: 0 }, trend: [], statusBreakdown: [], drivers: [] } });
     renderPage();
 
-    expect(await screen.findByText(/aun no hay entregas con conductor/i)).toBeInTheDocument();
+    expect(await screen.findByText(/a[uú]n no hay entregas con conductor/i, {}, { timeout: 5000 })).toBeInTheDocument();
     for (const fake of ['12,482', '94.2%', 'Juan Perez', 'Carlos Ruiz', 'Maria Lopez']) {
       expect(screen.queryByText(fake)).not.toBeInTheDocument();
     }

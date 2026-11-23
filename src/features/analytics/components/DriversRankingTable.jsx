@@ -16,7 +16,7 @@ function DriversRankingTable({ title = 'Ranking de conductores', data = [] }) {
         </div>
       </div>
 
-      {data.length === 0 && <p className="text-sm text-surface-500">Aun no hay entregas con conductor asignado en el rango elegido.</p>}
+      {data.length === 0 && <p className="text-sm text-surface-500">Aún no hay entregas con conductor asignado en el rango elegido.</p>}
 
       <div className="space-y-3">
         {data.map((driver, index) => {

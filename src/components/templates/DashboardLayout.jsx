@@ -46,7 +46,7 @@ function DashboardLayout() {
         </main>
       </div>
 
-      <nav className="fixed inset-x-3 bottom-3 z-40 lg:hidden" aria-label="Navegacion principal movil">
+      <nav className="fixed inset-x-3 bottom-3 z-40 lg:hidden" aria-label="Navegación principal móvil">
         <div className="mobile-bottom-nav no-scrollbar flex items-center gap-2 overflow-x-auto rounded-[1.6rem] border border-white/70 bg-white/88 px-2 py-2 shadow-[0_24px_50px_-28px_rgba(15,23,42,0.28)] backdrop-blur-2xl">
           {getNavItems(aiMode).filter((item) => hasRole(item.roles)).map((item) => {
             const Icon = item.icon;

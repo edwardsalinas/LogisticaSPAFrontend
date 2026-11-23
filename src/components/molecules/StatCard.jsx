@@ -38,7 +38,7 @@ function StatCard({
   value,
   icon: Icon = null,
   change = null,
-  changeLabel = 'vs periodo anterior',
+  changeLabel = 'vs período anterior',
   caption = null,
   tone = 'blue',
 }) {

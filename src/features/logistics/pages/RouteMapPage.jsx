@@ -77,9 +77,9 @@ function RouteMapPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-3">
-        <StatCard label="Duracion estimada" value={`${route.estimated_duration_minutes || 'N/A'} min`} icon={TimerReset} caption="Tiempo estimado total de recorrido." tone="blue" />
+        <StatCard label="Duración estimada" value={`${route.estimated_duration_minutes || 'N/A'} min`} icon={TimerReset} caption="Tiempo estimado total de recorrido." tone="blue" />
         <StatCard label="Distancia total" value={`${route.total_distance_km || 'N/A'} km`} icon={Ruler} caption="Longitud acumulada de la ruta." tone="emerald" />
-        <StatCard label="Estado de ruta" value={isActive ? 'Activa' : route.status} icon={MapPinned} caption="Condicion actual del circuito logistico." tone={isActive ? 'amber' : 'violet'} />
+        <StatCard label="Estado de ruta" value={isActive ? 'Activa' : route.status} icon={MapPinned} caption="Condición actual del circuito logístico." tone={isActive ? 'amber' : 'violet'} />
       </section>
 
       <section className="rounded-[1.6rem] border border-white/70 bg-white/88 p-4 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:rounded-[1.8rem] sm:p-5">

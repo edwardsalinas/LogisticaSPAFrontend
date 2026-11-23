@@ -3,7 +3,7 @@ import { AlertTriangle, ShieldCheck, TimerReset, Truck } from 'lucide-react';
 const operationalAlerts = [
   { title: '2 rutas con ventana ajustada', detail: 'RT-014 y RT-022 requieren seguimiento antes de las 16:00.', icon: AlertTriangle, tone: 'text-amber-700 bg-amber-50 border-amber-100' },
   { title: 'Cobertura SLA por encima del objetivo', detail: 'Se mantiene en 98.4% con 9 entregas cerradas hoy.', icon: ShieldCheck, tone: 'text-emerald-700 bg-emerald-50 border-emerald-100' },
-  { title: 'Flota disponible para reasignacion', detail: '6 unidades listas para nuevas ordenes en menos de 20 minutos.', icon: Truck, tone: 'text-sky-700 bg-sky-50 border-sky-100' },
+  { title: 'Flota disponible para reasignación', detail: '6 unidades listas para nuevas ordenes en menos de 20 minutos.', icon: Truck, tone: 'text-sky-700 bg-sky-50 border-sky-100' },
 ];
 
 export default function AlertsPanel({ stats }) {
@@ -52,7 +52,7 @@ export default function AlertsPanel({ stats }) {
   // Si no hay alertas específicas, mostrar un placeholder informativo
   if (alerts.length === 0) {
     alerts.push({
-      title: 'Operacion estable',
+      title: 'Operación estable',
       detail: 'No se detectan anomalias criticas en el flujo actual.',
       icon: ShieldCheck,
       tone: 'text-slate-700 bg-slate-50 border-slate-100'
@@ -64,7 +64,7 @@ export default function AlertsPanel({ stats }) {
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-500">Alertas y foco</p>
-          <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Supervision curada.</h3>
+          <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Supervisión curada.</h3>
         </div>
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
           <TimerReset size={20} strokeWidth={2.2} />

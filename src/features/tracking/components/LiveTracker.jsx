@@ -64,7 +64,7 @@ function LiveTracker({ packageId, routeId }) {
         setError(null);
       } catch (err) {
         console.error('Error obteniendo posicion:', err);
-        if (isMounted) setError('No se pudo obtener la posicion actual');
+        if (isMounted) setError('No se pudo obtener la posición actual');
       }
     };
 
@@ -105,7 +105,7 @@ function LiveTracker({ packageId, routeId }) {
                   <p>{history.length} registros disponibles</p>
                 </div>
               ) : (
-                <p className="mt-3 text-xs text-surface-500">Esperando senal de posicion...</p>
+                <p className="mt-3 text-xs text-surface-500">Esperando señal de posición...</p>
               )}
 
               {error && <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600"><TriangleAlert size={13} strokeWidth={2.2} /> {error}</p>}

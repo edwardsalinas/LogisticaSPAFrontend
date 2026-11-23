@@ -32,7 +32,7 @@ function PackageTrackingMap({ center, packageId, routeId, checkpoints = [], late
         <Marker position={[latestPosition.lat, latestPosition.lng]} icon={lastKnownIcon}>
           <Popup>
             <div className="min-w-[180px] p-1">
-              <h3 className="text-sm font-semibold text-surface-900">Ultima posicion conocida</h3>
+              <h3 className="text-sm font-semibold text-surface-900">Última posición conocida</h3>
               <p className="mt-1 text-xs text-surface-500">{new Date(latestPosition.timestamp).toLocaleString('es-BO')}</p>
               <p className="mt-3 text-xs text-surface-500">Estado: {latestPosition.status}</p>
             </div>

@@ -31,7 +31,7 @@ export default function LiveMapSummary({ stats }) {
           </div>
           <div className="mt-5 grid gap-3">
             {[
-              { label: 'Siniestros reportados', count: stats?.packagesIncident || 0, alert: 'Atencion', bad: 'text-red-300', badDot: 'bg-red-400' },
+              { label: 'Siniestros reportados', count: stats?.packagesIncident || 0, alert: 'Atención', bad: 'text-red-300', badDot: 'bg-red-400' },
               { label: 'Despachos con retraso', count: stats?.packagesDelayed || 0, alert: 'Revisar', bad: 'text-amber-300', badDot: 'bg-amber-400' },
             ].map((row) => (
               <div key={row.label} className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/6 px-4 py-3">

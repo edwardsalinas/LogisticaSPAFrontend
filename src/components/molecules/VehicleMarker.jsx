@@ -38,7 +38,7 @@ const createVehicleIcon = (isFinished = false) => L.divIcon({
   popupAnchor: [0, -22],
 });
 
-function VehicleMarker({ position, title = 'Vehiculo', subtitle, onClick, isFinished = false }) {
+function VehicleMarker({ position, title = 'Vehículo', subtitle, onClick, isFinished = false }) {
   if (!position) return null;
 
   return (

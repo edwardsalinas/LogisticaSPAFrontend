@@ -49,7 +49,7 @@ function DelayReasonsChart({ title = 'Estado de los envios', data = [] }) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_15rem] lg:items-center">
-        <div className="relative h-[260px]" role="img" aria-label="Grafico circular con la distribucion de los envios por estado">
+        <div className="relative h-[260px]" role="img" aria-label="Gráfico circular con la distribución de los envíos por estado">
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <div className="rounded-full border border-surface-100 bg-white/85 px-5 py-4 text-center shadow-sm backdrop-blur-sm">
               <p className="text-xs uppercase tracking-[0.18em] text-surface-500">Envios</p>

@@ -35,12 +35,12 @@ function PackageDetailPage() {
     destino: 'Oruro',
     status: 'en_transito',
     peso: 45.5,
-    description: 'Equipos electronicos',
+    description: 'Equipos electrónicos',
     priority: 'Express',
     sender: { name: 'ElectroBolivia S.R.L.', address: 'Av. 16 de Julio 1234, La Paz', contact: '+591 2 2201234' },
     receiver: { name: 'Comercializadora El Alto', address: 'C. Comercio 567, El Alto', contact: '+591 2 2805678' },
     dimensions: { length: 60, width: 40, height: 40 },
-    content_type: 'Equipos electronicos',
+    content_type: 'Equipos electrónicos',
     current_location: { lat: -16.58, lng: -68.25 },
     estimated_delivery: '2026-03-20 16:00',
     progress: 65,
@@ -67,7 +67,7 @@ function PackageDetailPage() {
 
   const timeline = useMemo(() => ([
     { label: 'Recolectado', date: '19 Mar, 08:30', location: 'La Paz - Almacen central', completed: true, active: false },
-    { label: 'Procesado', date: '19 Mar, 10:15', location: 'Centro de distribucion', completed: true, active: false },
+    { label: 'Procesado', date: '19 Mar, 10:15', location: 'Centro de distribución', completed: true, active: false },
     { label: 'En transito', date: '19 Mar, 11:00', location: 'Ruta La Paz - Oruro', completed: false, active: true },
     { label: 'Llegada a destino', date: '-', location: 'Oruro - terminal', completed: false, active: false },
     { label: 'Entregado', date: '-', location: '-', completed: false, active: false },
@@ -79,7 +79,7 @@ function PackageDetailPage() {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-4 text-center">
         <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-surface-950">No encontramos el paquete</h2>
-        <p className="max-w-md text-sm text-surface-500">La ficha del envio no esta disponible. Podemos volver al listado de paquetes.</p>
+        <p className="max-w-md text-sm text-surface-500">La ficha del envío no está disponible. Podemos volver al listado de paquetes.</p>
         <Button onClick={() => navigate('/logistics/packages')}>Volver a paquetes</Button>
       </div>
     );
@@ -105,12 +105,12 @@ function PackageDetailPage() {
         </div>
         <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.95fr)] lg:items-end">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100/85 backdrop-blur"><Package size={14} strokeWidth={2.2} />Detalle de envio</div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100/85 backdrop-blur"><Package size={14} strokeWidth={2.2} />Detalle de envío</div>
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <h1 className="font-display text-[clamp(2rem,4.5vw,3.8rem)] font-semibold tracking-[-0.06em] text-white break-all sm:break-normal">{pkg.tracking_code}</h1>
               <Badge variant={status.variant} dot>{status.label}</Badge>
             </div>
-            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Ficha completa del paquete con progreso, actores, ubicacion y cronograma de entrega.</p>
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Ficha completa del paquete con progreso, actores, ubicación y cronograma de entrega.</p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
             <Button variant="secondary" className="border-white/14 bg-white/8 text-white hover:bg-white/14" onClick={() => navigate('/logistics/packages')}><MoveLeft size={16} strokeWidth={2.2} />Volver</Button>
@@ -146,16 +146,16 @@ function PackageDetailPage() {
             </p>
           </div>
         </InfoCard>
-        <InfoCard title="Especificaciones" icon={Package} eyebrow="Ficha tecnica"><div className="grid grid-cols-2 gap-3 text-sm"><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Peso</p><p className="mt-1 font-semibold text-surface-900">{pkg.peso || 0} kg</p></div><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Dimensiones</p><p className="mt-1 font-semibold text-surface-900">{pkg.dimensions?.length || 60}x{pkg.dimensions?.width || 40}x{pkg.dimensions?.height || 40} cm</p></div><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Contenido</p><p className="mt-1 font-semibold text-surface-900">{pkg.content_type || pkg.description || 'General'}</p></div><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Prioridad</p><div className="mt-1"><Badge variant={priorityVariant}>{pkg.priority || 'Estandar'}</Badge></div></div></div></InfoCard>
+        <InfoCard title="Especificaciones" icon={Package} eyebrow="Ficha técnica"><div className="grid grid-cols-2 gap-3 text-sm"><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Peso</p><p className="mt-1 font-semibold text-surface-900">{pkg.peso || 0} kg</p></div><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Dimensiones</p><p className="mt-1 font-semibold text-surface-900">{pkg.dimensions?.length || 60}x{pkg.dimensions?.width || 40}x{pkg.dimensions?.height || 40} cm</p></div><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Contenido</p><p className="mt-1 font-semibold text-surface-900">{pkg.content_type || pkg.description || 'General'}</p></div><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Prioridad</p><div className="mt-1"><Badge variant={priorityVariant}>{pkg.priority || 'Estandar'}</Badge></div></div></div></InfoCard>
         <InfoCard title="Entrega" icon={Clock3} eyebrow="Resumen"><div className="space-y-3"><div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Fecha estimada</p><p className="mt-1 text-sm font-semibold text-surface-900">{pkg.estimated_delivery || 'No disponible'}</p></div><div><div className="mb-1 flex items-center justify-between"><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Progreso</p><p className="text-xs font-semibold text-surface-900">{pkg.progress || 65}%</p></div><ProgressBar value={pkg.progress || 65} size="md" variant="primary" /></div><div><Badge variant={status.variant} dot>{status.label}</Badge></div></div></InfoCard>
       </section>
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
         <div className="rounded-[1.6rem] border border-white/70 bg-white/88 p-4 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:rounded-[1.8rem] sm:p-5">
-          <div className="mb-4 flex flex-col gap-3 border-b border-surface-100 pb-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-xs uppercase tracking-[0.24em] text-surface-500">Localizacion</p><h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.04em] text-surface-950 sm:text-2xl">Ubicacion actual del envio</h2></div><div className="flex flex-wrap gap-2"><Badge variant="info" dot>{pkg.origen} {' -> '} {pkg.destino}</Badge><Badge variant={status.variant} dot>{status.label}</Badge></div></div>
+          <div className="mb-4 flex flex-col gap-3 border-b border-surface-100 pb-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-xs uppercase tracking-[0.24em] text-surface-500">Localización</p><h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.04em] text-surface-950 sm:text-2xl">Ubicación actual del envío</h2></div><div className="flex flex-wrap gap-2"><Badge variant="info" dot>{pkg.origen} {' -> '} {pkg.destino}</Badge><Badge variant={status.variant} dot>{status.label}</Badge></div></div>
           <div className="h-[24rem] overflow-hidden rounded-[1.4rem] border border-surface-100 sm:h-[28rem] sm:rounded-[1.5rem]">
             <Suspense fallback={<MapCanvasFallback />}>
-              <PackageLocationMap position={pkg.current_location ? [pkg.current_location.lat, pkg.current_location.lng] : null} title={pkg.tracking_code} subtitle="Ubicacion actual" />
+              <PackageLocationMap position={pkg.current_location ? [pkg.current_location.lat, pkg.current_location.lng] : null} title={pkg.tracking_code} subtitle="Ubicación actual" />
             </Suspense>
           </div>
         </div>
@@ -168,8 +168,8 @@ function PackageDetailPage() {
 
       <section className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-3">
         <InfoCard title="Ruta" icon={MapPinned} eyebrow="Trayecto"><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.origen} {' -> '} {pkg.destino}</p><p className="text-surface-500">Movimiento principal configurado para esta entrega.</p></div></InfoCard>
-        <InfoCard title="Estado actual" icon={Radar} eyebrow="Monitoreo"><div className="space-y-2 text-sm"><div><Badge variant={status.variant} dot>{status.label}</Badge></div><p className="text-surface-500">La lectura refleja el ultimo estado operativo disponible.</p></div></InfoCard>
-        <InfoCard title="Observacion" icon={Package} eyebrow="Descripción"><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.description || 'Sin descripcion adicional'}</p><p className="text-surface-500">Contenido declarado por el equipo de despacho.</p></div></InfoCard>
+        <InfoCard title="Estado actual" icon={Radar} eyebrow="Monitoreo"><div className="space-y-2 text-sm"><div><Badge variant={status.variant} dot>{status.label}</Badge></div><p className="text-surface-500">La lectura refleja el último estado operativo disponible.</p></div></InfoCard>
+        <InfoCard title="Observación" icon={Package} eyebrow="Descripción"><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.description || 'Sin descripción adicional'}</p><p className="text-surface-500">Contenido declarado por el equipo de despacho.</p></div></InfoCard>
       </section>
     </div>
   );

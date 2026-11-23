@@ -55,7 +55,7 @@ function RouteMap({ routeId, initialPosition, showControls = false }) {
 
   return (
     <div className="relative h-full w-full overflow-hidden rounded-[1.6rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.8),rgba(248,250,252,0.88))]">
-      <BaseMap center={[centerLat, centerLng]} zoom={9} className="h-full w-full" scrollWheelZoom ariaLabel="Mapa de ruta con puntos de control y posicion de unidad">
+      <BaseMap center={[centerLat, centerLng]} zoom={9} className="h-full w-full" scrollWheelZoom ariaLabel="Mapa de ruta con puntos de control y posición de unidad">
         <FitBounds checkpoints={checkpoints} />
         <RoutePath checkpoints={checkpoints} />
         {checkpoints.map((checkpoint) => (
@@ -101,7 +101,7 @@ function RouteMap({ routeId, initialPosition, showControls = false }) {
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-surface-100 bg-surface-50 p-3"><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Secuencia</p><p className="mt-1 text-sm font-semibold text-surface-900">#{selectedCheckpoint.sequence_order}</p></div>
               <div className="rounded-2xl border border-surface-100 bg-surface-50 p-3"><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Radio</p><p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-surface-900"><Ruler size={13} strokeWidth={2.2} /> {selectedCheckpoint.radius_meters} m</p></div>
-              <div className="rounded-2xl border border-surface-100 bg-surface-50 p-3 sm:col-span-2"><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Ubicacion</p><p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-surface-900"><MapPinned size={13} strokeWidth={2.2} /> {selectedCheckpoint.lat.toFixed(6)}, {selectedCheckpoint.lng.toFixed(6)}</p></div>
+              <div className="rounded-2xl border border-surface-100 bg-surface-50 p-3 sm:col-span-2"><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Ubicación</p><p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-surface-900"><MapPinned size={13} strokeWidth={2.2} /> {selectedCheckpoint.lat.toFixed(6)}, {selectedCheckpoint.lng.toFixed(6)}</p></div>
             </div>
             {showControls && <div className="mt-4 flex gap-2"><Button size="sm" variant="secondary"><PenLine size={14} strokeWidth={2.2} />Editar</Button><Button size="sm" variant="danger">Eliminar</Button></div>}
           </div>

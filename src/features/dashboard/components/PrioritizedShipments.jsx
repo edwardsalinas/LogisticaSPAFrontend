@@ -32,7 +32,7 @@ export default function PrioritizedShipments() {
       return {
         id: pkg.id.split('-')[0].toUpperCase(), // Short ID for UI
         destination: `${pkg.origen} -> ${pkg.destino}`,
-        operator: { name: 'Unidad Logistica', initials: 'UL' },
+        operator: { name: 'Unidad Logística', initials: 'UL' },
         status,
         progress: PROGRESS[status] ?? 10,
         eta: status === PACKAGE_STATUS.DELIVERED ? 'Entregado' : '---'
