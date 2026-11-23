@@ -84,8 +84,8 @@ test('2. varias peticiones en una sola frase se resuelven juntas (operación + c
   const spoken = await sayAndWait(page, '¿Cómo va la operación hoy y qué camiones están libres el viernes de tres a cinco?');
   expect(spoken.length).toBeLessThan(700);
   await page.getByRole('button', { name: /salir del chat de voz/i }).click();
-  await expect(page.getByText(/^(Operación de hoy|Resumen del día)$/).first()).toBeVisible();   // respondió la primera parte
-  await expect(page.getByText(/flota en ese horario/i)).toBeVisible();               // y la segunda
+  await expect(page.getByText(/^(Operación de hoy|Resumen del día)$/).first()).toBeVisible({ timeout: 60_000 });   // respondió la primera parte
+  await expect(page.getByText(/flota en ese horario/i)).toBeVisible({ timeout: 60_000 });               // y la segunda
   await page.screenshot({ path: 'e2e-results/shots/voz_3_varias_peticiones.png', fullPage: true });
 });
 

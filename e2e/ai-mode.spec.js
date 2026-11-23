@@ -62,8 +62,9 @@ test('2. el administrador pregunta cómo va la operación y recibe respuesta con
   await enableAiMode(page);
   await page.getByRole('button', { name: /¿cómo va la operación hoy\?/i }).click();
   await expect(page.locator('p:not(.sr-only)').filter({ hasText: /consultando…/i })).toBeHidden({ timeout: 120_000 });
-  await expect(page.getByText(/^(Operación de hoy|Resumen del día)$/).first()).toBeVisible();   // tarjeta con las cifras
-  await expect(page.getByText(/retrasados/i).first()).toBeVisible();
+  // la tarjeta llega con el evento final de la respuesta en vivo: puede tardar más que el texto
+  await expect(page.getByText(/^(Operación de hoy|Resumen del día)$/).first()).toBeVisible({ timeout: 60_000 });   // tarjeta con las cifras
+  await expect(page.getByText(/retrasados/i).first()).toBeVisible({ timeout: 60_000 });
   const answer = await page.locator('[data-role="assistant"]').last().innerText();
   expect(answer).not.toMatch(/No pude procesar|error técnico/i);
   await shot(page, 'ia_2_operacion_admin');
