@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { Check, CheckCircle2, FileText, ListChecks, Clock, MapPin, Package, ShieldAlert, Truck, User, X, XCircle } from 'lucide-react';
 import apiService from '../../../services/apiService';
@@ -255,8 +256,11 @@ export function ActionProposalCard({ data }) {
     try {
       const res = await apiService.post(`/ai-agent/actions/${action.id}/${verb}`);
       setState({ status: verb === 'confirm' ? 'done' : 'cancelled', message: res?.result?.message, results: res?.result?.data?.results });
+      if (verb === 'confirm') toast.success('Acción ejecutada', { description: res?.result?.message || action.title });
+      else toast('Acción cancelada', { description: action.title });
     } catch (err) {
       setState({ status: 'error', message: err?.message || 'No se pudo completar la acción.' });
+      toast.error('No se pudo completar la acción', { description: err?.message });
     }
   };
 

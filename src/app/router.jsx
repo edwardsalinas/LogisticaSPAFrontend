@@ -26,9 +26,9 @@ function PageLoader() {
   return (
     <div className="min-h-screen bg-surface-50 px-4 py-8 sm:px-6">
       <SectionLoader
-        eyebrow="Cargando modulo"
+        eyebrow="Cargando módulo"
         title="Preparando la vista"
-        description="Estamos montando el modulo solicitado y sus datos operativos."
+        description="Estamos montando el módulo solicitado y sus datos operativos."
         className="min-h-[calc(100vh-4rem)]"
       />
     </div>

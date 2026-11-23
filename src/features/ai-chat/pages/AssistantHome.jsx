@@ -7,6 +7,10 @@ import Skeleton from '../../../components/atoms/Skeleton';
 import Announcer from '../components/Announcer';
 import ConversationHistory, { refreshConversationList } from '../components/ConversationHistory';
 import ChatBubble from '../components/ChatBubble';
+import BlurText from '@/components/BlurText';
+import ShinyText from '@/components/ShinyText';
+import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import useMediaQuery from '@/hooks/useMediaQuery';
 import VoiceMode from '../components/VoiceMode';
 import { useSpeechRecognition, useSpeechSynthesis } from '../useVoice';
 import { prefersReducedMotion, stripForSpeech } from '../voice';
@@ -40,6 +44,7 @@ function AssistantHome() {
   const streaming = messages.length > 0 && !!messages[messages.length - 1].streaming; // ya hay texto en pantalla
   const [input, setInput] = useState('');
   const location = useLocation();
+  const isMobile = useMediaQuery('(max-width: 767px)');
   // Si llegamos desde la paleta de comandos (Ctrl+K), la pregunta queda escrita; el usuario decide si la envía
   useEffect(() => {
     const prefill = location.state?.prefill;
@@ -221,7 +226,10 @@ function AssistantHome() {
           <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-brand-gradient text-white shadow-lg shadow-primary-500/25">
             <Sparkles size={28} aria-hidden="true" />
           </span>
-          <h2 className="mt-6 text-3xl font-bold tracking-tight text-surface-950 sm:text-4xl">{name ? `Hola, ${name}` : 'Hola'}</h2>
+          {/* El texto completo va en un span solo para lectores de pantalla; la animación se apaga con prefers-reduced-motion */}
+          <div role="heading" aria-level={2} className="mt-6 flex justify-center text-3xl font-bold tracking-tight text-surface-950 sm:text-4xl">
+            <BlurText text={name ? `Hola, ${name}` : 'Hola'} animateBy="words" delay={120} stepDuration={0.3} blur={6} distance={16} className="justify-center" />
+          </div>
           <p className="mt-2 text-lg text-surface-600">¿En qué te puedo ayudar hoy?</p>
           <p className="mt-3 max-w-xl text-sm text-surface-500">{introForRole(role)}</p>
 
@@ -263,7 +271,20 @@ function AssistantHome() {
               <RotateCcw size={13} aria-hidden="true" /> Nueva conversación
             </button>
           </div>
-          {showHistory && <ConversationHistory activeId={conversationId} onOpen={openFromHistory} onDeleted={() => { reset([]); setShowHistory(false); }} />}
+          {showHistory && !isMobile && <ConversationHistory activeId={conversationId} onOpen={openFromHistory} onDeleted={() => { reset([]); setShowHistory(false); }} />}
+          {isMobile && (
+            <Drawer open={showHistory} onOpenChange={setShowHistory}>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle>Historial de conversaciones</DrawerTitle>
+                  <DrawerDescription className="sr-only">Elige una conversación anterior para retomarla.</DrawerDescription>
+                </DrawerHeader>
+                <div className="max-h-[65vh] overflow-y-auto px-4 pb-6">
+                  <ConversationHistory activeId={conversationId} onOpen={openFromHistory} onDeleted={() => { reset([]); setShowHistory(false); }} />
+                </div>
+              </DrawerContent>
+            </Drawer>
+          )}
           <Announcer messages={messages} loading={loading} />
           <div className="space-y-5">
             {messages.map((m, i) => (
@@ -273,7 +294,7 @@ function AssistantHome() {
               <div className="flex items-start gap-3">
                 <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Sparkles size={16} className="animate-pulse motion-reduce:animate-none" /></span>
                 <div className="w-72 rounded-[1.35rem] rounded-tl-md border border-surface-100 bg-white px-4 py-4 shadow-sm">
-                  <p className="text-xs font-semibold tracking-[0.04em] text-surface-600">{status || 'Consultando…'}</p>
+                  <p className="text-xs font-semibold tracking-[0.04em]"><ShinyText text={status || 'Consultando…'} color="#475569" shineColor="#1d4ed8" speed={2.4} /></p>
                   <Skeleton className="mt-3 h-3 w-11/12" />
                   <Skeleton className="mt-2 h-3 w-3/5" />
                   {slow && <p className="mt-3 text-xs text-surface-500">Sigo trabajando en tu consulta, puede tardar unos segundos más.</p>}
