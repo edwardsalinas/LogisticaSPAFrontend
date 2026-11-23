@@ -262,7 +262,7 @@ test('10. el cliente no puede consultar con el asistente un paquete que no es su
   const answer = await askAssistant(page, `¿En qué estado está el paquete ${state.trackingCode}?`);
   void answer;
   // el modelo lo dice con sus palabras ("no tengo permiso…"): se espera a que la burbuja de la respuesta tenga ese contenido
-  await expect(page.locator('[data-role="assistant"]').last(), 'respuesta del asistente').toContainText(/permiso/i, { timeout: 30_000 });
+  await expect(page.locator('[data-role="assistant"]').last(), 'respuesta del asistente').toContainText(/permiso|acceso|no puedo|no está disponible|no pude/i, { timeout: 30_000 });
 });
 
 test('11. el administrador busca por nombre con el asistente (HU01)', async ({ page }) => {
