@@ -1,3 +1,5 @@
+import NumberFlow from '@number-flow/react';
+
 const TONES = {
   default: 'text-surface-950',
   success: 'text-emerald-700',
@@ -12,7 +14,7 @@ function StatList({ stats, full }) {
         <div key={s.label} className="min-w-0 sm:pl-6 sm:first:pl-0">
           <dt className="whitespace-nowrap text-xs font-medium text-surface-600">{s.label}</dt>
           <dd className={`font-display text-2xl font-semibold tabular-nums tracking-[-0.03em] ${TONES[s.tone] || TONES.default}`}>
-            {s.value}
+            {typeof s.value === 'number' ? <NumberFlow value={s.value} suffix={s.suffix} locales="es" /> : s.value}
           </dd>
           {s.hint ? <p className="text-xs text-surface-500">{s.hint}</p> : null}
         </div>
@@ -25,7 +27,8 @@ function StatList({ stats, full }) {
  * Cabecera compacta de las pantallas operativas: el título, una línea de contexto y los indicadores clave.
  * Sustituye a los banners con foto: lo importante de la pantalla (tabla, calendario, mapa) queda a la vista sin desplazarse.
  *
- * stats: [{ label, value, hint?, tone? }] con tone en default | success | warning | danger.
+ * stats: [{ label, value, suffix?, hint?, tone? }] con tone en default | success | warning | danger.
+ * Si value es un número se anima al cambiar (number-flow); si es texto ("—", "4,8k") se muestra tal cual.
  * Con pocos indicadores y sin botón van a la derecha del título; con muchos (más de 4) o con botón, en una fila propia debajo.
  * El título es un h2: el h1 de la pantalla es el de la barra superior.
  */

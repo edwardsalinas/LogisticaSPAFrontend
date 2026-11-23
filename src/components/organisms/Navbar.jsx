@@ -1,9 +1,9 @@
-﻿import { LogOut, Sparkles } from 'lucide-react';
+﻿import { LogOut, Search, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../app/AuthContext';
 import { useAiMode } from '../../app/AiModeContext';
 
-function Navbar({ title }) {
+function Navbar({ title, onOpenSearch }) {
   const { logout } = useAuth();
   const { aiMode, toggleAiMode } = useAiMode();
   const navigate = useNavigate();
@@ -17,8 +17,19 @@ function Navbar({ title }) {
   return (
     <header className="fixed left-0 right-0 top-0 z-30 lg:left-[17rem]">
       <div className="mx-3 mt-3 flex min-h-16 items-center justify-between rounded-2xl border border-white/55 bg-white/78 px-4 shadow-[0_20px_45px_-28px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:mx-6 sm:mt-4 sm:h-16 sm:px-5 lg:mx-8">
-        <div className="min-w-0">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <h1 className="truncate text-base font-bold tracking-tight text-surface-900 sm:text-lg">{title}</h1>
+          <button
+            type="button"
+            onClick={onOpenSearch}
+            aria-label="Buscar o ir a (Ctrl+K)"
+            aria-keyshortcuts="Control+K"
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-surface-200 bg-white px-2.5 py-2 text-sm text-surface-600 transition-colors hover:bg-surface-100 sm:px-3"
+          >
+            <Search size={16} strokeWidth={2.2} aria-hidden="true" />
+            <span className="hidden md:inline">Buscar o ir a…</span>
+            <kbd className="hidden rounded border border-surface-200 bg-surface-50 px-1.5 text-xs font-medium text-surface-600 lg:inline">Ctrl K</kbd>
+          </button>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">

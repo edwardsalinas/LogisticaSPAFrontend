@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { BarChart3, FileText, Headphones, History, Mic, RotateCcw, Send, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { useAuth } from '../../../app/AuthContext';
 import useRole from '../../../app/useRole';
@@ -39,6 +39,12 @@ function AssistantHome() {
   const fileRef = useRef(null);
   const streaming = messages.length > 0 && !!messages[messages.length - 1].streaming; // ya hay texto en pantalla
   const [input, setInput] = useState('');
+  const location = useLocation();
+  // Si llegamos desde la paleta de comandos (Ctrl+K), la pregunta queda escrita; el usuario decide si la envía
+  useEffect(() => {
+    const prefill = location.state?.prefill;
+    if (typeof prefill === 'string' && prefill) setInput(prefill);
+  }, [location.state]);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [speakReplies, setSpeakReplies] = useState(readSpeakPref);
   const synth = useSpeechSynthesis();

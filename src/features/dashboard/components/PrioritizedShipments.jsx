@@ -41,11 +41,11 @@ export default function PrioritizedShipments() {
 
   if (isLoading) return <div className="p-8 text-center">Cargando despachos...</div>;
   return (
-    <article className="overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/85 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.32)] backdrop-blur-xl">
+    <article className="overflow-hidden rounded-2xl border border-surface-200 bg-white shadow-sm">
       <div className="flex flex-col gap-4 border-b border-surface-100 px-6 py-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-500">Despachos prioritarios</p>
-          <h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Lectura rápida de lo que requiere seguimiento hoy.</h2>
+          <h2 className="font-display text-xl font-semibold tracking-[-0.03em] text-surface-950">Despachos prioritarios</h2>
+          <p className="mt-1 text-sm text-surface-600">Lo que requiere seguimiento hoy.</p>
         </div>
         <button className="inline-flex items-center gap-2 text-sm font-semibold text-primary-700 transition-colors hover:text-primary-800">
           Ver operación completa<MoveRight size={16} strokeWidth={2.2} />

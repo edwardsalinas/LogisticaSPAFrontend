@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import AiAssistantPanel from '../../features/ai-chat/components/AiAssistantPanel';
+import CommandPalette from '../organisms/CommandPalette';
 import Navbar from '../organisms/Navbar';
 import Sidebar, { getNavItems } from '../organisms/Sidebar';
 import { useAiMode } from '../../app/AiModeContext';
@@ -26,6 +27,7 @@ function DashboardLayout() {
   const onAssistantPage = location.pathname === '/assistant' || (location.pathname === '/' && aiMode);
   const title = onAssistantPage ? 'Asistente' : pageTitles[location.pathname] || 'LogisticaSPA';
   const [isAiOpen, setIsAiOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const showFloatingAssistant = !onAssistantPage;
   const aiPanelId = 'ai-assistant-panel';
 
@@ -33,12 +35,25 @@ function DashboardLayout() {
     setIsAiOpen(false);
   }, [location.pathname]);
 
+  // Ctrl+K (o Cmd+K) abre la paleta de comandos desde cualquier pantalla
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen((open) => !open);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   return (
     <div className="app-shell flex min-h-screen bg-[radial-gradient(circle_at_top,rgba(19,127,236,0.08),transparent_34%),linear-gradient(180deg,#f5f8fc_0%,#eef3f9_100%)]">
       <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col lg:pl-[17rem]">
-        <Navbar title={title} />
+        <Navbar title={title} onOpenSearch={() => setPaletteOpen(true)} />
         <main id="main-content" tabIndex={-1} className="flex-1 px-4 pb-28 pt-24 outline-none sm:px-6 sm:pb-8 lg:px-8 lg:pb-20">
           <div className="motion-fade-up">
             <Outlet />

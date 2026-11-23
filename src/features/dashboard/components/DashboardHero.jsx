@@ -11,7 +11,7 @@ export default function DashboardHero({ stats }) {
       stats={[
         { label: 'Carga de hoy', value: orDash(stats?.packagesToday ?? 0) },
         { label: 'En curso', value: orDash(stats?.activeRoutes ?? 0) },
-        { label: 'A tiempo', value: orDash(stats?.sla, (v) => `${v}%`), tone: 'success' },
+        { label: 'A tiempo', value: orDash(stats?.sla), suffix: '%', tone: 'success' },
         { label: 'Flota activa', value: orDash(stats?.totalVehicles ?? 0), hint: 'vehículos' },
         { label: 'Conductores', value: orDash(stats?.totalDrivers ?? 0) },
         { label: 'Km recorridos', value: orDash(stats?.totalDistance, (v) => `${v.toLocaleString()}k`) },

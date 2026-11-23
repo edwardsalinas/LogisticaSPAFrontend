@@ -53,20 +53,20 @@ export default function AlertsPanel({ stats }) {
   if (alerts.length === 0) {
     alerts.push({
       title: 'Operación estable',
-      detail: 'No se detectan anomalias criticas en el flujo actual.',
+      detail: 'No se detectan anomalías críticas en el flujo actual.',
       icon: ShieldCheck,
       tone: 'text-slate-700 bg-slate-50 border-slate-100'
     });
   }
 
   return (
-    <article className="rounded-[1.8rem] border border-white/70 bg-white/85 p-6 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.32)] backdrop-blur-xl">
+    <article className="rounded-2xl border border-surface-200 bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-500">Alertas y foco</p>
-          <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Supervisión curada.</h3>
+          <h3 className="font-display text-xl font-semibold tracking-[-0.03em] text-surface-950">Alertas y foco</h3>
+          <p className="mt-1 text-sm text-surface-600">Lo que conviene revisar ahora.</p>
         </div>
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
           <TimerReset size={20} strokeWidth={2.2} />
         </div>
       </div>
@@ -74,13 +74,13 @@ export default function AlertsPanel({ stats }) {
         {alerts.map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.title} className="flex gap-3 rounded-[1.2rem] border border-surface-100 bg-surface-50/80 p-4">
-              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${item.tone}`}>
+            <div key={item.title} className="flex gap-3 rounded-xl border border-surface-200 bg-surface-50 p-4">
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${item.tone}`}>
                 <Icon size={18} strokeWidth={2.2} />
               </div>
               <div>
                 <p className="text-sm font-semibold text-surface-900">{item.title}</p>
-                <p className="mt-1 text-sm leading-relaxed text-surface-500">{item.detail}</p>
+                <p className="mt-1 text-sm leading-relaxed text-surface-600">{item.detail}</p>
               </div>
             </div>
           );
