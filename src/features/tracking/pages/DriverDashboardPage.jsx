@@ -19,6 +19,8 @@ import CheckpointMarker from '../../../components/molecules/CheckpointMarker';
 import OriginDestMarker from '../../../components/molecules/OriginDestMarker';
 import VehicleMarker from '../../../components/molecules/VehicleMarker';
 import PageHeader from '../../../components/organisms/PageHeader';
+import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import useMediaQuery from '@/hooks/useMediaQuery';
 import apiService from '../../../services/apiService';
 import { PACKAGE_STATUS, isPackageDelivered, isRouteFinished } from '../../../constants/status';
 import { enqueuePoint, countQueued, flushQueue, requestBackgroundSync } from '../../../services/offlineQueue';
@@ -89,6 +91,44 @@ const DashboardCalendar = memo(({ events, onEventClick, renderEventContent }) =>
   />
 ));
 
+// Nota de entrega (opcional) y botones. En el celular va dentro de una hoja inferior; en escritorio, en línea bajo el paquete.
+function DeliveryNoteForm({ pkgId, note, onNote, delivering, onCancel, onConfirm }) {
+  return (
+    <div className="space-y-2 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-3">
+      <label htmlFor={`note-${pkgId}`} className="text-xs font-bold uppercase tracking-widest text-surface-500">
+        Nota de entrega (opcional)
+      </label>
+      <textarea
+        id={`note-${pkgId}`}
+        value={note}
+        onChange={(e) => onNote(e.target.value)}
+        maxLength={500}
+        rows={2}
+        placeholder="Ej: Recibió la señora Mamani"
+        className="w-full rounded-xl border border-surface-200 p-2 text-base md:text-xs"
+      />
+      <div className="flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={delivering}
+          className="min-h-11 px-4 py-2 text-xs font-bold uppercase tracking-widest text-surface-500 md:min-h-0 md:px-3"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={delivering}
+          className="min-h-11 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white active:scale-95 disabled:opacity-60 md:min-h-0 md:px-3.5"
+        >
+          {delivering ? 'Guardando...' : 'Confirmar entrega'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function DriverDashboardPage() {
   const queryClient = useQueryClient();
   const [selectedRouteId, setSelectedRouteId] = useState('');
@@ -105,6 +145,7 @@ function DriverDashboardPage() {
   // --- COLA OFFLINE (puntos GPS sin conexión) ---
   const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
   const [pendingCount, setPendingCount] = useState(0);
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
   // --- REACT QUERY ---
   const { data: activeTrip, isLoading: loadingTrip } = useQuery({
@@ -520,6 +561,8 @@ function DriverDashboardPage() {
 
   if (loading) return <PageSkeleton stats={3} layout="map" />;
 
+  const confirmingPkg = activeRouteData?.packages?.find((p) => p.id === confirmingPkgId);
+
   return (
     <div className="space-y-6 sm:space-y-8">
       <PageHeader
@@ -528,8 +571,36 @@ function DriverDashboardPage() {
         stats={[{ label: 'Estado satelital', value: isActive ? 'Transmitiendo' : 'En pausa', tone: isActive ? 'success' : 'default' }]}
       />
 
+      {isMobile && (
+        <Drawer open={confirmingPkgId != null} onOpenChange={(open) => { if (!open) { setConfirmingPkgId(null); setDeliveryNote(''); } }}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Entregar paquete</DrawerTitle>
+              <DrawerDescription>
+                {confirmingPkg ? `${confirmingPkg.tracking_code} · ${confirmingPkg.destino}` : 'Confirma la entrega y, si quieres, deja una nota.'}
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="space-y-2 px-4 pb-6">
+              {confirmingPkg && (
+                <DeliveryNoteForm
+                  pkgId={confirmingPkg.id}
+                  note={deliveryNote}
+                  onNote={setDeliveryNote}
+                  delivering={deliveringPkgId === confirmingPkg.id}
+                  onCancel={() => { setConfirmingPkgId(null); setDeliveryNote(''); }}
+                  onConfirm={() => handleDeliverPackage(confirmingPkg.id)}
+                />
+              )}
+              {deliverError?.id === confirmingPkgId && (
+                <p role="alert" className="px-2 text-sm font-semibold text-red-600">{deliverError.message}</p>
+              )}
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
+
       {(!isOnline || pendingCount > 0) && (
-        <div role="status" className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+        <div role="status" className="sticky top-[5.25rem] z-20 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 shadow-sm">
           <WifiOff size={18} strokeWidth={2.2} className="shrink-0" />
           <span>
             {isOnline
@@ -604,7 +675,7 @@ function DriverDashboardPage() {
                         {isActive ? (
                           <Button
                             variant="danger"
-                            className="px-4 py-2 h-9 text-xs font-bold uppercase tracking-wider gap-1.5 shadow-none border-none rounded-xl"
+                            className="px-4 py-2 h-11 md:h-9 text-xs font-bold uppercase tracking-wider gap-1.5 shadow-none border-none rounded-xl"
                             onClick={handleStopTrip}
                             disabled={toggling}
                           >
@@ -612,7 +683,7 @@ function DriverDashboardPage() {
                           </Button>
                         ) : (
                           <Button
-                            className={`${(isFinished || !selectedRouteId) ? 'bg-surface-100 text-surface-400' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200/40'} px-4 py-2 h-9 text-xs font-bold uppercase tracking-wider gap-1.5 transition-all active:scale-95 border-none rounded-xl`}
+                            className={`${(isFinished || !selectedRouteId) ? 'bg-surface-100 text-surface-400' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200/40'} px-4 py-2 h-11 md:h-9 text-xs font-bold uppercase tracking-wider gap-1.5 transition-all active:scale-95 border-none rounded-xl`}
                             onClick={handleStartTrip}
                             disabled={toggling || !selectedRouteId || isFinished}
                           >
@@ -662,7 +733,7 @@ function DriverDashboardPage() {
                                 {!isReached && (
                                   <button
                                     onClick={() => handleCheckpointCheck(cp.id)}
-                                    className="text-xs font-bold text-primary-600 hover:text-white hover:bg-primary-600 uppercase tracking-widest px-3 py-1.5 rounded-lg bg-primary-50 active:scale-95 transition-all border border-primary-100/30"
+                                    className="text-xs font-bold text-primary-600 hover:text-white hover:bg-primary-600 uppercase tracking-widest px-4 py-1.5 min-h-11 md:min-h-0 md:px-3 rounded-lg bg-primary-50 active:scale-95 transition-all border border-primary-100/30"
                                   >
                                     Validar
                                   </button>
@@ -698,7 +769,7 @@ function DriverDashboardPage() {
                                   <button
                                     onClick={() => { setConfirmingPkgId(pkg.id); setDeliveryNote(''); setDeliverError(null); }}
                                     disabled={isDelivering}
-                                    className="text-xs font-bold text-emerald-700 hover:text-white hover:bg-emerald-600 uppercase tracking-widest px-3.5 py-2 rounded-xl bg-emerald-50 active:scale-95 transition-all border border-emerald-100/50"
+                                    className="text-xs font-bold text-emerald-700 hover:text-white hover:bg-emerald-600 uppercase tracking-widest px-4 py-2 min-h-11 md:min-h-0 md:px-3.5 rounded-xl bg-emerald-50 active:scale-95 transition-all border border-emerald-100/50"
                                   >
                                     {isDelivering ? '...' : 'Entregar'}
                                   </button>
@@ -709,41 +780,19 @@ function DriverDashboardPage() {
                                 )}
                               </div>
                             </div>
-                            {confirmingPkgId === pkg.id && !isDelivered && (
-                              <div className="mt-2 space-y-2 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-3">
-                                <label htmlFor={`note-${pkg.id}`} className="text-xs font-bold uppercase tracking-widest text-surface-500">
-                                  Nota de entrega (opcional)
-                                </label>
-                                <textarea
-                                  id={`note-${pkg.id}`}
-                                  value={deliveryNote}
-                                  onChange={(e) => setDeliveryNote(e.target.value)}
-                                  maxLength={500}
-                                  rows={2}
-                                  placeholder="Ej: Recibió la señora Mamani"
-                                  className="w-full rounded-xl border border-surface-200 p-2 text-xs"
+                            {confirmingPkgId === pkg.id && !isDelivered && !isMobile && (
+                              <div className="mt-2">
+                                <DeliveryNoteForm
+                                  pkgId={pkg.id}
+                                  note={deliveryNote}
+                                  onNote={setDeliveryNote}
+                                  delivering={isDelivering}
+                                  onCancel={() => { setConfirmingPkgId(null); setDeliveryNote(''); }}
+                                  onConfirm={() => handleDeliverPackage(pkg.id)}
                                 />
-                                <div className="flex justify-end gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => { setConfirmingPkgId(null); setDeliveryNote(''); }}
-                                    disabled={isDelivering}
-                                    className="px-3 py-2 text-xs font-bold uppercase tracking-widest text-surface-500"
-                                  >
-                                    Cancelar
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeliverPackage(pkg.id)}
-                                    disabled={isDelivering}
-                                    className="rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold uppercase tracking-widest text-white active:scale-95 disabled:opacity-60"
-                                  >
-                                    {isDelivering ? 'Guardando...' : 'Confirmar entrega'}
-                                  </button>
-                                </div>
                               </div>
                             )}
-                            {deliverError?.id === pkg.id && (
+                            {deliverError?.id === pkg.id && !isMobile && (
                               <p role="alert" className="mt-1 px-2 text-xs font-semibold text-red-600">{deliverError.message}</p>
                             )}
                             </div>
@@ -760,7 +809,7 @@ function DriverDashboardPage() {
         </div>
 
         <div className="xl:col-span-8">
-          <div className="h-[65vh] min-h-[35rem] overflow-hidden rounded-[2rem] border border-white/60 bg-white p-3 shadow-2xl relative">
+          <div className="h-[65vh] min-h-[35rem] overflow-hidden rounded-[2rem] border border-white/60 bg-white p-3 shadow-2xl relative isolate">
             <DashboardMap
               currentPosition={currentPosition}
               activeRouteData={activeRouteData}
