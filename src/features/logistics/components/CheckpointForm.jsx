@@ -77,7 +77,7 @@ function CheckpointForm({ routeId, checkpoint, nextOrder = 1, onSuccess, onCance
         {...register('name')}
       />
 
-      <LocationPicker register={register} errors={errors} setValue={setValue} lat={lat} lng={lng} onPlace={nameFromPlace} />
+      <LocationPicker title="Ubicación del punto de control" register={register} errors={errors} setValue={setValue} lat={lat} lng={lng} onPlace={nameFromPlace} />
 
       <details className="rounded-xl border border-surface-100 bg-surface-50/60 px-4 py-3">
         <summary className="min-h-6 cursor-pointer text-sm font-semibold text-surface-700">Opciones avanzadas</summary>

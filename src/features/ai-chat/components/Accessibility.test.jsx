@@ -1,4 +1,4 @@
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -123,5 +123,28 @@ describe('Quién habla y qué se anuncia', () => {
     expect(region).toHaveAttribute('aria-live', 'polite');
     expect(region).toHaveAttribute('aria-atomic', 'true');
     expect(region).toHaveClass('sr-only');
+  });
+});
+
+describe('Tablas en las respuestas del asistente', () => {
+  const TABLE = `| Viaje | Paquetes |
+|---|---|
+| Oruro → La Paz | 2 |
+| Sucre | 0 |`;
+
+  it('una tabla markdown se dibuja como tabla accesible, no como texto con barras (regresión)', async () => {
+    render(<MemoryRouter><ChatBubble message={{ role: 'assistant', content: TABLE }} /></MemoryRouter>);
+    const table = await screen.findByRole('table', {}, { timeout: 8000 });
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Viaje', 'Paquetes']);
+    expect(within(table).getByRole('cell', { name: 'Oruro → La Paz' })).toBeInTheDocument();
+    expect(screen.queryByText(/\|---\|/)).not.toBeInTheDocument();
+  });
+
+  it('el HTML dentro de una celda sigue sin ejecutarse', async () => {
+    const { container } = render(<MemoryRouter><ChatBubble message={{ role: 'assistant', content: `| a |
+|---|
+| <img src=x onerror=alert(1)> |` }} /></MemoryRouter>);
+    await screen.findByRole('table', {}, { timeout: 8000 });
+    expect(container.querySelector('img')).toBeNull();
   });
 });

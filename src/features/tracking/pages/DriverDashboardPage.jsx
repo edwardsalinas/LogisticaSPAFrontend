@@ -77,8 +77,13 @@ const DashboardCalendar = memo(({ events, onEventClick, renderEventContent }) =>
     height="100%"
     allDaySlot={false}
     locale="es"
-    slotMinTime="06:00:00"
+    // Las 24 horas del día (antes empezaba a las 06:00 y una salida de madrugada, como las de 04:30, quedaba invisible);
+    // la vista arranca desplazada a las 06:00 para que se vea igual que antes
+    slotMinTime="00:00:00"
     slotMaxTime="24:00:00"
+    scrollTime="06:00:00"
+    // Nombre accesible de los botones de navegación (por defecto salen en inglés y sin texto para lectores de pantalla)
+    buttonHints={{ prev: 'Anterior', next: 'Siguiente', today: 'Ir a hoy', month: 'Vista de mes', week: 'Vista de semana', day: 'Vista de día' }}
     dayMaxEvents={true}
     buttonText={{ today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día' }}
   />

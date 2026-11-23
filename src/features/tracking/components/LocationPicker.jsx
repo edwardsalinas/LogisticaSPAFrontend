@@ -14,7 +14,7 @@ const BTN = 'inline-flex min-h-11 items-center gap-2 rounded-xl border px-4 text
  * Elegir dónde está el paquete sin saber coordenadas: por ciudad, con el GPS del dispositivo o marcando el mapa.
  * Las coordenadas exactas quedan en un apartado avanzado. El valor vive en el formulario (campos lat/lng).
  */
-export default function LocationPicker({ register, errors, setValue, lat, lng, suggestion, onPlace }) {
+export default function LocationPicker({ register, errors, setValue, lat, lng, suggestion, onPlace, title = 'Ubicación del paquete' }) {
   const [cityKey, setCityKey] = useState('');
   const [showMap, setShowMap] = useState(false);
   const [showExact, setShowExact] = useState(false);
@@ -68,7 +68,7 @@ export default function LocationPicker({ register, errors, setValue, lat, lng, s
   return (
     <fieldset className="space-y-3">
       <legend className="mb-1.5 text-sm font-medium text-surface-700">
-        Ubicación del paquete <span className="text-danger" aria-hidden="true">*</span>
+        {title} <span className="text-danger" aria-hidden="true">*</span>
       </legend>
 
       <Select

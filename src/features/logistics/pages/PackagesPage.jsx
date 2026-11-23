@@ -370,9 +370,11 @@ function PackagesPage() {
                             {ship.packages.length}
                          </td>
                          <td className="px-4 py-5 text-right pr-8">
-                            <Button variant="secondary" size="xs" className="h-8 px-4 rounded-xl text-xs font-bold uppercase tracking-tight gap-1.5 border-primary-200 text-primary-700 bg-white hover:bg-primary-600 hover:text-white transition-all shadow-sm disabled:opacity-30 disabled:grayscale disabled:pointer-events-none" disabled={(isPast && activeTab !== 'delivered') || ['completada', 'finalizada', 'completed', 'entregado'].includes(route.status?.toLowerCase())} onClick={(e) => { e.stopPropagation(); handleOpenContextualForm(route); }}>
+                            {!isClient && (
+<Button variant="secondary" size="xs" className="h-8 px-4 rounded-xl text-xs font-bold uppercase tracking-tight gap-1.5 border-primary-200 text-primary-700 bg-white hover:bg-primary-600 hover:text-white transition-all shadow-sm disabled:opacity-30 disabled:grayscale disabled:pointer-events-none" disabled={(isPast && activeTab !== 'delivered') || ['completada', 'finalizada', 'completed', 'entregado'].includes(route.status?.toLowerCase())} onClick={(e) => { e.stopPropagation(); handleOpenContextualForm(route); }}>
                                <PackagePlus size={14} strokeWidth={2.5} /> {['completada', 'finalizada', 'completed', 'entregado'].includes(route.status?.toLowerCase()) ? 'Cerrado' : 'Cargar'}
                             </Button>
+                            )}
                          </td>
                        </tr>
                        
@@ -426,9 +428,12 @@ function PackagesPage() {
            </div>
            
            <div className="rounded-[2.2rem] border border-surface-100 bg-white p-5 shadow-xl shadow-surface-200/20 h-fit max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
-              <Button size="lg" className="w-full h-14 mb-6 gap-3 text-sm font-bold shadow-xl shadow-primary-500/25 rounded-2xl" onClick={() => setShowForm(true)}>
-                <PackagePlus size={20} strokeWidth={2.5} /> Nuevo Registro Global
-              </Button>
+              {/* registrar paquetes es del personal: al cliente el backend se lo rechazaría (403) */}
+              {!isClient && (
+                <Button size="lg" className="w-full h-14 mb-6 gap-3 text-sm font-bold shadow-xl shadow-primary-500/25 rounded-2xl" onClick={() => setShowForm(true)}>
+                  <PackagePlus size={20} strokeWidth={2.5} /> Nuevo Registro Global
+                </Button>
+              )}
 
               <div className="space-y-4">
                 {groupedData.loose?.length > 0 ? (
