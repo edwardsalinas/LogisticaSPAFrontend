@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Boxes, Radar } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -7,8 +7,10 @@ import { z } from 'zod';
 import { useAuth } from '../../../app/AuthContext';
 import Spinner from '../../../components/atoms/Spinner';
 import Captcha, { CAPTCHA_ENABLED } from '../../../components/molecules/Captcha';
-import { heroImages } from '../../../constants/heroImages';
 import apiService from '../../../services/apiService';
+
+// El único efecto de la pantalla (React Bits): carga bajo demanda para no pesar en el paquete principal
+const DotGrid = lazy(() => import('@/components/DotGrid'));
 
 // Esquema de validación del formulario (React Hook Form + Zod)
 const loginSchema = z.object({
@@ -83,34 +85,28 @@ function LoginPage() {
   return (
     <div className="min-h-screen overflow-hidden bg-[#f4f7fb] text-surface-900 relative">
       <main className="grid min-h-screen grid-cols-1 md:grid-cols-2">
-        <section className="relative hidden overflow-hidden md:block">
-          <img
-            src={heroImages.login.url}
-            alt={heroImages.login.alt}
-            className="absolute inset-0 h-full w-full object-cover grayscale-[0.2] brightness-[0.7]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-br from-[#022448]/95 via-[#022448]/85 to-transparent" />
+        <section className="relative hidden overflow-hidden bg-[#06111f] md:block">
+          {/* Cuadrícula de puntos que reacciona al cursor. Respeta prefers-reduced-motion y se pausa con la pestaña oculta */}
+          <div className="absolute inset-0" aria-hidden="true">
+            <Suspense fallback={null}>
+              <DotGrid dotSize={3} gap={26} baseColor="#1d3557" activeColor="#38bdf8" proximity={130} glow={0.35} swell={0.5} stretch={0.3} clickShock={false} />
+            </Suspense>
+          </div>
           <div className="relative z-10 flex h-full flex-col justify-between p-10 lg:p-16">
             <div className="flex items-center justify-between">
-              <div className="inline-flex w-fit items-center gap-3 rounded-full border border-white/15 bg-white/8 px-4 py-2 backdrop-blur-md">
+              <div className="inline-flex w-fit items-center gap-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-400 text-sm font-bold tracking-[0.2em] text-[#022448]">
                   LS
                 </div>
                 <div>
                   <p className="text-sm font-bold text-white">LogisticaSPA</p>
-                  <p className="text-xs uppercase tracking-[0.24em] text-sky-100/60">
-                    Precision Global Logistics
-                  </p>
                 </div>
               </div>
             </div>
 
             <div className="max-w-xl">
-              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.26em] text-sky-100/75">
-                Plataforma empresarial
-              </p>
               <h1 className="max-w-lg text-5xl font-extrabold leading-[0.95] tracking-tight text-white lg:text-6xl">
-                Controla el flujo completo de tu operacion.
+                Controla el flujo completo de tu operación.
               </h1>
               <p className="mt-6 max-w-md text-base leading-relaxed text-white/72">
                 Flota, rutas, entregas y trazabilidad en una sola capa de control
@@ -127,25 +123,24 @@ function LoginPage() {
                 </button>
               </div>
 
-              <div className="mt-10 h-1 w-24 rounded-full bg-sky-300" />
             </div>
 
             <div className="grid max-w-lg grid-cols-3 gap-4">
-              <div className="rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur-sm">
+              <div className="border-l border-white/20 pl-4">
                 <p className="text-2xl font-bold text-white">{stats.efficiency}</p>
-                <p className="mt-1 text-xs uppercase tracking-[0.16em] text-sky-100/70">
+                <p className="mt-1 text-xs text-sky-100/75">
                   Entregas a tiempo
                 </p>
               </div>
-              <div className="rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur-sm">
+              <div className="border-l border-white/20 pl-4">
                 <p className="text-2xl font-bold text-white">{stats.movements}</p>
-                <p className="mt-1 text-xs uppercase tracking-[0.16em] text-sky-100/70">
+                <p className="mt-1 text-xs text-sky-100/75">
                   Movimientos hoy
                 </p>
               </div>
-              <div className="rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur-sm">
+              <div className="border-l border-white/20 pl-4">
                 <p className="text-2xl font-bold text-white">{stats.activeUnits}</p>
-                <p className="mt-1 text-xs uppercase tracking-[0.16em] text-sky-100/70">
+                <p className="mt-1 text-xs text-sky-100/75">
                   Visibilidad
                 </p>
               </div>
@@ -174,7 +169,7 @@ function LoginPage() {
               </h2>
               <p className="mt-3 text-sm leading-relaxed text-surface-500">
                 Ingresa con tus credenciales para acceder al centro de control
-                logistico.
+                logístico.
               </p>
             </header>
 
@@ -260,7 +255,7 @@ function LoginPage() {
             </form>
 
             <div className="mt-8 border-t border-surface-100 pt-6 text-center">
-              <p className="text-xs uppercase tracking-widest text-surface-400 font-bold mb-2">No tienes acceso todavía?</p>
+              <p className="mb-2 text-sm text-surface-600">¿No tienes acceso todavía?</p>
               <button
                 type="button"
                 className="text-sm font-bold text-primary-600 transition-colors hover:text-primary-800"
