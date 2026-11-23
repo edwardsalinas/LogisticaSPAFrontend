@@ -1,12 +1,17 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
   ],
+  resolve: {
+    // Alias @ -> src (lo usan los componentes de shadcn/ui)
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+  },
   build: {
     // Chunk size warning limit
     chunkSizeWarningLimit: 1000,

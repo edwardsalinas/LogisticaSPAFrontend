@@ -2,6 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap');
 
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @theme {
   --color-brand-950: #06111f;
@@ -42,6 +43,40 @@
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
+}
+
+/* shadcn/ui: variables que usan sus componentes, enlazadas a NUESTROS tokens (no reemplazan la paleta existente
+   ni agregan reglas globales: los componentes viejos se ven igual). */
+:root {
+  --background: #ffffff;
+  --foreground: var(--color-surface-900);
+  --popover: #ffffff;
+  --popover-foreground: var(--color-surface-900);
+  --primary: var(--color-primary-600);
+  --primary-foreground: #ffffff;
+  --muted: var(--color-surface-100);
+  --muted-foreground: var(--color-surface-500);
+  --accent: var(--color-surface-100);
+  --accent-foreground: var(--color-surface-900);
+  --border: var(--color-surface-200);
+  --input: var(--color-surface-200);
+  --ring: var(--color-primary-500);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 }
 
 /* Gradiente de marca (botones primarios, logotipo, paginación...): una sola definición */
