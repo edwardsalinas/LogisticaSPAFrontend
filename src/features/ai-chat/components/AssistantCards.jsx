@@ -256,7 +256,8 @@ export function ActionProposalCard({ data }) {
     try {
       const res = await apiService.post(`/ai-agent/actions/${action.id}/${verb}`);
       setState({ status: verb === 'confirm' ? 'done' : 'cancelled', message: res?.result?.message, results: res?.result?.data?.results });
-      if (verb === 'confirm') toast.success('Acción ejecutada', { description: res?.result?.message || action.title });
+      // el detalle ya se ve en la tarjeta: el aviso solo nombra la acción
+      if (verb === 'confirm') toast.success('Acción ejecutada', { description: action.title });
       else toast('Acción cancelada', { description: action.title });
     } catch (err) {
       setState({ status: 'error', message: err?.message || 'No se pudo completar la acción.' });

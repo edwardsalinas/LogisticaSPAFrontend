@@ -96,7 +96,7 @@ test('3. un cliente activa el Modo IA, consulta sus paquetes y ubica uno', async
   // la primera coincidencia es el atajo de la pantalla de inicio (luego aparecen también las filas del historial)
   await clientPage.getByRole('button', { name: /¿qué paquetes tengo\?/i }).first().click();
   await expect(clientPage.locator('p:not(.sr-only)').filter({ hasText: /consultando…/i })).toBeHidden({ timeout: 120_000 });
-  await expect(clientPage.getByRole('button', { name: new RegExp(pkg.tracking_code) })).toBeVisible(); // tarjeta con SU paquete
+  await expect(clientPage.getByRole('button', { name: new RegExp(pkg.tracking_code) })).toBeVisible({ timeout: 60_000 }); // tarjeta con SU paquete (llega con el evento final de la respuesta en vivo)
   await shot(clientPage, 'ia_4_lista_cliente');
 
   // toca el paquete de la tarjeta: el asistente lo ubica y muestra la ficha
