@@ -4,6 +4,9 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './app/App';
 import { API_BASE_URL } from './services/api';
 import { saveMeta } from './services/offlineQueue';
+// Tipografías propias (variables): ya no se piden a Google Fonts, así funcionan sin conexión y no revelan la visita a un tercero
+import '@fontsource-variable/inter';
+import '@fontsource-variable/manrope';
 import './styles/index.css';
 
 async function enableMocking() {

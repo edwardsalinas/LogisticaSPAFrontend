@@ -3,10 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Activity, MapPinned, MoveLeft, PackageCheck, Printer, Route } from 'lucide-react';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
+import PageHeader from '../../../components/organisms/PageHeader';
 import StatCard from '../../../components/molecules/StatCard';
 import MapCanvasFallback from '../../../components/molecules/MapCanvasFallback';
 import PageSkeleton from '../../../components/organisms/PageSkeleton';
-import { heroImages } from '../../../constants/heroImages';
 import apiService from '../../../services/apiService';
 const PackageTrackingMap = lazy(() => import('../components/PackageTrackingMap'));
 
@@ -32,6 +32,13 @@ function PackageMapPage() {
     if (packageId) fetchMapData();
   }, [packageId]);
 
+  // Los hooks van antes de los return anticipados: si no, al terminar de cargar React ve más hooks que antes y la pantalla se rompe
+  const mapRoute = mapData?.route;
+  const routeStatus = useMemo(() => {
+    if (!mapRoute) return { label: 'Sin ruta', variant: 'neutral' };
+    return mapRoute.status === 'active' ? { label: 'En ruta', variant: 'success' } : { label: mapRoute.status, variant: 'info' };
+  }, [mapRoute]);
+
   if (loading) return <PageSkeleton stats={4} layout="map" />;
 
   if (!mapData) {
@@ -49,31 +56,19 @@ function PackageMapPage() {
   const centerLat = checkpoints.length > 0 ? checkpoints.reduce((sum, cp) => sum + cp.lat, 0) / checkpoints.length : -16.5;
   const centerLng = checkpoints.length > 0 ? checkpoints.reduce((sum, cp) => sum + cp.lng, 0) / checkpoints.length : -68.15;
 
-  const routeStatus = useMemo(() => {
-    if (!route) return { label: 'Sin ruta', variant: 'neutral' };
-    return route.status === 'active' ? { label: 'En ruta', variant: 'success' } : { label: route.status, variant: 'info' };
-  }, [route]);
-
   return (
     <div className="space-y-6 sm:space-y-8">
-      <section className="relative overflow-hidden rounded-[1.7rem] border border-white/70 bg-[linear-gradient(135deg,#06111f_0%,#0b1d34_35%,#f8fbff_100%)] p-6 shadow-[0_28px_80px_-48px_rgba(2,36,72,0.7)] sm:rounded-[2rem] sm:p-8">
-        <div className="absolute inset-0">
-          <img src={heroImages.packageMap.url} alt={heroImages.packageMap.alt} className="h-full w-full object-cover object-center" />
-          <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(6,17,31,0.94)_0%,rgba(11,29,52,0.84)_38%,rgba(11,29,52,0.34)_100%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.18),transparent_34%)]" />
-        </div>
-        <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.95fr)] lg:items-end">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100/85 backdrop-blur"><Activity size={14} strokeWidth={2.2} />Tracking en mapa</div>
-            <h1 className="mt-5 max-w-3xl font-display text-[clamp(2rem,4.5vw,3.8rem)] font-semibold tracking-[-0.06em] text-white break-all sm:break-normal">{pkg.tracking_code}</h1>
-            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Seguimiento espacial del envío con puntos de control, última posición conocida y lectura activa sobre el mapa.</p>
+      <PageHeader
+        title={pkg.tracking_code}
+        titleClassName="break-all sm:break-normal"
+        description="Seguimiento espacial del envío con puntos de control, última posición conocida y lectura activa sobre el mapa."
+        actions={(
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button variant="secondary" onClick={() => navigate('/tracking')}><MoveLeft size={16} strokeWidth={2.2} />Volver</Button>
+            <Button onClick={() => window.print()}><Printer size={16} strokeWidth={2.2} />Imprimir</Button>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-            <Button variant="secondary" className="border-white/14 bg-white/8 text-white hover:bg-white/14" onClick={() => navigate('/tracking')}><MoveLeft size={16} strokeWidth={2.2} />Volver</Button>
-            <Button size="lg" onClick={() => window.print()}><Printer size={16} strokeWidth={2.2} />Imprimir</Button>
-          </div>
-        </div>
-      </section>
+        )}
+      />
 
       <section className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-4">
         <StatCard label="Origen" value={pkg.origen} icon={MapPinned} caption="Ciudad de salida del paquete." tone="blue" />

@@ -18,14 +18,25 @@ const pageTitles = {
   '/fleet': 'Flota',
   '/ai-chat': 'Asistente IA',
   '/analytics': 'Reportes',
+  '/assistant/usage': 'Uso de la IA',
+  '/driver': 'Mi viaje',
 };
+
+// Pantallas de detalle (p. ej. /logistics/packages/:id): llevan el título de su sección en lugar del genérico
+const detailTitles = [
+  ['/logistics/packages/', 'Paquetes'],
+  ['/logistics/routes/', 'Viajes'],
+  ['/tracking/', 'Tracking'],
+];
+
+const titleFor = (path) => pageTitles[path] || detailTitles.find(([prefix]) => path.startsWith(prefix))?.[1] || 'LogisticaSPA';
 
 function DashboardLayout() {
   const location = useLocation();
   const { aiMode } = useAiMode();
   const { hasRole, role } = useRole();
   const onAssistantPage = location.pathname === '/assistant' || (location.pathname === '/' && aiMode);
-  const title = onAssistantPage ? 'Asistente' : pageTitles[location.pathname] || 'LogisticaSPA';
+  const title = onAssistantPage ? 'Asistente' : titleFor(location.pathname);
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const showFloatingAssistant = !onAssistantPage;

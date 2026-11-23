@@ -18,7 +18,7 @@ import RoutePath from '../../../components/molecules/RoutePath';
 import CheckpointMarker from '../../../components/molecules/CheckpointMarker';
 import OriginDestMarker from '../../../components/molecules/OriginDestMarker';
 import VehicleMarker from '../../../components/molecules/VehicleMarker';
-import { heroImages } from '../../../constants/heroImages';
+import PageHeader from '../../../components/organisms/PageHeader';
 import apiService from '../../../services/apiService';
 import { PACKAGE_STATUS, isPackageDelivered, isRouteFinished } from '../../../constants/status';
 import { enqueuePoint, countQueued, flushQueue, requestBackgroundSync } from '../../../services/offlineQueue';
@@ -522,31 +522,11 @@ function DriverDashboardPage() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <section className="relative overflow-hidden rounded-[1.7rem] border border-white/70 bg-[linear-gradient(135deg,#06111f_0%,#0b1d34_35%,#f8fbff_100%)] p-6 shadow-[0_28px_80px_-48px_rgba(2,36,72,0.7)] sm:rounded-[2rem] sm:p-8">
-        <div className="absolute inset-0">
-          <img src={heroImages.fleet.url} alt="Operación Conductor" className="h-full w-full object-cover object-center" />
-          <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(6,17,31,0.94)_0%,rgba(11,29,52,0.84)_38%,rgba(11,29,52,0.34)_100%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.18),transparent_34%)]" />
-        </div>
-        <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.95fr)] lg:items-end">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-100/85 backdrop-blur">
-              <Truck size={14} strokeWidth={2.2} /> Modo Conduccion
-            </div>
-            <h1 className="mt-5 max-w-3xl font-display text-[clamp(2rem,4.5vw,3.8rem)] font-semibold tracking-[-0.06em] text-white break-all sm:break-normal">Panel Operativo</h1>
-            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">Inicia tu viaje para habilitar el seguimiento GPS y compartir tu ubicación en línea con el centro de control.</p>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-            <div className="rounded-[1.4rem] border border-white/10 bg-white/7 p-4 text-white backdrop-blur-sm">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Estado satelital</p>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="font-display text-2xl font-semibold tracking-[-0.05em]">{isActive ? 'Transmitiendo' : 'En pausa'}</span>
-                {isActive ? <Activity size={18} className="text-emerald-400" strokeWidth={2.2} /> : <Search size={18} className="text-slate-400" strokeWidth={2.2} />}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <PageHeader
+        title="Panel operativo"
+        description="Inicia tu viaje para habilitar el seguimiento GPS y compartir tu ubicación en línea con el centro de control."
+        stats={[{ label: 'Estado satelital', value: isActive ? 'Transmitiendo' : 'En pausa', tone: isActive ? 'success' : 'default' }]}
+      />
 
       {(!isOnline || pendingCount > 0) && (
         <div role="status" className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">

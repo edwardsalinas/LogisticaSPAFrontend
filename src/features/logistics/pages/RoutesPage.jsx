@@ -21,7 +21,6 @@ import RoutePath from '../../../components/molecules/RoutePath';
 import VehicleMarker from '../../../components/molecules/VehicleMarker';
 import OriginDestMarker from '../../../components/molecules/OriginDestMarker';
 import Skeleton from '../../../components/atoms/Skeleton';
-import { heroImages } from '../../../constants/heroImages';
 import apiService from '../../../services/apiService';
 import RoutesHero from '../components/RoutesHero';
 import RouteCard from '../components/RouteCard';

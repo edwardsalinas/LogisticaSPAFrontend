@@ -30,9 +30,10 @@ function StatList({ stats, full }) {
  * stats: [{ label, value, suffix?, hint?, tone? }] con tone en default | success | warning | danger.
  * Si value es un número se anima al cambiar (number-flow); si es texto ("—", "4,8k") se muestra tal cual.
  * Con pocos indicadores y sin botón van a la derecha del título; con muchos (más de 4) o con botón, en una fila propia debajo.
+ * titleAdornment: algo junto al título (p. ej. el estado del paquete). titleClassName: ajustes del título (p. ej. break-all para códigos largos).
  * El título es un h2: el h1 de la pantalla es el de la barra superior.
  */
-function PageHeader({ title, description, stats = [], actions, className = '' }) {
+function PageHeader({ title, titleClassName = '', titleAdornment, description, stats = [], actions, className = '' }) {
   const hasStats = stats.length > 0;
   const inline = hasStats && stats.length <= 4 && !actions;
 
@@ -40,7 +41,10 @@ function PageHeader({ title, description, stats = [], actions, className = '' })
     <section className={`rounded-2xl border border-surface-200 bg-white p-5 shadow-sm sm:p-6 ${className}`}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
         <div className="min-w-0">
-          <h2 className="font-display text-2xl font-semibold tracking-[-0.03em] text-surface-950 sm:text-3xl">{title}</h2>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className={`font-display text-2xl font-semibold tracking-[-0.03em] text-surface-950 sm:text-3xl ${titleClassName}`}>{title}</h2>
+            {titleAdornment}
+          </div>
           {description ? <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-surface-600">{description}</p> : null}
         </div>
         {inline ? <StatList stats={stats} /> : null}

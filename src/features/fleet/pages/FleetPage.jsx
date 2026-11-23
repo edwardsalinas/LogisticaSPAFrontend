@@ -21,7 +21,6 @@ import Pagination from '../../../components/molecules/Pagination';
 import Skeleton from '../../../components/atoms/Skeleton';
 
 import DataTable from '../../../components/organisms/DataTable';
-import { heroImages } from '../../../constants/heroImages';
 import apiService from '../../../services/apiService';
 import FleetHero from '../components/FleetHero';
 import VehicleForm from '../components/VehicleForm';
