@@ -6,6 +6,7 @@ import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
 import Modal from '../../../components/molecules/Modal';
 import DataTable from '../../../components/organisms/DataTable';
+import usePersistentState from '@/hooks/usePersistentState';
 import Skeleton from '../../../components/atoms/Skeleton';
 import PackageDetail from '../components/PackageDetail';
 import PackageForm from '../components/PackageForm';
@@ -31,8 +32,8 @@ function PackagesPage() {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assignPackage, setAssignPackage] = useState(null);
   const [selectedPackage, setSelectedPackage] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('all'); // Handles 'all' vs 'delivered' (Historical)
+  const [searchTerm, setSearchTerm] = usePersistentState('paquetes:busqueda', '');
+  const [activeTab, setActiveTab] = usePersistentState('paquetes:pestana', 'all'); // 'all' o 'delivered' (histórico)
   const [contextualRoute, setContextualRoute] = useState(null);
   const [expandedShipments, setExpandedShipments] = useState(new Set());
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -316,17 +317,17 @@ function PackagesPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-[2.2rem] border border-surface-100 bg-white shadow-xl shadow-surface-200/20">
+          <div className="overflow-x-auto rounded-2xl border border-surface-200 bg-white shadow-sm">
              <table className="w-full border-collapse">
                <thead>
-                 <tr className="bg-surface-50/50 border-b border-surface-100">
-                   <th className="w-14 px-4 py-5"></th>
-                   <th className="px-4 py-5 text-left text-xs font-bold text-surface-500 uppercase tracking-widest">Viaje / Ruta</th>
-                   <th className="px-4 py-5 text-left text-xs font-bold text-surface-500 uppercase tracking-widest text-center">Fecha</th>
-                   <th className="hidden px-4 py-5 text-left text-xs font-bold text-surface-500 uppercase tracking-widest md:table-cell">Responsable</th>
-                   <th className="px-4 py-5 text-center text-xs font-bold text-surface-500 uppercase tracking-widest">Estado</th>
-                   <th className="hidden px-4 py-5 text-center text-xs font-bold text-surface-500 uppercase tracking-widest md:table-cell">Manifiesto</th>
-                   <th className="px-4 py-5 text-right text-xs font-bold text-surface-500 uppercase tracking-widest pr-10">Acciones</th>
+                 <tr className="bg-white border-b border-surface-200">
+                   <th className="w-14 px-4 py-3"></th>
+                   <th className="px-4 py-3 text-left text-xs font-semibold text-surface-600">Viaje / Ruta</th>
+                   <th className="px-4 py-3 text-left text-xs font-semibold text-surface-600 text-center">Fecha</th>
+                   <th className="hidden px-4 py-3 text-left text-xs font-semibold text-surface-600 md:table-cell">Responsable</th>
+                   <th className="px-4 py-3 text-center text-xs font-semibold text-surface-600">Estado</th>
+                   <th className="hidden px-4 py-3 text-center text-xs font-semibold text-surface-600 md:table-cell">Manifiesto</th>
+                   <th className="px-4 py-3 text-right text-xs font-semibold text-surface-600 pr-10">Acciones</th>
                  </tr>
                </thead>
                <tbody className="divide-y divide-surface-100">

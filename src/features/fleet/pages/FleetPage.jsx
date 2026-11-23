@@ -21,6 +21,7 @@ import Pagination from '../../../components/molecules/Pagination';
 import Skeleton from '../../../components/atoms/Skeleton';
 
 import DataTable from '../../../components/organisms/DataTable';
+import usePersistentState from '@/hooks/usePersistentState';
 import apiService from '../../../services/apiService';
 import FleetHero from '../components/FleetHero';
 import VehicleForm from '../components/VehicleForm';
@@ -49,8 +50,8 @@ const vehicleTypeLabel = {
 };
 
 function FleetPage() {
-  const [activeTab, setActiveTab] = useState('vehicles');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = usePersistentState('flota:pestana', 'vehicles');
+  const [searchTerm, setSearchTerm] = usePersistentState('flota:busqueda', '');
   const [showVehicleForm, setShowVehicleForm] = useState(false);
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
@@ -81,6 +82,13 @@ function FleetPage() {
   const maintenanceVehicles = vehicles.filter((v) => MAINTENANCE_STATUSES.includes(v.status)).length;
   const availability = Math.round((activeVehicles / vehicles.length) * 100) || 0;
 
+  // Si el modelo ya empieza con la marca ("Volvo FH16" con marca "Volvo") no se repite la marca
+  const vehicleName = (v) => {
+    const brand = (v.brand || '').trim();
+    const model = (v.model || '').trim();
+    return brand && model.toLowerCase().startsWith(brand.toLowerCase()) ? model : `${brand} ${model}`.trim();
+  };
+
   const vehicleColumns = [
     {
       key: 'vehicle',
@@ -91,20 +99,20 @@ function FleetPage() {
             <Truck size={18} strokeWidth={2.1} />
           </div>
           <div>
-            <p className="font-semibold text-surface-900">{row.brand} {row.model}</p>
+            <p className="font-semibold text-surface-900">{vehicleName(row)}</p>
             <p className="text-xs uppercase tracking-[0.18em] text-surface-500">{vehicleTypeLabel[row.type] || row.type}</p>
           </div>
         </div>
       ),
     },
-    { key: 'plate', label: 'Placa', render: (_, row) => <span>{row.plate_number || row.plate || '—'}</span> },
-    { key: 'capacity_kg', label: 'Capacidad', render: (val) => <span>{Intl.NumberFormat('es-BO').format(val)} kg</span> },
+    { key: 'plate', label: 'Placa', nowrap: true, render: (_, row) => <span>{row.plate_number || row.plate || '—'}</span> },
+    { key: 'capacity_kg', label: 'Capacidad', nowrap: true, render: (val) => <span>{Intl.NumberFormat('es-BO').format(val)} kg</span> },
     {
       key: 'driver',
       label: 'Conductor',
       render: (val) => val ? <div className="flex items-center gap-2"><Avatar name={val} size="sm" /><span className="text-sm text-surface-700">{val}</span></div> : <span className="text-sm text-surface-500">Sin asignar</span>,
     },
-    { key: 'status', label: 'Estado', render: (val) => <Badge variant={statusMap[val]?.variant || 'neutral'} dot>{statusMap[val]?.label || val}</Badge> },
+    { key: 'status', label: 'Estado', nowrap: true, render: (val) => <Badge variant={statusMap[val]?.variant || 'neutral'} dot>{statusMap[val]?.label || val}</Badge> },
   ];
 
   const driverColumns = [
@@ -113,9 +121,9 @@ function FleetPage() {
       label: 'Conductor',
       render: (_, row) => <div className="flex items-center gap-3"><Avatar name={row.full_name} size="md" /><div><p className="font-semibold text-surface-900">{row.full_name}</p><p className="text-xs text-surface-500">{row.email}</p></div></div>,
     },
-    { key: 'phone', label: 'Teléfono' },
-    { key: 'license_number', label: 'Licencia' },
-    { key: 'status', label: 'Estado', render: (val) => <Badge variant={statusMap[val]?.variant || 'neutral'} dot>{statusMap[val]?.label || val}</Badge> },
+    { key: 'phone', label: 'Teléfono', nowrap: true },
+    { key: 'license_number', label: 'Licencia', nowrap: true },
+    { key: 'status', label: 'Estado', nowrap: true, render: (val) => <Badge variant={statusMap[val]?.variant || 'neutral'} dot>{statusMap[val]?.label || val}</Badge> },
   ];
 
   return (
@@ -126,23 +134,22 @@ function FleetPage() {
         <FleetHero vehiclesCount={vehicles.length} driversCount={drivers.length} availability={availability} maintenanceCount={maintenanceVehicles} />
       )}
 
-      <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.82fr)]">
+      <section className="grid grid-cols-1 gap-6 2xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.82fr)]">
         <div className="rounded-[1.8rem] border border-white/70 bg-white/88 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
           <div className="flex flex-col gap-4 border-b border-surface-100 p-6 2xl:flex-row 2xl:items-center 2xl:justify-between">
-            <div><p className="text-xs uppercase tracking-[0.24em] text-surface-500">Centro de datos</p><h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Vehículos y conductores</h2></div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <div className="rounded-2xl bg-surface-100 p-1 flex"><button onClick={() => { setActiveTab('vehicles'); setCurrentPage(1); }} className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all sm:flex-none ${activeTab === 'vehicles' ? 'bg-white text-primary-700 shadow-sm' : 'text-surface-500'}`}>Vehículos</button><button onClick={() => { setActiveTab('drivers'); setCurrentPage(1); }} className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all sm:flex-none ${activeTab === 'drivers' ? 'bg-white text-primary-700 shadow-sm' : 'text-surface-500'}`}>Conductores</button></div>
               <div className="w-full sm:w-72"><SearchInput value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder={`Buscar ${activeTab === 'vehicles' ? 'vehículo o placa' : 'conductor o licencia'}`} /></div>
               {activeTab === 'vehicles' && <Button size="md" className="w-full sm:w-auto whitespace-nowrap" onClick={() => setShowVehicleForm(true)}>+ Agregar vehículo</Button>}
             </div>
           </div>
           <div className="px-6 pt-5"><p className="text-sm text-surface-500">Mostrando {activeTab === 'vehicles' ? filteredVehicles.length : filteredDrivers.length} registros en la vista actual.</p></div>
-          {activeTab === 'vehicles' ? <><DataTable columns={vehicleColumns} data={paginatedVehicles} loading={loading} /><div className="border-t border-surface-100 p-6"><Pagination currentPage={currentPage} totalPages={totalPagesVehicles} totalItems={filteredVehicles.length} itemsPerPage={itemsPerPage} onPageChange={setCurrentPage} /></div></> : <><DataTable columns={driverColumns} data={paginatedDrivers} loading={loading} /><div className="border-t border-surface-100 p-6"><Pagination currentPage={currentPage} totalPages={totalPagesDrivers} totalItems={filteredDrivers.length} itemsPerPage={itemsPerPage} onPageChange={setCurrentPage} /></div></>}
+          {activeTab === 'vehicles' ? <><DataTable maxHeight="32rem" columns={vehicleColumns} data={paginatedVehicles} loading={loading} /><div className="border-t border-surface-100 p-6"><Pagination currentPage={currentPage} totalPages={totalPagesVehicles} totalItems={filteredVehicles.length} itemsPerPage={itemsPerPage} onPageChange={setCurrentPage} /></div></> : <><DataTable maxHeight="32rem" columns={driverColumns} data={paginatedDrivers} loading={loading} /><div className="border-t border-surface-100 p-6"><Pagination currentPage={currentPage} totalPages={totalPagesDrivers} totalItems={filteredDrivers.length} itemsPerPage={itemsPerPage} onPageChange={setCurrentPage} /></div></>}
         </div>
 
         <aside className="space-y-5">
           <div className="rounded-[1.6rem] border border-white/70 bg-white/88 p-6 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
-            <p className="text-xs uppercase tracking-[0.24em] text-surface-500">Resumen de la flota</p>
+            <h3 className="text-base font-semibold text-surface-900">Resumen de la flota</h3>
             <div className="mt-5 space-y-3">
               {[
                 { label: 'Vehículos registrados', value: vehicles.length },
@@ -158,7 +165,7 @@ function FleetPage() {
             </div>
           </div>
           <div className="rounded-[1.6rem] border border-sky-100 bg-sky-50 p-6">
-            <p className="text-xs uppercase tracking-[0.24em] text-sky-700">Alta de conductores</p>
+            <h3 className="text-base font-semibold text-sky-900">Alta de conductores</h3>
             <p className="mt-2 text-sm leading-relaxed text-surface-600">Los conductores se registran como usuarios con rol <strong>driver</strong> en Supabase Auth y sus datos se sincronizan automaticamente con la flota.</p>
           </div>
         </aside>

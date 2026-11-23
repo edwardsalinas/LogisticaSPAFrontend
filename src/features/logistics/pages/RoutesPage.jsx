@@ -11,6 +11,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
+import usePersistentState from '@/hooks/usePersistentState';
 import SearchInput from '../../../components/atoms/SearchInput';
 import BaseMap from '../../../components/molecules/BaseMap';
 import CheckpointMarker from '../../../components/molecules/CheckpointMarker';
@@ -138,12 +139,12 @@ function RoutesPage() {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assigningRoute, setAssigningRoute] = useState(null);
   const [selectedRoute, setSelectedRoute] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('calendar');
-  const [selectedDriverId, setSelectedDriverId] = useState('');
-  const [selectedOrigin, setSelectedOrigin] = useState('');
-  const [selectedDestination, setSelectedDestination] = useState('');
-  const [selectedTripType, setSelectedTripType] = useState('');
+  const [searchTerm, setSearchTerm] = usePersistentState('viajes:busqueda', '');
+  const [viewMode, setViewMode] = usePersistentState('viajes:vista', 'calendar');
+  const [selectedDriverId, setSelectedDriverId] = usePersistentState('viajes:conductor', '');
+  const [selectedOrigin, setSelectedOrigin] = usePersistentState('viajes:origen', '');
+  const [selectedDestination, setSelectedDestination] = usePersistentState('viajes:destino', '');
+  const [selectedTripType, setSelectedTripType] = usePersistentState('viajes:tipo', '');
   const [clickTimeout, setClickTimeout] = useState(null);
   const prevPackagesState = useRef({});
 

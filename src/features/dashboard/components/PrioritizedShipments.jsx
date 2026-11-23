@@ -52,15 +52,15 @@ export default function PrioritizedShipments() {
         </button>
       </div>
       <div className="overflow-x-auto px-2 pb-2 sm:px-4 sm:pb-4">
-        <table className="w-full border-separate border-spacing-y-3">
+        <table className="w-full border-collapse tabular-nums">
           <thead>
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">Despacho</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">Destino</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">Operador</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">Estado</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">ETA</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">Progreso</th>
+              <th className="border-b border-surface-200 bg-white px-4 py-3 text-left text-xs font-semibold text-surface-600">Despacho</th>
+              <th className="border-b border-surface-200 bg-white px-4 py-3 text-left text-xs font-semibold text-surface-600">Destino</th>
+              <th className="border-b border-surface-200 bg-white px-4 py-3 text-left text-xs font-semibold text-surface-600">Operador</th>
+              <th className="border-b border-surface-200 bg-white px-4 py-3 text-left text-xs font-semibold text-surface-600">Estado</th>
+              <th className="border-b border-surface-200 bg-white px-4 py-3 text-left text-xs font-semibold text-surface-600">ETA</th>
+              <th className="border-b border-surface-200 bg-white px-4 py-3 text-left text-xs font-semibold text-surface-600">Progreso</th>
             </tr>
           </thead>
           <tbody>
@@ -69,8 +69,8 @@ export default function PrioritizedShipments() {
               const progressTone = shipment.progress === 100 ? 'success' : shipment.progress >= 50 ? 'primary' : 'warning';
               
               return (
-                <tr key={shipment.id} className="rounded-xl bg-surface-50/75 shadow-sm">
-                  <td className="rounded-l-[1.2rem] px-4 py-4">
+                <tr key={shipment.id} className="border-b border-surface-100 transition-colors last:border-b-0 hover:bg-surface-50/70">
+                  <td className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
                         <Boxes size={18} strokeWidth={2.1} />
@@ -81,8 +81,8 @@ export default function PrioritizedShipments() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-sm text-surface-700">{shipment.destination}</td>
-                  <td className="px-4 py-4">
+                  <td className="px-4 py-3.5 text-sm text-surface-700">{shipment.destination}</td>
+                  <td className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
                       <Avatar name={shipment.operator.name} size="sm" className="ring-2 ring-white" />
                       <div>
@@ -91,11 +91,11 @@ export default function PrioritizedShipments() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-4 py-3.5">
                     <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
                   </td>
-                  <td className="px-4 py-4 text-sm font-medium text-surface-700">{shipment.eta}</td>
-                  <td className="rounded-r-[1.2rem] px-4 py-4">
+                  <td className="px-4 py-3.5 text-sm font-medium text-surface-700">{shipment.eta}</td>
+                  <td className="px-4 py-3.5">
                     <div className="w-36">
                       <ProgressBar value={shipment.progress} size="sm" variant={progressTone} showLabel />
                     </div>
