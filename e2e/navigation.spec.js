@@ -70,6 +70,6 @@ test('el login por la interfaz lleva al panel de cada rol', async ({ page }) => 
   // El único inicio de sesión por la interfaz dentro de las pruebas (global-setup ya inicia uno por rol)
   await loginViaUI(page, 'admin');
   await expect(page.getByText('admin@logistica.bo')).toBeVisible();
-  await page.getByRole('button', { name: /cerrar sesion/i }).click();
+  await page.getByRole('button', { name: /cerrar sesi[oó]n/i }).click();
   await page.waitForURL(/\/login/, { timeout: 10_000 });
 });

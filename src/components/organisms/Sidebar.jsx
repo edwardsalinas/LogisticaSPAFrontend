@@ -14,12 +14,12 @@ import { useAiMode } from '../../app/AiModeContext';
 
 export const navItems = [
   { path: '/', label: 'Dashboard', eyebrow: 'Resumen', icon: LayoutDashboard, roles: ['admin'] },
-  { path: '/driver', label: 'Mi Viaje', eyebrow: 'Operacion', icon: Truck, roles: ['driver'] },
-  { path: '/logistics/packages', label: 'Paquetes', eyebrow: 'Operacion', icon: Package, roles: ['admin', 'logistics_operator', 'client'] },
+  { path: '/driver', label: 'Mi Viaje', eyebrow: 'Operación', icon: Truck, roles: ['driver'] },
+  { path: '/logistics/packages', label: 'Paquetes', eyebrow: 'Operación', icon: Package, roles: ['admin', 'logistics_operator', 'client'] },
   { path: '/logistics/routes', label: 'Viajes', eyebrow: 'Planificación', icon: Map, roles: ['admin', 'logistics_operator'] },
   { path: '/tracking', label: 'Tracking', eyebrow: 'Seguimiento', icon: Crosshair, roles: ['admin', 'logistics_operator', 'client'] },
   { path: '/fleet', label: 'Flota', eyebrow: 'Unidades', icon: Truck, roles: ['admin'] },
-  { path: '/analytics', label: 'Reportes', eyebrow: 'Metricas', icon: BarChart3, roles: ['admin'] },
+  { path: '/analytics', label: 'Reportes', eyebrow: 'Métricas', icon: BarChart3, roles: ['admin'] },
 ];
 
 /**
@@ -49,13 +49,6 @@ function Sidebar() {
             <p className="text-[1.05rem] font-bold tracking-tight text-white">LogisticaSPA</p>
             <p className="text-xs uppercase tracking-[0.28em] text-sky-200/55">Enterprise Control</p>
           </div>
-        </div>
-
-        <div className="mt-5 rounded-2xl border border-white/7 bg-white/[0.03] px-4 py-3">
-          <p className="text-xs uppercase tracking-[0.26em] text-slate-400">Centro de operaciones</p>
-          <p className="mt-2 text-sm leading-relaxed text-slate-200">
-            Monitoreo de flota, rutas y entregas desde una sola interfaz.
-          </p>
         </div>
       </div>
 
@@ -91,7 +84,7 @@ function Sidebar() {
                     <p className={`text-sm font-semibold ${isActive ? 'text-white' : 'text-slate-200'}`}>
                       {item.label}
                     </p>
-                    <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
+                    <p className="text-xs text-slate-400">
                       {item.eyebrow}
                     </p>
                   </div>
@@ -105,7 +98,7 @@ function Sidebar() {
       <div className="space-y-3 border-t border-white/6 pt-4">
 
         <div className="rounded-2xl border border-white/7 bg-white/[0.03] p-3">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Sesion activa</p>
+          <p className="text-xs font-medium text-slate-400">Sesión activa</p>
           <div className="mt-3 flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.08] text-sm font-bold text-white">
               {user?.email?.substring(0, 2) || 'US'}

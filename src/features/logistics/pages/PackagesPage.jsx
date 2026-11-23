@@ -227,12 +227,23 @@ function PackagesPage() {
       {loading ? (
         <Skeleton className="h-[180px] w-full" />
       ) : (
-        <PackagesHero totalPackages={totalPackages} deliveredCount={delivered} transitCount={transitCount} pendingCount={pendingCount} />
+        <PackagesHero
+          totalPackages={totalPackages}
+          deliveredCount={delivered}
+          transitCount={transitCount}
+          pendingCount={pendingCount}
+          actions={!isClient && (
+            // En pantallas medianas el panel "Carga suelta" queda debajo de la tabla: la acción principal sube a la cabecera
+            <Button size="md" className="gap-2 whitespace-nowrap font-bold 2xl:hidden" onClick={() => setShowForm(true)}>
+              <PackagePlus size={18} strokeWidth={2.5} /> Nuevo Registro Global
+            </Button>
+          )}
+        />
       )}
 
-      <section className="flex flex-col xl:flex-row gap-8 items-start">
+      <section className="flex flex-col 2xl:flex-row gap-8 items-start">
         {/* LEFT: UNIFIED SHIPMENT BOARD (70%) */}
-        <div className="flex-1 w-full space-y-4">
+        <div className="flex-1 w-full min-w-0 space-y-4">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-xl shadow-primary-500/20">
@@ -413,7 +424,7 @@ function PackagesPage() {
         </div>
 
         {/* RIGHT: LOOSE CARGO PANEL (30%) */}
-        <aside className="w-full xl:w-[30rem] space-y-5">
+        <aside className="w-full 2xl:w-[26rem] 2xl:shrink-0 space-y-5">
            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-2xl bg-warning-500 text-white flex items-center justify-center shadow-xl shadow-warning-500/20">
@@ -430,7 +441,7 @@ function PackagesPage() {
            <div className="rounded-[2.2rem] border border-surface-100 bg-white p-5 shadow-xl shadow-surface-200/20 h-fit max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
               {/* registrar paquetes es del personal: al cliente el backend se lo rechazaría (403) */}
               {!isClient && (
-                <Button size="lg" className="w-full h-14 mb-6 gap-3 text-sm font-bold shadow-xl shadow-primary-500/25 rounded-2xl" onClick={() => setShowForm(true)}>
+                <Button size="lg" className="max-2xl:hidden w-full h-14 mb-6 gap-3 text-sm font-bold shadow-xl shadow-primary-500/25 rounded-2xl" onClick={() => setShowForm(true)}>
                   <PackagePlus size={20} strokeWidth={2.5} /> Nuevo Registro Global
                 </Button>
               )}

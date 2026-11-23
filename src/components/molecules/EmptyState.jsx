@@ -3,7 +3,7 @@
 function EmptyState({
   eyebrow = 'Sin resultados',
   title = 'No hay informacion disponible',
-  description = 'Todavia no tenemos datos para mostrar en esta seccion.',
+  description = 'Todavía no tenemos datos para mostrar en esta sección.',
   action = null,
   className = '',
 }) {

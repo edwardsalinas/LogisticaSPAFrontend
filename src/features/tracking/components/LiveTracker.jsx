@@ -117,7 +117,7 @@ function LiveTracker({ packageId, routeId }) {
       {position && (
         <VehicleMarker
           position={[position.lat, position.lng]}
-          title="Vehiculo en transito"
+          title="Vehículo en tránsito"
           subtitle={`Actualizado ${new Date().toLocaleTimeString('es-BO')}`}
         />
       )}

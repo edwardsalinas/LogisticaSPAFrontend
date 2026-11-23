@@ -59,7 +59,7 @@ function TrackingHistory({ packageId, className }) {
       </div>
 
       {logs.length === 0 ? (
-        <EmptyState eyebrow="Sin eventos" title="Todavia no hay trazabilidad registrada" description="Cuando el paquete comience a generar eventos, apareceran aqui en orden cronologico." className="min-h-[18rem] border-none bg-surface-50 shadow-none" />
+        <EmptyState eyebrow="Sin eventos" title="Todavía no hay trazabilidad registrada" description="Cuando el paquete comience a generar eventos, apareceran aqui en orden cronologico." className="min-h-[18rem] border-none bg-surface-50 shadow-none" />
       ) : (
         <div className="space-y-4">
           {logs.map((log, idx) => (

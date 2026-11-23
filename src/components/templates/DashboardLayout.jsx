@@ -11,12 +11,12 @@ const pageTitles = {
   '/': 'Dashboard',
   '/dashboard': 'Dashboard',
   '/assistant': 'Asistente',
-  '/logistics/packages': 'Gestion de Paquetes',
-  '/logistics/routes': 'Monitoreo de Rutas',
+  '/logistics/packages': 'Paquetes',
+  '/logistics/routes': 'Viajes',
   '/tracking': 'Trazabilidad',
-  '/fleet': 'Gestion de Flota',
+  '/fleet': 'Flota',
   '/ai-chat': 'Asistente IA',
-  '/analytics': 'Analitica',
+  '/analytics': 'Reportes',
 };
 
 function DashboardLayout() {
@@ -39,7 +39,7 @@ function DashboardLayout() {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col lg:pl-[17rem]">
         <Navbar title={title} />
-        <main id="main-content" tabIndex={-1} className="flex-1 px-4 pb-28 pt-24 outline-none sm:px-6 sm:pb-8 lg:px-8 lg:pb-6">
+        <main id="main-content" tabIndex={-1} className="flex-1 px-4 pb-28 pt-24 outline-none sm:px-6 sm:pb-8 lg:px-8 lg:pb-20">
           <div className="motion-fade-up">
             <Outlet />
           </div>
@@ -85,11 +85,12 @@ function DashboardLayout() {
               aria-label={isAiOpen ? 'Cerrar asistente IA' : 'Abrir asistente IA'}
               aria-expanded={isAiOpen}
               aria-controls={aiPanelId}
+              title={isAiOpen ? 'Cerrar el asistente' : 'Abrir el asistente'}
             >
               <div className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-transform duration-300 ${isAiOpen ? 'bg-sky-400 text-[#06203b] rotate-[10deg]' : 'bg-brand-gradient text-white'}`}>
                 <Sparkles size={18} strokeWidth={2.2} />
               </div>
-              <div className="hidden min-w-0 sm:block">
+              <div className="hidden min-w-0 2xl:block">
                 <p className={`text-xs uppercase tracking-[0.24em] ${isAiOpen ? 'text-sky-100/70' : 'text-surface-500'}`}>
                   Copiloto operativo
                 </p>

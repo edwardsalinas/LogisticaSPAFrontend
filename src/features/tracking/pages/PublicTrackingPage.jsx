@@ -87,7 +87,7 @@ function PublicTrackingPage() {
 
         <section className="text-center mb-16">
            <h1 className="text-4xl lg:text-6xl font-bold text-white tracking-tight mb-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
-              Rastreo de <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-blue-500">Carga Activa</span>
+              Rastreo de <span className="text-sky-400">Carga Activa</span>
            </h1>
            <p className="text-slate-400 max-w-xl mx-auto text-lg font-medium leading-relaxed italic animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
               Ingresa tu código de seguimiento para conocer la ubicación y el estado en tiempo real de tu envío.

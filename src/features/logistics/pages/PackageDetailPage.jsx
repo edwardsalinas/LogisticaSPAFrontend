@@ -169,7 +169,7 @@ function PackageDetailPage() {
       <section className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-3">
         <InfoCard title="Ruta" icon={MapPinned} eyebrow="Trayecto"><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.origen} {' -> '} {pkg.destino}</p><p className="text-surface-500">Movimiento principal configurado para esta entrega.</p></div></InfoCard>
         <InfoCard title="Estado actual" icon={Radar} eyebrow="Monitoreo"><div className="space-y-2 text-sm"><div><Badge variant={status.variant} dot>{status.label}</Badge></div><p className="text-surface-500">La lectura refleja el ultimo estado operativo disponible.</p></div></InfoCard>
-        <InfoCard title="Observacion" icon={Package} eyebrow="Descripcion"><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.description || 'Sin descripcion adicional'}</p><p className="text-surface-500">Contenido declarado por el equipo de despacho.</p></div></InfoCard>
+        <InfoCard title="Observacion" icon={Package} eyebrow="Descripción"><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.description || 'Sin descripcion adicional'}</p><p className="text-surface-500">Contenido declarado por el equipo de despacho.</p></div></InfoCard>
       </section>
     </div>
   );

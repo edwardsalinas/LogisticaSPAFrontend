@@ -18,7 +18,6 @@ function Navbar({ title }) {
     <header className="fixed left-0 right-0 top-0 z-30 lg:left-[17rem]">
       <div className="mx-3 mt-3 flex min-h-16 items-center justify-between rounded-2xl border border-white/55 bg-white/78 px-4 shadow-[0_20px_45px_-28px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:mx-6 sm:mt-4 sm:h-16 sm:px-5 lg:mx-8">
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.24em] text-surface-500 sm:text-xs">Control logistico</p>
           <h1 className="truncate text-base font-bold tracking-tight text-surface-900 sm:text-lg">{title}</h1>
         </div>
 
@@ -46,10 +45,11 @@ function Navbar({ title }) {
 
           <button
             onClick={logout}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-600 transition-all duration-200 hover:bg-red-50 sm:px-3.5"
+            aria-label="Cerrar sesión"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-surface-200 bg-white px-3 py-2 text-sm font-semibold text-surface-700 transition-all duration-200 hover:bg-surface-100 sm:px-3.5"
           >
             <LogOut size={16} strokeWidth={2.2} />
-            <span className="hidden sm:inline">Cerrar sesion</span>
+            <span className="hidden sm:inline">Cerrar sesión</span>
           </button>
         </div>
       </div>

@@ -12,7 +12,7 @@ export default function LiveMapSummary({ stats }) {
           Flota en la calle ahora
         </h3>
         <p className="mt-3 max-w-sm text-sm leading-relaxed text-slate-300">
-          La interfaz destaca zonas activas, alertas y flujo operativo sin depender solo del mapa tecnico.
+          La interfaz destaca zonas activas, alertas y flujo operativo sin depender solo del mapa técnico.
         </p>
         <div className="mt-8 rounded-[1.5rem] border border-white/10 bg-white/6 p-4 backdrop-blur-sm">
           <div className="grid grid-cols-3 gap-3">

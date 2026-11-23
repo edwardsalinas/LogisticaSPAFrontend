@@ -41,7 +41,7 @@ function RouteMap({ routeId, initialPosition, showControls = false }) {
     return (
       <EmptyState
         eyebrow="Sin puntos de control"
-        title="Todavia no hay puntos de control"
+        title="Todavía no hay puntos de control"
         description="Agrega el primer punto de control para dibujar la ruta y habilitar el seguimiento geoespacial."
         action={showControls ? <Button>+ Agregar primer punto de control</Button> : null}
         className="min-h-[28rem] rounded-none border-none bg-[radial-gradient(circle_at_top,rgba(11,78,162,0.06),transparent_55%)] shadow-none"

@@ -65,7 +65,7 @@ function PackageDetail({ pkg }) {
           <div className="mb-5 flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700"><Package size={18} strokeWidth={2.2} /></div><div><p className="text-xs uppercase tracking-[0.18em] text-surface-500">Ficha del paquete</p><p className="text-sm text-surface-600">Datos base y descripcion operativa.</p></div></div>
           <div className="grid gap-4 md:grid-cols-2">
             <div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Peso</p><p className="mt-2 text-sm font-semibold text-surface-900">{pkg.peso} kg</p></div>
-            <div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Descripcion</p><p className="mt-2 text-sm font-semibold text-surface-900">{pkg.description || 'Sin descripcion'}</p></div>
+            <div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Descripción</p><p className="mt-2 text-sm font-semibold text-surface-900">{pkg.description || 'Sin descripcion'}</p></div>
           </div>
         </div>
 

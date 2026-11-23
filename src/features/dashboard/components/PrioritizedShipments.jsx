@@ -45,10 +45,10 @@ export default function PrioritizedShipments() {
       <div className="flex flex-col gap-4 border-b border-surface-100 px-6 py-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-surface-500">Despachos prioritarios</p>
-          <h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Lectura rapida de lo que requiere seguimiento hoy.</h2>
+          <h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">Lectura rápida de lo que requiere seguimiento hoy.</h2>
         </div>
         <button className="inline-flex items-center gap-2 text-sm font-semibold text-primary-700 transition-colors hover:text-primary-800">
-          Ver operacion completa<MoveRight size={16} strokeWidth={2.2} />
+          Ver operación completa<MoveRight size={16} strokeWidth={2.2} />
         </button>
       </div>
       <div className="overflow-x-auto px-2 pb-2 sm:px-4 sm:pb-4">
