@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, CheckCircle2, Clock, MapPin, Package, ShieldAlert, Truck, User, X, XCircle } from 'lucide-react';
+import { Check, CheckCircle2, ListChecks, Clock, MapPin, Package, ShieldAlert, Truck, User, X, XCircle } from 'lucide-react';
 import apiService from '../../../services/apiService';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
@@ -497,6 +497,114 @@ export function AnalyticsSummaryCard({ data }) {
 }
 
 /** Elige la tarjeta según el tipo de dato. */
+const MAX_PREPARED_AT_ONCE = 5; // el servidor guarda como máximo 5 propuestas pendientes por usuario
+
+/**
+ * Sugerencias de asignación: a qué viaje enviar cada paquete suelto. Es solo una sugerencia: el botón convierte un
+ * grupo en una propuesta (sin llamar al modelo) y esa propuesta se confirma con el botón de siempre.
+ */
+export function AssignmentSuggestionsCard({ data }) {
+  const groups = data.groups ?? [];
+  const unassigned = data.unassigned ?? [];
+  const [prepared, setPrepared] = useState({}); // índice del grupo -> { status: 'working' | 'ready' | 'error', proposal?, message? }
+
+  const prepare = async (index) => {
+    const g = groups[index];
+    setPrepared((p) => ({ ...p, [index]: { status: 'working' } }));
+    try {
+      const res = await apiService.prepareAssignment({ route_ref: g.route_ref, codes: g.packages.map((x) => x.tracking_code) });
+      setPrepared((p) => ({ ...p, [index]: { status: 'ready', proposal: res.data } }));
+    } catch (err) {
+      setPrepared((p) => ({ ...p, [index]: { status: 'error', message: err?.message || 'No se pudo preparar la asignación.' } }));
+    }
+  };
+
+  const pending = groups.map((_, i) => i).filter((i) => !prepared[i] || prepared[i].status === 'error');
+  const prepareAll = async () => {
+    for (const i of pending.slice(0, MAX_PREPARED_AT_ONCE)) {
+      // en serie: así el servidor cuenta bien las propuestas pendientes
+      // eslint-disable-next-line no-await-in-loop
+      await prepare(i);
+    }
+  };
+
+  if (data.total_loose === 0) {
+    return (
+      <Card>
+        <div className="px-4 py-4">
+          <p className="flex items-center gap-2 text-sm font-semibold text-surface-900"><CheckCircle2 size={16} aria-hidden="true" className="text-emerald-600" /> No hay paquetes sueltos</p>
+          <p className="mt-1 text-sm text-surface-600">Todos los paquetes registrados ya tienen viaje.</p>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <div className="border-b border-surface-100 bg-surface-50 px-4 py-3">
+        <p className="flex items-center gap-2 text-sm font-bold text-surface-900"><ListChecks size={16} aria-hidden="true" className="text-primary-600" /> Sugerencia de asignación</p>
+        <p className="mt-0.5 text-xs text-surface-600">
+          {data.assignable} de {data.total_loose} paquetes sueltos se pueden asignar. No se ha asignado nada todavía.
+        </p>
+      </div>
+
+      <ul className="divide-y divide-surface-100">
+        {groups.map((g, i) => {
+          const st = prepared[i];
+          return (
+            <li key={`${g.route_ref}-${i}`} className="px-4 py-3">
+              <p className="text-sm font-semibold text-surface-900">{g.origin} → {g.destination}</p>
+              <p className="text-xs text-surface-600">
+                Sale {formatDateTime(g.departure_time)}
+                {g.vehicle ? ` · ${g.vehicle}` : ''}
+                {g.capacity_unknown ? ' · sin dato de capacidad' : ` · quedan ${g.remaining_kg} kg libres`}
+              </p>
+              <ul className="mt-2 space-y-1">
+                {g.packages.map((p) => (
+                  <li key={p.tracking_code} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="min-w-0 truncate"><span className="font-mono text-xs font-semibold text-surface-900">{p.tracking_code}</span>{p.recipient_name ? <span className="text-surface-600"> · {p.recipient_name}</span> : null}</span>
+                    <span className="shrink-0 text-surface-600">{p.peso} kg</span>
+                  </li>
+                ))}
+              </ul>
+
+              {(!st || st.status === 'error') && (
+                <button type="button" onClick={() => prepare(i)} className="mt-3 min-h-11 rounded-xl border border-primary-200 bg-primary-50 px-4 text-sm font-bold text-primary-700 hover:bg-primary-100">
+                  Preparar asignación ({g.packages.length} {g.packages.length === 1 ? 'paquete' : 'paquetes'}, {g.total_kg} kg)
+                </button>
+              )}
+              {st?.status === 'working' && <p role="status" className="mt-3 text-sm text-surface-600">Preparando…</p>}
+              {st?.status === 'error' && <p role="alert" className="mt-2 text-sm text-red-700">{st.message}</p>}
+              {st?.status === 'ready' && <div className="mt-3"><ActionProposalCard data={st.proposal} /></div>}
+            </li>
+          );
+        })}
+      </ul>
+
+      {groups.length > 1 && pending.length > 1 && (
+        <div className="border-t border-surface-100 px-4 py-3">
+          <button type="button" onClick={prepareAll} className="min-h-11 rounded-xl bg-brand-gradient px-5 text-sm font-bold text-white shadow-sm">
+            Preparar {Math.min(pending.length, MAX_PREPARED_AT_ONCE)} asignaciones
+          </button>
+          {pending.length > MAX_PREPARED_AT_ONCE && <p className="mt-2 text-xs text-surface-600">Máximo {MAX_PREPARED_AT_ONCE} a la vez; el resto, después.</p>}
+        </div>
+      )}
+
+      {unassigned.length > 0 && (
+        <div className="border-t border-surface-100 bg-amber-50/50 px-4 py-3">
+          <p className="text-sm font-semibold text-surface-900">Sin viaje por ahora ({unassigned.length})</p>
+          <ul className="mt-1.5 space-y-1">
+            {unassigned.map((u) => (
+              <li key={u.tracking_code} className="text-sm text-surface-700"><span className="font-mono text-xs font-semibold">{u.tracking_code}</span> — {u.reason}</li>
+            ))}
+          </ul>
+          <Link to="/logistics/routes" className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-primary-700 hover:underline">Revisar o crear viajes →</Link>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export function AttachmentCard({ attachment, onAsk, role }) {
   switch (attachment?.kind) {
     case 'package_tracking': return <PackageTrackingCard data={attachment} canOpenTracking={role !== 'driver'} />;
@@ -509,6 +617,7 @@ export function AttachmentCard({ attachment, onAsk, role }) {
     case 'fleet_availability': return <FleetAvailabilityCard data={attachment} />;
     case 'daily_briefing': return <DailyBriefingCard data={attachment} onAsk={onAsk} />;
     case 'analytics_summary': return <AnalyticsSummaryCard data={attachment} />;
+    case 'assignment_suggestions': return <AssignmentSuggestionsCard data={attachment} />;
     default: return null;
   }
 }

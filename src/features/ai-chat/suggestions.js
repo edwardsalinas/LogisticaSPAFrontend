@@ -1,6 +1,6 @@
 import {
   AlertTriangle, BarChart3, CalendarDays, CheckCircle2, MapPin, Package, PackageCheck, PackagePlus, PenLine,
-  Route, Search, Sunrise, TrendingUp, Truck, Warehouse,
+  ListChecks, Route, Search, Sunrise, TrendingUp, Truck, Warehouse,
 } from 'lucide-react';
 
 /** Preguntas sugeridas según el rol: qué se le puede preguntar al asistente. `icon` es un componente de lucide. */
@@ -28,6 +28,7 @@ const OPERATIONS = [
   { icon: Search, label: 'Buscar por nombre', value: 'Busca el paquete a nombre de ', prefill: true },
   { icon: Route, label: 'Rutas en tránsito', value: '¿Qué rutas están en tránsito ahora?' },
   { icon: CalendarDays, label: 'Viajes con espacio', value: '¿Qué viajes hay el viernes de 3 a 5 de la tarde y cuánto espacio tienen?' },
+  { icon: ListChecks, label: 'Sugerir asignaciones', value: 'Sugiere cómo asignar los paquetes sueltos a los viajes' },
   { icon: PackagePlus, label: 'Crear un paquete', value: 'Crea un paquete de ', prefill: true },
   { icon: PackageCheck, label: 'Entregar varios', value: 'Entrega los paquetes TRK-', prefill: true },
   { icon: PenLine, label: 'Registrar un evento', value: 'Registra que el paquete TRK-', prefill: true },
@@ -46,7 +47,7 @@ export const suggestionsForRole = (role) => {
 export const introForRole = (role) => {
   if (role === 'driver') return 'Pregúntame por tus entregas de hoy, tu próxima ruta o el estado de los paquetes que llevas.';
   if (role === 'admin' || role === 'logistics_operator') {
-    return 'Pregúntame por cualquier paquete, el resumen del día o qué hay que atender. También puedo preparar acciones (crear, asignar a un viaje, registrar un evento, entregar; incluso varios paquetes a la vez) que tú confirmas antes de ejecutarlas.';
+    return 'Pregúntame por cualquier paquete, el resumen del día o qué hay que atender. También puedo preparar acciones (crear, asignar a un viaje, registrar un evento, entregar; incluso varios paquetes a la vez) y sugerir a qué viaje enviar los paquetes sueltos que tú confirmas antes de ejecutarlas.';
   }
   return 'Pregúntame dónde está tu paquete, en qué estado está, quién lo lleva y cuándo llega.';
 };

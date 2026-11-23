@@ -8,6 +8,8 @@ const apiService = {
   getAiConversations: () => api.get('/ai-agent/conversations'),
   getAiConversation: (id) => api.get(`/ai-agent/conversations/${id}`),
   deleteAiConversation: (id) => api.delete(`/ai-agent/conversations/${id}`),
+  // Convierte un grupo de las sugerencias de asignación en una propuesta a confirmar (sin llamar al modelo)
+  prepareAssignment: (body) => api.post('/ai-agent/suggestions/assign', body),
   getAiUsage: (days = 7) => api.get('/ai-agent/usage', { params: { days } }),
   getRoutes: () => api.get('/logistics/routes'),
   getCheckpointsByRoute: (routeId) => api.get(`/logistics/routes/${routeId}/checkpoints`),
