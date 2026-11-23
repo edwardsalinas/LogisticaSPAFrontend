@@ -69,7 +69,7 @@ export default function PrioritizedShipments() {
               const progressTone = shipment.progress === 100 ? 'success' : shipment.progress >= 50 ? 'primary' : 'warning';
               
               return (
-                <tr key={shipment.id} className="rounded-[1.35rem] bg-surface-50/75 shadow-[0_10px_35px_-30px_rgba(15,23,42,0.4)]">
+                <tr key={shipment.id} className="rounded-xl bg-surface-50/75 shadow-sm">
                   <td className="rounded-l-[1.2rem] px-4 py-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">

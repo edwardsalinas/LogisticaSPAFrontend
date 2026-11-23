@@ -25,7 +25,7 @@ function ChatBubble({ message, onAsk, role, showFollowUps = false }) {
   if (message.role === 'user') {
     return (
       <div className="flex justify-end motion-fade-up">
-        <div className="max-w-[85%] rounded-[1.35rem] rounded-br-md bg-brand-gradient px-4 py-3 text-white shadow-sm">
+        <div className="max-w-[85%] rounded-2xl rounded-br-md bg-brand-gradient px-4 py-3 text-white shadow-sm">
           <span className="sr-only">Tú: </span>
           <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
         </div>
@@ -37,7 +37,7 @@ function ChatBubble({ message, onAsk, role, showFollowUps = false }) {
   return (
     <div className="motion-fade-up flex items-start gap-3" data-role="assistant">
       <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600" aria-hidden="true"><Sparkles size={16} /></span>
-      <div className={`min-w-0 max-w-[90%] flex-1 rounded-[1.35rem] rounded-tl-md border px-4 py-3 ${message.isError ? 'border-red-200 bg-red-50 text-red-800' : 'border-surface-100 bg-white text-surface-800 shadow-sm'}`}>
+      <div className={`min-w-0 max-w-[90%] flex-1 rounded-2xl rounded-tl-md border px-4 py-3 ${message.isError ? 'border-red-200 bg-red-50 text-red-800' : 'border-surface-100 bg-white text-surface-800 shadow-sm'}`}>
         <span className="sr-only">Asistente: </span>
         {message.streaming ? (
           // En vivo: texto plano (el markdown a medias, con ** sin cerrar, parpadea); al terminar se da formato

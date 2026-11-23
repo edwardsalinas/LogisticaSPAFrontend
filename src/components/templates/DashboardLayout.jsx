@@ -62,7 +62,7 @@ function DashboardLayout() {
       </div>
 
       <nav className="fixed inset-x-3 bottom-3 z-40 lg:hidden" aria-label="Navegación principal móvil">
-        <div className="mobile-bottom-nav no-scrollbar flex items-center gap-2 overflow-x-auto rounded-[1.6rem] border border-white/70 bg-white/88 px-2 py-2 shadow-[0_24px_50px_-28px_rgba(15,23,42,0.28)] backdrop-blur-2xl">
+        <div className="mobile-bottom-nav no-scrollbar flex items-center gap-2 overflow-x-auto rounded-2xl border border-white/70 bg-white/88 px-2 py-2 shadow-lg backdrop-blur-2xl">
           {getNavItems(aiMode).filter((item) => hasRole(item.roles)).map((item) => {
             const Icon = item.icon;
             return (
@@ -92,7 +92,7 @@ function DashboardLayout() {
             <button
               type="button"
               onClick={() => setIsAiOpen((prev) => !prev)}
-              className={`pointer-events-auto flex items-center gap-3 rounded-[1.5rem] border px-4 py-3 text-left shadow-[0_22px_55px_-24px_rgba(2,36,72,0.35)] backdrop-blur-xl transition-all duration-300 ${
+              className={`pointer-events-auto flex items-center gap-3 rounded-2xl border px-4 py-3 text-left shadow-lg backdrop-blur-xl transition-all duration-300 ${
                 isAiOpen
                   ? 'border-sky-300/70 bg-[#0a2745] text-white'
                   : 'bg-white/90 text-surface-900 border-white/75 hover:-translate-y-0.5 hover:bg-white'

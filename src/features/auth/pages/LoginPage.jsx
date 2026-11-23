@@ -150,9 +150,9 @@ function LoginPage() {
 
         <section className="flex items-center justify-center bg-[#eef3f9] px-6 py-10 sm:px-8 lg:px-16 relative">
 
-          <div className="w-full max-w-[30rem] rounded-[2rem] border border-white/70 bg-white p-8 shadow-[0_28px_80px_-40px_rgba(15,23,42,0.28)] sm:p-10">
+          <div className="w-full max-w-[30rem] rounded-2xl border border-white/70 bg-white p-8 shadow-lg sm:p-10">
             <div className="mb-10 flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-gradient text-sm font-bold tracking-[0.18em] text-white shadow-[0_16px_34px_-20px_rgba(19,127,236,0.8)]">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-gradient text-sm font-bold tracking-[0.18em] text-white shadow-md">
                 LS
               </div>
               <div>
@@ -248,7 +248,7 @@ function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex h-12 w-full items-center justify-center rounded-xl bg-[linear-gradient(135deg,#163d70_0%,#0b4ea2_100%)] text-sm font-bold text-white shadow-[0_20px_40px_-24px_rgba(11,78,162,0.75)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_48px_-24px_rgba(11,78,162,0.85)] disabled:translate-y-0"
+                className="flex h-12 w-full items-center justify-center rounded-xl bg-[linear-gradient(135deg,#163d70_0%,#0b4ea2_100%)] text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:translate-y-0"
               >
                 {loading ? <Spinner size="sm" className="mx-auto" /> : 'Ingresar al panel'}
               </button>

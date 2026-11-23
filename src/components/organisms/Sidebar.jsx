@@ -39,10 +39,10 @@ function Sidebar() {
   const { aiMode } = useAiMode();
   const visibleNavItems = getNavItems(aiMode).filter((item) => hasRole(item.roles));
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[17rem] flex-col border-r border-white/6 bg-[#06111f] p-4 text-white shadow-[20px_0_60px_-40px_rgba(0,0,0,0.9)] lg:flex">
-      <div className="rounded-[1.75rem] border border-white/7 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-5 motion-fade-in">
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[17rem] flex-col border-r border-white/6 bg-[#06111f] p-4 text-white shadow-lg lg:flex">
+      <div className="rounded-2xl border border-white/7 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-5 motion-fade-in">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-gradient text-white shadow-[0_18px_36px_-22px_rgba(19,127,236,0.75)]">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-gradient text-white shadow-md">
             <Truck size={18} strokeWidth={2.2} />
           </div>
           <div>
@@ -64,7 +64,7 @@ function Sidebar() {
               className={({ isActive }) =>
                 `group flex items-center gap-3 rounded-2xl border px-3 py-3 transition-all duration-250 ${
                   isActive
-                    ? 'border-sky-400/30 bg-[linear-gradient(135deg,rgba(19,127,236,0.22),rgba(255,255,255,0.04))] shadow-[0_16px_40px_-28px_rgba(19,127,236,0.85)]'
+                    ? 'border-sky-400/30 bg-[linear-gradient(135deg,rgba(19,127,236,0.22),rgba(255,255,255,0.04))] shadow-sm'
                     : 'border-transparent text-slate-300 hover:-translate-y-0.5 hover:border-white/8 hover:bg-white/[0.04]'
                 }`
               }

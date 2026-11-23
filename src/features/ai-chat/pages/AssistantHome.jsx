@@ -139,7 +139,7 @@ function AssistantHome() {
   // teléfono (antes tres botones de 48 px lo dejaban en ~40 px a 360 px de ancho) y todos los controles son táctiles.
   const toolButton = 'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors disabled:opacity-40';
   const composer = (
-    <div className="rounded-[1.6rem] border border-surface-200 bg-white p-2 shadow-[0_20px_50px_-30px_rgba(15,23,42,0.35)] focus-within:border-primary-600 focus-within:ring-2 focus-within:ring-primary-200">
+    <div className="rounded-2xl border border-surface-200 bg-white p-2 shadow-md focus-within:border-primary-600 focus-within:ring-2 focus-within:ring-primary-200">
       <div className="flex items-end gap-2">
         <textarea
           value={dictation.listening && dictation.interim ? dictation.interim : input}
@@ -293,7 +293,7 @@ function AssistantHome() {
             {loading && !streaming && (
               <div className="flex items-start gap-3">
                 <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Sparkles size={16} className="animate-pulse motion-reduce:animate-none" /></span>
-                <div className="w-72 rounded-[1.35rem] rounded-tl-md border border-surface-100 bg-white px-4 py-4 shadow-sm">
+                <div className="w-72 rounded-2xl rounded-tl-md border border-surface-100 bg-white px-4 py-4 shadow-sm">
                   <p className="text-xs font-semibold tracking-[0.04em]"><ShinyText text={status || 'Consultando…'} color="#475569" shineColor="#1d4ed8" speed={2.4} /></p>
                   <Skeleton className="mt-3 h-3 w-11/12" />
                   <Skeleton className="mt-2 h-3 w-3/5" />

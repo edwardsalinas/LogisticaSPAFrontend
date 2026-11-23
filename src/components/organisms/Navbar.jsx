@@ -16,7 +16,7 @@ function Navbar({ title, onOpenSearch }) {
 
   return (
     <header className="fixed left-0 right-0 top-0 z-30 lg:left-[17rem]">
-      <div className="mx-3 mt-3 flex min-h-16 items-center justify-between rounded-2xl border border-white/55 bg-white/78 px-4 shadow-[0_20px_45px_-28px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:mx-6 sm:mt-4 sm:h-16 sm:px-5 lg:mx-8">
+      <div className="mx-3 mt-3 flex min-h-16 items-center justify-between rounded-2xl border border-white/55 bg-white/78 px-4 shadow-sm backdrop-blur-xl sm:mx-6 sm:mt-4 sm:h-16 sm:px-5 lg:mx-8">
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <h1 className="truncate text-base font-bold tracking-tight text-surface-900 sm:text-lg">{title}</h1>
           <button
