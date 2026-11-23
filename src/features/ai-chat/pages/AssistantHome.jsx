@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart3, Headphones, History, Mic, RotateCcw, Send, Sparkles, Volume2, VolumeX } from 'lucide-react';
+import { BarChart3, FileText, Headphones, History, Mic, RotateCcw, Send, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { useAuth } from '../../../app/AuthContext';
 import useRole from '../../../app/useRole';
 import Skeleton from '../../../components/atoms/Skeleton';
@@ -35,7 +35,8 @@ function AssistantHome() {
   const { user } = useAuth();
   const { role } = useRole();
   const chat = useAssistantChat();
-  const { messages, loading, status, conversationId, send, reset, openConversation } = chat;
+  const { messages, loading, status, conversationId, send, reset, openConversation, readDocument } = chat;
+  const fileRef = useRef(null);
   const streaming = messages.length > 0 && !!messages[messages.length - 1].streaming; // ya hay texto en pantalla
   const [input, setInput] = useState('');
   const [voiceOpen, setVoiceOpen] = useState(false);
@@ -60,6 +61,13 @@ function AssistantHome() {
   const openFromHistory = async (id) => {
     const ok = await openConversation(id);
     if (ok) { setShowHistory(false); setInput(''); }
+  };
+
+  const canReadDocuments = role === 'admin' || role === 'logistics_operator'; // registrar paquetes es del personal
+  const onFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // permite elegir la misma foto otra vez
+    if (file) await readDocument?.(file);
   };
 
   const name = displayName(user);
@@ -157,6 +165,21 @@ function AssistantHome() {
           >
             <Mic size={18} aria-hidden="true" />
           </button>
+        )}
+        {canReadDocuments && (
+          <>
+            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/*" onChange={onFile} className="hidden" aria-label="Elegir la foto de una guía de remisión" tabIndex={-1} />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={loading}
+              aria-label="Adjuntar la foto de una guía de remisión"
+              title="Registrar un paquete desde la foto de una guía de remisión"
+              className={`${toolButton} border-surface-200 bg-white text-surface-600 hover:bg-surface-50`}
+            >
+              <FileText size={18} aria-hidden="true" />
+            </button>
+          </>
         )}
         <button
           type="button"

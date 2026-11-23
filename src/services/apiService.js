@@ -10,6 +10,9 @@ const apiService = {
   deleteAiConversation: (id) => api.delete(`/ai-agent/conversations/${id}`),
   // Convierte un grupo de las sugerencias de asignación en una propuesta a confirmar (sin llamar al modelo)
   prepareAssignment: (body) => api.post('/ai-agent/suggestions/assign', body),
+  // Leer la foto de una guía de remisión (devuelve los campos para revisarlos) y, ya revisados, preparar el registro
+  extractDocument: (body) => api.post('/ai-agent/documents/extract', body, { timeout: 60000 }),
+  proposeFromDocument: (body) => api.post('/ai-agent/documents/propose', body),
   getAiUsage: (days = 7) => api.get('/ai-agent/usage', { params: { days } }),
   getRoutes: () => api.get('/logistics/routes'),
   getCheckpointsByRoute: (routeId) => api.get(`/logistics/routes/${routeId}/checkpoints`),

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, CheckCircle2, ListChecks, Clock, MapPin, Package, ShieldAlert, Truck, User, X, XCircle } from 'lucide-react';
+import { Check, CheckCircle2, FileText, ListChecks, Clock, MapPin, Package, ShieldAlert, Truck, User, X, XCircle } from 'lucide-react';
 import apiService from '../../../services/apiService';
+import { BOLIVIA_CITIES } from '../../../constants/bolivia';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
 
@@ -497,6 +498,109 @@ export function AnalyticsSummaryCard({ data }) {
 }
 
 /** Elige la tarjeta según el tipo de dato. */
+const FIELD_LABELS = { origen: 'Origen', destino: 'Destino', peso: 'Peso (kg)', recipient_name: 'Destinatario' };
+const inputClass = (bad) => `min-h-11 w-full rounded-xl border bg-white px-3 text-sm text-surface-900 outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 disabled:bg-surface-50 disabled:text-surface-600 ${bad ? 'border-red-300' : 'border-surface-200'}`;
+
+// A nivel de módulo a propósito: definido dentro de la tarjeta se recrearía en cada tecla y el campo perdería el foco.
+function DocField({ listId, id, label, required, children }) {
+  return (
+    <div className="min-w-0">
+      <label htmlFor={`${listId}-${id}`} className="text-xs font-semibold text-surface-700">{label}{required && <span aria-hidden="true" className="text-danger"> *</span>}</label>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Datos leídos de la foto de una guía de remisión. La IA solo leyó: aquí la persona revisa y corrige, y recién entonces
+ * se prepara el registro (que se confirma con el botón de siempre). Lo que no se leyó queda marcado para completarlo.
+ */
+export function DocumentExtractionCard({ data }) {
+  const f = data.fields ?? {};
+  const [form, setForm] = useState({
+    origen: f.origen ?? '',
+    destino: f.destino ?? '',
+    peso: f.peso_kg ?? '',
+    recipient_name: f.recipient_name ?? '',
+    recipient_phone: f.recipient_phone ?? '',
+    sender_name: f.sender_name ?? '',
+    sender_phone: f.sender_phone ?? '',
+    description: f.description ?? '',
+  });
+  const [state, setState] = useState({ status: 'editing' }); // editing | working | ready | error
+  const listId = `ciudades-${data.fields?.document_number ?? 'doc'}`;
+
+  const set = (key) => (e) => setForm((p) => ({ ...p, [key]: e.target.value }));
+  const weight = Number(String(form.peso).replace(',', '.'));
+  const problems = {
+    origen: form.origen.trim().length < 3,
+    destino: form.destino.trim().length < 3,
+    peso: !(weight > 0),
+    recipient_name: form.recipient_name.trim().length < 3,
+  };
+  const missing = Object.keys(problems).filter((k) => problems[k]);
+  const locked = state.status === 'working' || state.status === 'ready';
+
+  const prepare = async () => {
+    setState({ status: 'working' });
+    try {
+      const body = { origen: form.origen.trim(), destino: form.destino.trim(), peso: weight, recipient_name: form.recipient_name.trim() };
+      for (const k of ['recipient_phone', 'sender_name', 'sender_phone', 'description']) if (form[k].trim()) body[k] = form[k].trim();
+      const res = await apiService.proposeFromDocument(body);
+      setState({ status: 'ready', proposal: res.data });
+    } catch (err) {
+      setState({ status: 'error', message: err?.message || 'No se pudo preparar el registro.' });
+    }
+  };
+
+  return (
+    <Card>
+      <div className="border-b border-surface-100 bg-surface-50 px-4 py-3">
+        <p className="flex items-center gap-2 text-sm font-bold text-surface-900"><FileText size={16} aria-hidden="true" className="text-primary-600" /> Datos leídos de la guía{f.document_number ? ` N° ${f.document_number}` : ''}</p>
+        <p className="mt-0.5 text-xs text-surface-600">La IA solo leyó la foto. Revisa y corrige los datos; la foto no se guarda.</p>
+      </div>
+
+      {(data.warnings ?? []).length > 0 && (
+        <ul className="space-y-1 border-b border-amber-100 bg-amber-50 px-4 py-3" aria-label="Avisos de la lectura">
+          {data.warnings.map((w) => <li key={w} className="flex gap-2 text-sm text-amber-900"><ShieldAlert size={15} aria-hidden="true" className="mt-0.5 shrink-0" />{w}</li>)}
+        </ul>
+      )}
+
+      <fieldset disabled={locked} className="grid gap-3 p-4 sm:grid-cols-2">
+        <legend className="sr-only">Datos del paquete</legend>
+        <DocField listId={listId} id="origen" label="Origen" required>
+          <input id={`${listId}-origen`} list={`${listId}-cities`} value={form.origen} onChange={set('origen')} aria-invalid={problems.origen} className={inputClass(problems.origen)} autoComplete="off" />
+        </DocField>
+        <DocField listId={listId} id="destino" label="Destino" required>
+          <input id={`${listId}-destino`} list={`${listId}-cities`} value={form.destino} onChange={set('destino')} aria-invalid={problems.destino} className={inputClass(problems.destino)} autoComplete="off" />
+        </DocField>
+        <datalist id={`${listId}-cities`}>{BOLIVIA_CITIES.map((c) => <option key={c.key} value={c.name} />)}</datalist>
+        <DocField listId={listId} id="peso" label="Peso (kg)" required>
+          <input id={`${listId}-peso`} type="number" inputMode="decimal" step="0.1" min="0" value={form.peso} onChange={set('peso')} aria-invalid={problems.peso} className={inputClass(problems.peso)} />
+        </DocField>
+        <DocField listId={listId} id="recipient_name" label="Destinatario" required>
+          <input id={`${listId}-recipient_name`} value={form.recipient_name} onChange={set('recipient_name')} aria-invalid={problems.recipient_name} className={inputClass(problems.recipient_name)} autoComplete="off" />
+        </DocField>
+        <DocField listId={listId} id="recipient_phone" label="Teléfono del destinatario"><input id={`${listId}-recipient_phone`} inputMode="tel" value={form.recipient_phone} onChange={set('recipient_phone')} className={inputClass(false)} /></DocField>
+        <DocField listId={listId} id="sender_name" label="Remitente"><input id={`${listId}-sender_name`} value={form.sender_name} onChange={set('sender_name')} className={inputClass(false)} autoComplete="off" /></DocField>
+        <DocField listId={listId} id="sender_phone" label="Teléfono del remitente"><input id={`${listId}-sender_phone`} inputMode="tel" value={form.sender_phone} onChange={set('sender_phone')} className={inputClass(false)} /></DocField>
+        <DocField listId={listId} id="description" label="Contenido"><input id={`${listId}-description`} value={form.description} onChange={set('description')} className={inputClass(false)} autoComplete="off" /></DocField>
+      </fieldset>
+
+      {state.status !== 'ready' && (
+        <div className="border-t border-surface-100 px-4 py-3">
+          <button type="button" onClick={prepare} disabled={missing.length > 0 || state.status === 'working'} className="min-h-11 rounded-xl bg-brand-gradient px-5 text-sm font-bold text-white shadow-sm disabled:opacity-50">
+            {state.status === 'working' ? 'Preparando…' : 'Preparar registro'}
+          </button>
+          {missing.length > 0 && <p className="mt-2 text-xs text-surface-600">Falta completar: {missing.map((k) => FIELD_LABELS[k].toLowerCase()).join(', ')}.</p>}
+          {state.status === 'error' && <p role="alert" className="mt-2 text-sm text-red-700">{state.message}</p>}
+        </div>
+      )}
+      {state.status === 'ready' && <div className="border-t border-surface-100 p-3"><ActionProposalCard data={state.proposal} /></div>}
+    </Card>
+  );
+}
+
 const MAX_PREPARED_AT_ONCE = 5; // el servidor guarda como máximo 5 propuestas pendientes por usuario
 
 /**
@@ -618,6 +722,7 @@ export function AttachmentCard({ attachment, onAsk, role }) {
     case 'daily_briefing': return <DailyBriefingCard data={attachment} onAsk={onAsk} />;
     case 'analytics_summary': return <AnalyticsSummaryCard data={attachment} />;
     case 'assignment_suggestions': return <AssignmentSuggestionsCard data={attachment} />;
+    case 'document_extraction': return <DocumentExtractionCard data={attachment} />;
     default: return null;
   }
 }

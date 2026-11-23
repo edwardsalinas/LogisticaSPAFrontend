@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useRef, useState } from 'react';
 import apiService from '../../services/apiService';
+import { fileToJpegBase64 } from '../../utils/imageForUpload';
 
 const HISTORY_LIMIT = 16; // el backend acepta como máximo 16 mensajes previos
 export const MAX_MESSAGE_LENGTH = 1000;
@@ -135,6 +136,39 @@ export function useChatState(initialMessages = []) {
     }
   }, []);
 
+  /**
+   * Lee la foto de una guía de remisión: muestra los datos para que la persona los revise (tarjeta editable). Los mensajes
+   * son locales: no se guardan en el historial ni se envían como contexto. Devuelve true si se pudo leer.
+   */
+  const readDocument = useCallback(async (file) => {
+    if (loadingRef.current || !file) return false;
+    loadingRef.current = true;
+    setLoading(true);
+    setStatus('Leyendo la guía…');
+    const push = (m) => setMessages((prev) => [...prev, { id: nextId(), local: true, ...m }]);
+    push({ role: 'user', content: `Foto de la guía de remisión: ${file.name || 'imagen'}` });
+    try {
+      const image = await fileToJpegBase64(file);
+      const res = await apiService.extractDocument({ image: image.base64, mime: image.mime });
+      const data = res?.data ?? {};
+      push({
+        role: 'assistant',
+        content: data.missing?.length ? 'Leí la guía, pero faltan algunos datos. Revísalos y complétalos antes de continuar.' : 'Leí la guía. Revisa los datos y corrígelos si hace falta antes de preparar el registro.',
+        attachments: [{ kind: 'document_extraction', ...data }],
+      });
+      return true;
+    } catch (err) {
+      // el servidor responde en español (foto muy pesada, formato no admitido, sin permiso, saturado…)
+      const content = err?.status && err?.message ? err.message : (err?.message || 'No se pudo leer el documento. Inténtalo con otra foto.');
+      push({ role: 'assistant', content, isError: true });
+      return false;
+    } finally {
+      loadingRef.current = false;
+      setLoading(false);
+      setStatus('');
+    }
+  }, []);
+
   /** Empieza de cero: mensajes nuevos y sin conversación guardada asociada. */
   const reset = useCallback((nextMessages = []) => {
     conversationRef.current = null;
@@ -157,7 +191,7 @@ export function useChatState(initialMessages = []) {
     }
   }, []);
 
-  return { messages, loading, status, conversationId, send, reset, openConversation };
+  return { messages, loading, status, conversationId, send, reset, openConversation, readDocument };
 }
 
 /**

@@ -47,7 +47,7 @@ export const suggestionsForRole = (role) => {
 export const introForRole = (role) => {
   if (role === 'driver') return 'Pregúntame por tus entregas de hoy, tu próxima ruta o el estado de los paquetes que llevas.';
   if (role === 'admin' || role === 'logistics_operator') {
-    return 'Pregúntame por cualquier paquete, el resumen del día o qué hay que atender. También puedo preparar acciones (crear, asignar a un viaje, registrar un evento, entregar; incluso varios paquetes a la vez) y sugerir a qué viaje enviar los paquetes sueltos que tú confirmas antes de ejecutarlas.';
+    return 'Pregúntame por cualquier paquete, el resumen del día o qué hay que atender. También puedo preparar acciones (crear —también desde la foto de una guía de remisión—, asignar a un viaje, registrar un evento, entregar; incluso varios paquetes a la vez) y sugerir a qué viaje enviar los paquetes sueltos que tú confirmas antes de ejecutarlas.';
   }
   return 'Pregúntame dónde está tu paquete, en qué estado está, quién lo lleva y cuándo llega.';
 };
