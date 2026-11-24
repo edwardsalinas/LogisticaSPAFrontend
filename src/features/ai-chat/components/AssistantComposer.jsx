@@ -1,15 +1,10 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FileText, Headphones, Mic, Send, Volume2, VolumeX } from 'lucide-react';
 import VoiceMode from './VoiceMode';
 import { useSpeechRecognition, useSpeechSynthesis } from '../useVoice';
 import { stripForSpeech } from '../voice';
+import { useSpeakPref } from '../speakPref';
 import { MAX_MESSAGE_LENGTH } from '../useAssistantChat';
-
-const SPEAK_KEY = 'logistica:ai-speak-replies';
-
-const readSpeakPref = () => {
-  try { return window.localStorage.getItem(SPEAK_KEY) === '1'; } catch { return false; }
-};
 
 /**
  * Todo lo que hace falta para escribirle al asistente: texto, dictado por micrófono, foto de una guía de remisión,
@@ -20,9 +15,12 @@ export function useAssistantComposer({ chat, role }) {
   const { loading, send, readDocument } = chat;
   const [input, setInput] = useState('');
   const [voiceOpen, setVoiceOpen] = useState(false);
-  const [speakReplies, setSpeakReplies] = useState(readSpeakPref);
+  const [speakReplies, setSpeakReplies] = useSpeakPref(); // compartida con Logi y con la pantalla del Modo IA
   const synth = useSpeechSynthesis();
   const fileRef = useRef(null);
+  // Si el panel ya se cerró cuando llega la respuesta, la lee Logi (no se lee dos veces)
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const canReadDocuments = role === 'admin' || role === 'logistics_operator'; // registrar paquetes es del personal
   const onFile = async (e) => {
@@ -39,7 +37,7 @@ export function useAssistantComposer({ chat, role }) {
     if (!String(text).trim() || busy) return;
     const result = await send(text);
     // con "leer respuestas" activado, la respuesta también se escucha
-    if (speak && result?.ok) voice.speak(stripForSpeech(result.text));
+    if (speak && result?.ok && mounted.current) voice.speak(stripForSpeech(result.text));
   }, [send]);
 
   const submit = async (text = input) => {
@@ -55,7 +53,6 @@ export function useAssistantComposer({ chat, role }) {
     const next = !speakReplies;
     setSpeakReplies(next);
     if (!next) synth.cancel();
-    try { window.localStorage.setItem(SPEAK_KEY, next ? '1' : '0'); } catch { /* sin almacenamiento */ }
   };
 
   const openVoice = () => {

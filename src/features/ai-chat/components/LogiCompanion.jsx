@@ -1,24 +1,32 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 import AssistantAvatar from './AssistantAvatar';
-import { prefersReducedMotion } from '../voice';
+import { prefersReducedMotion, stripForSpeech } from '../voice';
+import { useSpeechSynthesis } from '../useVoice';
+import { useSpeakPref } from '../speakPref';
 
 const WIDTH = 60; // ancho del robot en pantalla (px)
 const MARGIN = 12;
 const SPEED = 70; // px por segundo al caminar
 const GREETING_KEY = 'logi:saludo';
+const MAX_SPOKEN = 600; // caracteres que Logi lee de una respuesta larga
 
 const rand = (min, max) => min + Math.random() * (max - min);
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
 /** Primera frase de una respuesta, sin marcas de formato, para el globo de texto. */
 export const speechFromReply = (text) => {
-  const plain = String(text ?? '')
-    .replace(/[`*_#>|]/g, '')
+  const clean = (line) => line
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/^\s*(?:[-•*]|\d+[.)])\s+/, '')
+    .replace(/[`*_#>|]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
-  if (!plain) return '';
-  const sentence = plain.match(/^.{12,}?[.!?](\s|$)/)?.[0].trim() ?? plain;
+  // la primera línea con contenido (suele ser el título o la frase principal); las viñetas no se mezclan con ella
+  const lines = String(text ?? '').split(/\n+/).map(clean).filter(Boolean);
+  if (!lines.length) return '';
+  const first = lines[0].length >= 12 ? lines[0] : lines.join(' ');
+  const sentence = first.match(/^.{12,}?[.!?](\s|$)/)?.[0].trim() ?? first;
   return sentence.length > 110 ? `${sentence.slice(0, 107).trimEnd()}…` : sentence;
 };
 
@@ -44,6 +52,11 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
   const [speech, setSpeech] = useState('');
   const [waving, setWaving] = useState(false);
   const calm = prefersReducedMotion();
+  const synth = useSpeechSynthesis();
+  const [speakOn, setSpeakOn] = useSpeakPref(); // el mismo interruptor de «Leer las respuestas en voz alta»
+  const speakingRef = useRef(false);
+  speakingRef.current = synth.speaking;
+  const spokenKey = useRef('');
 
   // posición inicial: el rincón derecho, donde estaba el botón
   useLayoutEffect(() => {
@@ -100,7 +113,9 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
     const line = bubbleFor(status, reply);
     setSpeech(line);
     if (!line || status === 'thinking' || status === 'confirm') return undefined; // mientras dure ese estado se queda
-    const t = setTimeout(() => setSpeech(''), 9000);
+    let t;
+    const hide = () => { if (speakingRef.current) t = setTimeout(hide, 3000); else setSpeech(''); }; // no se recoge mientras habla
+    t = setTimeout(hide, 9000);
     return () => clearTimeout(t);
   }, [status, reply, open]);
 
@@ -117,12 +132,31 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
     return () => clearTimeout(t);
   }, [open]);
 
-  const toggle = useCallback(() => { setSpeech(''); onToggle(); }, [onToggle]);
+  // Qué lee en voz alta: el aviso de confirmación tal cual; de una respuesta, su texto limpio (sin formato ni códigos enteros)
+  const textToRead = useCallback(() => {
+    if (status === 'unread') return stripForSpeech(reply).slice(0, MAX_SPOKEN);
+    return stripForSpeech(bubbleFor(status, reply) || speech);
+  }, [status, reply, speech]);
+
+  // Con «leer respuestas» activado, lo que Logi tiene que decir también se escucha (una vez por aviso)
+  useEffect(() => {
+    if (open || !speakOn || !synth.supported || !['unread', 'confirm'].includes(status)) return;
+    const key = `${status}:${status === 'unread' ? reply : ''}`;
+    if (spokenKey.current === key || window.speechSynthesis?.speaking) return; // ya se leyó o hay algo sonando
+    const said = textToRead();
+    if (said) { spokenKey.current = key; synth.speak(said); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo debe reaccionar al aviso nuevo
+  }, [status, reply, open, speakOn]);
+
+  useEffect(() => { if (open) synth.cancel(); }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggle = useCallback(() => { setSpeech(''); synth.cancel(); onToggle(); }, [onToggle, synth]);
   if (open) return null; // abierto, Logi está en el encabezado del chat
 
-  const mood = ['confirm', 'thinking', 'unread'].includes(status) ? status : 'idle';
+  const mood = synth.speaking ? 'talking' : ['confirm', 'thinking', 'unread'].includes(status) ? status : 'idle';
   const nearRight = (pos.x ?? 0) > window.innerWidth / 2;
   const talkingNow = Boolean(speech) && mood === 'idle';
+  const canSpeak = synth.supported && Boolean(speech) && status !== 'thinking';
 
   return (
     <div ref={rootRef} className="pointer-events-none fixed inset-x-0 bottom-24 z-40 h-24 lg:bottom-2">
@@ -133,11 +167,24 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
       >
         {speech && (
           <div
-            aria-hidden="true"
             className={`logi-bubble pointer-events-none absolute bottom-full mb-1 w-max max-w-[15rem] rounded-2xl border border-surface-200 bg-white px-3.5 py-2.5 text-sm font-medium leading-snug text-surface-800 shadow-lg ${nearRight ? 'right-0 rounded-br-md' : 'left-0 rounded-bl-md'}`}
           >
-            {speech}
-            {status === 'thinking' && <span className="ml-1 inline-block animate-pulse motion-reduce:animate-none">···</span>}
+            <span aria-hidden="true">
+              {speech}
+              {status === 'thinking' && <span className="ml-1 inline-block animate-pulse motion-reduce:animate-none">···</span>}
+            </span>
+            {canSpeak && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (synth.speaking) { synth.cancel(); if (speakOn) setSpeakOn(false); } else synth.speak(textToRead());
+                }}
+                className="pointer-events-auto mt-1.5 flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-primary-700 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-500"
+              >
+                {synth.speaking ? <VolumeX size={14} aria-hidden="true" /> : <Volume2 size={14} aria-hidden="true" />}
+                {synth.speaking ? (speakOn ? 'Silenciar a Logi' : 'Detener') : 'Escuchar'}
+              </button>
+            )}
           </div>
         )}
         <button
