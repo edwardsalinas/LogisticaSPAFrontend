@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Mic, Square, Volume2, X } from 'lucide-react';
+import { Maximize2, Mic, Minimize2, Square, Volume2, X } from 'lucide-react';
 import { useSpeechRecognition, useSpeechSynthesis } from '../useVoice';
 import { plainText, stripForSpeech } from '../voice';
 import apiService from '../../../services/apiService';
 import { canGuide, useGuidedRun } from '../guided/GuidedRunProvider';
 import { applyGuidedOutcome } from '../guided/outcome';
+import { detectFormAssist } from '../guided/speechParse';
 import { CONFIRM_PROMPT, isVoiceConfirmable, parseVoiceConfirmation, REPEAT_PROMPT, spokenProposal } from '../guided/voiceConfirm';
 
 const MAX_SILENCES = 2; // tras dos silencios seguidos el modo manos libres se detiene
@@ -24,7 +25,7 @@ const PHASE_TEXT = {
  * «sí, hazlo» (con manos libres): Logi lee el resumen, pregunta, y al oír el «sí» cierra el chat de voz y lo hace en pantalla.
  * Entregar y las acciones masivas siguen exigiendo el clic en "Confirmar". La frase de confirmación es prudente: ver voiceConfirm.js.
  */
-export default function VoiceMode({ chat, onClose }) {
+export default function VoiceMode({ chat, onClose, compact = false, onExpand, onCompact }) {
   const { send, loading, messages } = chat;
   const synth = useSpeechSynthesis();
   const guided = useGuidedRun(); // null fuera del layout: sin Logi no hay confirmación por voz
@@ -45,6 +46,8 @@ export default function VoiceMode({ chat, onClose }) {
   const startRef = useRef(() => {});
   const mountedRef = useRef(true);
   const manualStopRef = useRef(false); // el usuario detuvo la escucha a propósito: no se reinicia sola
+  const listenRef = useRef(null); // una pregunta de Logi espera la respuesta (ayuda por voz): { resolve }
+  const [assisting, setAssisting] = useState(false);
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
   const lastAttachments = lastAssistant?.attachments ?? [];
@@ -101,7 +104,17 @@ export default function VoiceMode({ chat, onClose }) {
     silences.current = 0;
     setNotice(null);
     synth.cancel();
+    if (listenRef.current) { const { resolve } = listenRef.current; listenRef.current = null; resolve(text); return; } // la respuesta a una pregunta de Logi
     if (pendingRef.current) { await answerConfirmationRef.current(text); return; }
+
+    // «Ayúdame a crear un paquete» (sin datos): Logi va a la página y pregunta campo por campo, en vez de enviarlo al modelo
+    const assist = latest.current.guided && handsFreeRef.current ? detectFormAssist(text) : null;
+    if (assist) {
+      setAssisting(true);
+      await latest.current.guided.assist(assist.form, { listen });
+      if (mountedRef.current) setAssisting(false);
+      return;
+    }
     const result = await send(text, { voice: true });
     if (!result) return;
 
@@ -120,12 +133,15 @@ export default function VoiceMode({ chat, onClose }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- synth.* son estables
   }, [send, listenAgain]);
   const answerConfirmationRef = useRef(answerConfirmation);
+  const listenFnRef = useRef(null);
+  const listen = useCallback((signal) => listenFnRef.current(signal), []);
   answerConfirmationRef.current = answerConfirmation;
   const recognitionRef = useRef(null);
 
   const recognition = useSpeechRecognition({
     onFinal: handleUtterance,
     onEnd: (hadText, fatal) => {
+      if (listenRef.current && !hadText) { const { resolve } = listenRef.current; listenRef.current = null; resolve(null); return; } // silencio o error: Logi decide si repite la pregunta
       if (hadText || fatal || !mountedRef.current) return; // con texto lo atiende handleUtterance; un error no se arregla reintentando
       if (manualStopRef.current) { manualStopRef.current = false; return; }
       silences.current += 1;
@@ -135,6 +151,16 @@ export default function VoiceMode({ chat, onClose }) {
   });
   startRef.current = recognition.start;
   recognitionRef.current = recognition;
+  // Escucha UNA respuesta para Logi: texto, o null si hubo silencio o se terminó la ayuda
+  listenFnRef.current = (signal) => new Promise((resolve) => {
+    if (signal?.aborted) { resolve(null); return; }
+    synth.cancel();
+    const finish = (v) => { signal?.removeEventListener('abort', onAbort); resolve(v); };
+    const onAbort = () => { if (listenRef.current) listenRef.current = null; recognition.abort(); resolve(null); };
+    signal?.addEventListener('abort', onAbort, { once: true });
+    listenRef.current = { resolve: finish };
+    if (!recognition.start()) { listenRef.current = null; finish(null); }
+  });
 
   // Al abrir, empieza a escuchar; al cerrar, corta el micrófono y la voz
   useEffect(() => {
@@ -146,6 +172,7 @@ export default function VoiceMode({ chat, onClose }) {
 
   // Diálogo modal de verdad: el foco entra, el resto de la página queda inerte y, al cerrar, el foco vuelve a donde estaba
   useEffect(() => {
+    if (compact) return undefined; // la barra compacta NO es modal: la página sigue usándose
     const previous = document.activeElement;
     const appRoot = document.getElementById('root');
     appRoot?.setAttribute('inert', '');
@@ -154,7 +181,7 @@ export default function VoiceMode({ chat, onClose }) {
       appRoot?.removeAttribute('inert');
       if (previous instanceof HTMLElement && document.contains(previous)) previous.focus();
     };
-  }, []);
+  }, [compact]);
 
   // Tab no sale del diálogo: al llegar al último control vuelve al primero (y al revés con Mayús+Tab)
   const trapTab = (e) => {
@@ -168,7 +195,7 @@ export default function VoiceMode({ chat, onClose }) {
   };
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape' && !document.querySelector('[data-logi-run]')) onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
@@ -186,13 +213,81 @@ export default function VoiceMode({ chat, onClose }) {
   const caption = recognition.listening && recognition.interim ? recognition.interim : null;
   const error = recognition.error;
 
+  // Barra compacta: no tapa la página. Muestra el micrófono, lo que oye y lo último que dijo el asistente
+  if (compact) {
+    const orbColor = phase === 'listening' ? 'bg-sky-500' : phase === 'speaking' ? 'bg-emerald-500' : phase === 'thinking' ? 'bg-violet-500' : 'bg-slate-600';
+    return createPortal(
+      <section
+        aria-label="Chat de voz"
+        data-testid="voice-compact"
+        // por encima de los paneles y cajones (1200-1300); pointer-events:auto porque un cajón de Radix deja inertes los clics fuera de él
+        style={{ pointerEvents: 'auto' }}
+        className="fixed right-3 top-[4.5rem] z-[1360] w-[min(23rem,calc(100vw-1.5rem))] rounded-2xl border border-white/15 bg-slate-900/95 p-3 text-white shadow-2xl backdrop-blur [&_:focus-visible]:outline-sky-300"
+      >
+        <div className="flex items-start gap-3">
+          {recognition.supported ? (
+            <button
+              type="button"
+              onClick={onOrb}
+              aria-label={phase === 'listening' ? 'Dejar de escuchar' : 'Hablar'}
+              className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-4 focus-visible:ring-sky-300/60"
+            >
+              {(phase === 'listening' || phase === 'speaking') && <span aria-hidden="true" className={`absolute inset-0 rounded-full ${phase === 'listening' ? 'bg-sky-400/30' : 'bg-emerald-400/25'} animate-ping motion-reduce:animate-none`} />}
+              <span aria-hidden="true" className={`relative flex h-12 w-12 items-center justify-center rounded-full ${orbColor} ${phase === 'thinking' ? 'animate-pulse motion-reduce:animate-none' : ''}`}>
+                {phase === 'speaking' ? <Volume2 size={22} /> : phase === 'listening' ? <Square size={18} fill="currentColor" /> : <Mic size={22} />}
+              </span>
+            </button>
+          ) : (
+            <p role="alert" className="text-xs text-amber-100">Tu navegador no permite reconocimiento de voz. Usa Chrome o Edge.</p>
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <p data-testid="voice-phase" role="status" className="text-sm font-semibold text-sky-100">{assisting && phase === 'idle' ? 'Logi te está ayudando' : PHASE_TEXT[phase]}</p>
+              <div className="flex shrink-0 gap-1">
+                {onExpand && <button type="button" onClick={onExpand} aria-label="Pantalla completa" title="Pantalla completa" className="flex h-9 w-9 items-center justify-center rounded-lg text-sky-100 hover:bg-white/10"><Maximize2 size={16} aria-hidden="true" /></button>}
+                <button ref={closeRef} type="button" onClick={onClose} aria-label="Salir del chat de voz" className="flex h-9 w-9 items-center justify-center rounded-lg text-sky-100 hover:bg-white/10"><X size={18} aria-hidden="true" /></button>
+              </div>
+            </div>
+            <div className="mt-1 text-sm leading-snug" aria-live="polite">
+              {caption && <p aria-hidden="true" className="font-medium text-white">“{caption}”</p>}
+              {!caption && !pending && !assisting && lastAssistant && !lastAssistant.isError && <p className="line-clamp-3 text-sky-50/90">{plainText(lastAssistant.content)}</p>}
+              {!caption && assisting && <p className="text-sky-50/80">Responde en voz alta; puedes corregir escribiendo en la pantalla.</p>}
+              {error && <p role="alert" className="font-semibold text-amber-200">{error}</p>}
+              {notice && <p className="text-sky-200/80">{notice}</p>}
+            </div>
+          </div>
+        </div>
+        {pending && (
+          <div className="mt-3 rounded-xl border border-amber-300/40 bg-amber-400/10 p-3 text-left">
+            <p className="text-sm font-semibold text-amber-100">{pending.title}</p>
+            <ul className="mt-1 space-y-0.5 text-xs text-amber-50/90">{(pending.lines ?? []).map((line) => <li key={line}>{line}</li>)}</ul>
+            <p className="mt-2 text-xs font-semibold text-amber-100">Di «sí, hazlo» o «cancela».</p>
+            <div className="mt-2 flex gap-2">
+              <button type="button" onClick={() => answerConfirmation('sí')} className="min-h-11 flex-1 rounded-xl bg-emerald-500 px-3 text-sm font-bold text-white hover:bg-emerald-600">Sí, hazlo</button>
+              <button type="button" onClick={() => answerConfirmation('cancela')} className="min-h-11 flex-1 rounded-xl border border-white/30 bg-white/10 px-3 text-sm font-bold text-white hover:bg-white/20">Cancelar</button>
+            </div>
+          </div>
+        )}
+        <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs text-sky-100/90">
+          <input type="checkbox" checked={handsFree} onChange={(e) => setHandsFree(e.target.checked)} className="h-4 w-4 rounded" />
+          Manos libres
+        </label>
+        <p className="mt-1 text-[11px] leading-snug text-sky-200/70">Prueba: «ayúdame a crear un paquete». Chrome procesa el audio en servidores de Google; el asistente solo recibe el texto.</p>
+      </section>,
+      document.body
+    );
+  }
+
   return createPortal(
     <div ref={dialogRef} tabIndex={-1} onKeyDown={trapTab} role="dialog" aria-modal="true" aria-label="Chat de voz" className="[&_:focus-visible]:outline-sky-300 fixed inset-0 z-50 flex flex-col items-center justify-between bg-[radial-gradient(circle_at_top,#133a6b_0%,#06111f_70%)] px-6 py-8 text-white">
       <div className="flex w-full max-w-3xl items-center justify-between">
         <p className="text-xs font-semibold text-sky-200/80">Chat de voz</p>
-        <button ref={closeRef} type="button" onClick={onClose} aria-label="Salir del chat de voz" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 hover:bg-white/20">
-          <X size={20} aria-hidden="true" />
-        </button>
+        <div className="flex gap-2">
+          {onCompact && <button type="button" onClick={onCompact} aria-label="Barra compacta" title="Barra compacta: ver la página mientras hablas" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 hover:bg-white/20"><Minimize2 size={18} aria-hidden="true" /></button>}
+          <button ref={closeRef} type="button" onClick={onClose} aria-label="Salir del chat de voz" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 hover:bg-white/20">
+            <X size={20} aria-hidden="true" />
+          </button>
+        </div>
       </div>
 
       <div className="flex w-full max-w-2xl flex-1 flex-col items-center justify-center gap-8 text-center">

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FileText, Headphones, Mic, Send, Volume2, VolumeX } from 'lucide-react';
 import VoiceMode from './VoiceMode';
+import { voiceDock } from '../voiceDock';
 import { useSpeechRecognition, useSpeechSynthesis } from '../useVoice';
 import { stripForSpeech } from '../voice';
 import { useSpeakPref } from '../speakPref';
@@ -58,7 +59,8 @@ export function useAssistantComposer({ chat, role }) {
   const openVoice = () => {
     dictation.abort();
     synth.cancel();
-    setVoiceOpen(true);
+    if (voiceDock.hasHost()) voiceDock.open(); // el chat de voz vive en el layout (barra compacta)
+    else setVoiceOpen(true);
   };
 
   const onKeyDown = (e) => {

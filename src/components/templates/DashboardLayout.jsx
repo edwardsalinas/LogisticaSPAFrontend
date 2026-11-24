@@ -2,6 +2,8 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import AiAssistantPanel from '../../features/ai-chat/components/AiAssistantPanel';
 import LogiHost from '../../features/ai-chat/components/LogiHost';
+import VoiceHost from '../../features/ai-chat/components/VoiceHost';
+import { useVoiceDock } from '../../features/ai-chat/voiceDock';
 import { GuidedRunProvider } from '../../features/ai-chat/guided/GuidedRunProvider';
 import CommandPalette from '../organisms/CommandPalette';
 import Navbar from '../organisms/Navbar';
@@ -56,6 +58,9 @@ function DashboardLayout() {
   const aiPanelId = 'ai-assistant-panel';
   // Cuando Logi va a hacer una acción a la vista de todos, el panel se cierra para dejar el escenario libre
   const closePanelForLogi = useCallback(() => setIsAiOpen(false), [setIsAiOpen]);
+  // Al hablar con Logi el panel de texto se cierra: queda la barra de voz y la página libre
+  const voiceDock = useVoiceDock();
+  useEffect(() => { if (voiceDock.open && !onAssistantPage) setIsAiOpen(false); }, [voiceDock.open, onAssistantPage, setIsAiOpen]);
 
   // En el celular el panel ocupa casi toda la pantalla: al navegar se cierra para dejar ver la pantalla de destino
   // (la conversación se conserva y vuelve al abrirlo)
@@ -89,6 +94,7 @@ function DashboardLayout() {
     <div className="app-shell flex min-h-screen bg-[radial-gradient(circle_at_top,rgba(19,127,236,0.08),transparent_34%),linear-gradient(180deg,#f5f8fc_0%,#eef3f9_100%)]">
       <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      <VoiceHost />
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col lg:pl-[17rem]">
         <Navbar title={title} onOpenSearch={() => setPaletteOpen(true)} />

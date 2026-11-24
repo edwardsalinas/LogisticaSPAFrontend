@@ -136,12 +136,16 @@ function PackageForm({ onSuccess, onCancel, initialRouteId = '', initialOrigin =
     if (name === 'origen') { setValue('destino', ''); setValue('route_id', ''); }
     else if (name === 'destino') setValue('route_id', '');
   };
+  const optionsRef = useRef({ origins: [], destinations: [] });
+  optionsRef.current = { origins: originCities, destinations: validDestinations };
   const applyFieldRef = useRef(applyField);
   applyFieldRef.current = applyField;
   useEffect(() => registerGuidedForm('package', {
     isReady: () => readyRef.current,
     setValue: (name, value) => applyFieldRef.current(name, value),
     getElement: (name) => formRef.current?.querySelector(`[name="${name}"]`) ?? null,
+    // las opciones que la persona vería en la lista: Logi las usa para entender «la paz» o «a oruro»
+    getOptions: (name) => (name === 'origen' ? optionsRef.current.origins : name === 'destino' ? optionsRef.current.destinations : []),
   }), []);
 
   const handleChange = (e) => {

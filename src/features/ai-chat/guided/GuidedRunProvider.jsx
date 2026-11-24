@@ -10,6 +10,7 @@ import createPackage from './choreographies/createPackage';
 import assignPackages from './choreographies/assignPackages';
 import registerEvent from './choreographies/registerEvent';
 import deliverPackages from './choreographies/deliverPackages';
+import assistPackage from './choreographies/assistPackage';
 import LogiGuide from './LogiGuide';
 import { trackLogi } from '../logiEvents';
 
@@ -17,11 +18,14 @@ import { trackLogi } from '../logiEvents';
 const CHOREOGRAPHIES = { create_package: createPackage, assign_package: assignPackages, register_tracking_event: registerEvent, deliver_package: deliverPackages };
 
 
+/** Ayudas por voz: no traen los datos hechos, los preguntan. Se hacen con la pantalla libre (la persona puede corregir). */
+const ASSISTS = { package: assistPackage };
+
 const GuidedRunContext = createContext(null);
 /** null fuera del layout (pantallas sueltas, pruebas): quien lo use debe tolerarlo. */
 export const useGuidedRun = () => useContext(GuidedRunContext);
 
-const IDLE = { active: false, x: 0, y: 0, dur: 0, moving: false, say: '', mood: 'idle', committed: false, fast: false, look: null, demo: false };
+const IDLE = { active: false, x: 0, y: 0, dur: 0, moving: false, say: '', mood: 'idle', committed: false, fast: false, look: null, demo: false, interactive: false };
 const LOGI_W = 64;
 const LOGI_H = 96;
 
@@ -75,11 +79,24 @@ export function GuidedRunProvider({ children, onBegin }) {
     };
 
     // Dice algo en el globo (y en voz alta si la lectura está activada). Con `wait` espera lo que tarda en leerse.
-    const say = async (text, { wait = false, mood } = {}) => {
+    // untilSpoken: espera a que TERMINE de hablar (para no escuchar a la persona encima de la voz de Logi)
+    const say = async (text, { wait = false, mood, untilSpoken = false } = {}) => {
       if (signal.aborted) throw new StopError();
       patch({ say: text, mood: mood ?? 'talking' });
       const aloudNow = (runRef.current?.aloud || getSpeakPref()) && synthRef.current.supported && !fastRef.current;
+      if (aloudNow && untilSpoken) {
+        await new Promise((resolve, reject) => {
+          const onAbort = () => { synthRef.current.cancel(); reject(new StopError()); };
+          const done = () => { clearTimeout(cap); signal.removeEventListener('abort', onAbort); resolve(); };
+          const cap = setTimeout(done, 15000); // por si el navegador nunca avisa que terminó
+          signal.addEventListener('abort', onAbort, { once: true });
+          synthRef.current.speak(stripForSpeech(text), { onEnd: done });
+        });
+        patch({ mood: mood ?? 'idle' });
+        return;
+      }
       if (aloudNow) synthRef.current.speak(stripForSpeech(text));
+      if (untilSpoken && !wait) { await sleep(Math.min(2600, 700 + text.length * 28)); patch({ mood: mood ?? 'idle' }); return; }
       if (wait) await sleep(aloudNow ? Math.min(7000, 1200 + text.length * 65) : Math.min(2600, 700 + text.length * 28));
       patch({ mood: mood ?? 'idle' });
     };
@@ -139,7 +156,7 @@ export function GuidedRunProvider({ children, onBegin }) {
     };
 
     return {
-      sleep, waitFor, say, pointAt, press, typeInto, confirm, findVisible, navigate, getForm: getGuidedForm,
+      signal, sleep, waitFor, say, pointAt, press, typeInto, confirm, findVisible, navigate, getForm: getGuidedForm,
       demo: Boolean(runRef.current?.demo),
       finishDemo,
       fallback: () => trackLogi('guided_fallback', runRef.current?.type),
@@ -178,6 +195,34 @@ export function GuidedRunProvider({ children, onBegin }) {
     })();
   }, [makeCtx, onBegin, patch]);
 
+  // Ayuda por voz (interactiva): Logi pregunta y llena a la vista de todos SIN bloquear la pantalla; la persona puede corregir
+  // escribiendo y termina cuando quiera. `io.listen(signal)` escucha una respuesta (lo da el chat de voz).
+  const assist = useCallback((kind, io) => {
+    if (runRef.current) return Promise.resolve({ error: new Error('Logi ya está haciendo otra cosa.') });
+    if (!ASSISTS[kind]) return Promise.resolve({ error: new Error('No sé ayudar con eso todavía.') });
+    const controller = new AbortController();
+    runRef.current = { controller, committed: false, aloud: true, demo: false, interactive: true, type: `assist_${kind}` };
+    fastRef.current = false;
+    onBegin?.();
+    trackLogi('guided_started', `assist_${kind}`);
+    patch({ ...IDLE, active: true, interactive: true, x: window.innerWidth - LOGI_W - 16, y: window.innerHeight - LOGI_H - 24 });
+    return (async () => {
+      try {
+        const result = await ASSISTS[kind](makeCtx(controller.signal), io);
+        trackLogi(result?.done ? 'guided_done' : 'guided_stopped', `assist_${kind}`);
+        return { result };
+      } catch (e) {
+        if (e instanceof StopError) { trackLogi('guided_stopped', `assist_${kind}`); return { stopped: true }; }
+        return { error: e };
+      } finally {
+        document.querySelectorAll('[data-logi-active]').forEach((el) => el.removeAttribute('data-logi-active'));
+        synthRef.current.cancel();
+        runRef.current = null;
+        patch({ ...IDLE });
+      }
+    })();
+  }, [makeCtx, onBegin, patch]);
+
   const stop = useCallback(() => {
     if (runRef.current && !runRef.current.committed) runRef.current.controller.abort();
   }, []);
@@ -192,7 +237,7 @@ export function GuidedRunProvider({ children, onBegin }) {
     return () => window.removeEventListener('keydown', onKey, true);
   }, [ui.active, stop]);
 
-  const value = useMemo(() => ({ active: ui.active, start }), [ui.active, start]);
+  const value = useMemo(() => ({ active: ui.active, start, assist }), [ui.active, start, assist]);
 
   return (
     <GuidedRunContext.Provider value={value}>
@@ -201,11 +246,11 @@ export function GuidedRunProvider({ children, onBegin }) {
         <>
           {/* capa transparente: tocar la pantalla mientras Logi trabaja lo detiene (nadie pelea con él por el formulario) */}
           {/* por encima de modales (1200) y cajones (1300); pointer-events:auto porque un cajón de Radix deja inertes los clics fuera de él */}
-          <div data-logi-run className="fixed inset-0 z-[1350]" style={{ pointerEvents: 'auto' }} onPointerDown={stop} aria-hidden="true" />
+          {!ui.interactive && <div data-logi-run className="fixed inset-0 z-[1350]" style={{ pointerEvents: 'auto' }} onPointerDown={stop} aria-hidden="true" />}
           <LogiGuide ui={ui} />
           <div style={{ pointerEvents: 'auto' }} className="fixed left-1/2 top-3 z-[1410] flex max-w-[calc(100vw-1.5rem)] -translate-x-1/2 items-center gap-2 rounded-2xl border border-primary-200 bg-white px-3 py-2 shadow-xl">
-            <span className="px-1 text-sm font-semibold text-surface-800"><span className="max-sm:hidden">Logi está trabajando por ti</span><span className="sm:hidden">Logi trabaja</span></span>
-            {!ui.fast && (
+            <span className="px-1 text-sm font-semibold text-surface-800"><span className="max-sm:hidden">{ui.interactive ? 'Logi te ayuda: puedes corregir en pantalla' : 'Logi está trabajando por ti'}</span><span className="sm:hidden">{ui.interactive ? 'Logi te ayuda' : 'Logi trabaja'}</span></span>
+            {!ui.fast && !ui.interactive && (
               <button type="button" onClick={speedUp} className="min-h-11 rounded-xl border border-surface-200 px-3 text-sm font-semibold text-surface-700 hover:bg-surface-50">
                 Hacerlo ya
               </button>
@@ -216,7 +261,7 @@ export function GuidedRunProvider({ children, onBegin }) {
               disabled={ui.committed}
               className="min-h-11 rounded-xl bg-red-600 px-3 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-40"
             >
-              Detener
+              {ui.interactive ? 'Terminar' : 'Detener'}
             </button>
           </div>
           <p role="status" className="sr-only">{ui.say}</p>
