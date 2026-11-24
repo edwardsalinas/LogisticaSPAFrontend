@@ -10,6 +10,7 @@ import usePersistentState from '@/hooks/usePersistentState';
 import Skeleton from '../../../components/atoms/Skeleton';
 import PackageDetail from '../components/PackageDetail';
 import PackageForm from '../components/PackageForm';
+import { GUIDED_EVENTS } from '../../ai-chat/guided/guidedForms';
 import ShipmentAssignmentForm from '../components/ShipmentAssignmentForm';
 import useRole from '../../../app/useRole';
 import PackagesHero from '../components/PackagesHero';
@@ -97,6 +98,19 @@ function PackagesPage() {
     setAssignPackage(null);
     fetchData();
   };
+
+  // Logi (asistente) crea un paquete a la vista de todos: al terminar refresca la lista y cierra el formulario; si lo detienen, solo lo cierra
+  useEffect(() => {
+    const onCreated = () => handleCreateSuccess();
+    const onCancel = () => { setShowForm(false); setContextualRoute(null); };
+    window.addEventListener(GUIDED_EVENTS.packageCreated, onCreated);
+    window.addEventListener(GUIDED_EVENTS.cancelForm, onCancel);
+    return () => {
+      window.removeEventListener(GUIDED_EVENTS.packageCreated, onCreated);
+      window.removeEventListener(GUIDED_EVENTS.cancelForm, onCancel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchData solo usa setters de estado
+  }, []);
 
   const handleOpenContextualForm = (route) => {
     setContextualRoute(route);
@@ -235,7 +249,7 @@ function PackagesPage() {
           pendingCount={pendingCount}
           actions={!isClient && (
             // En pantallas medianas el panel "Carga suelta" queda debajo de la tabla: la acción principal sube a la cabecera
-            <Button size="md" className="gap-2 whitespace-nowrap font-bold max-sm:min-h-11 2xl:hidden" onClick={() => setShowForm(true)}>
+            <Button size="md" data-logi="nuevo-paquete" className="gap-2 whitespace-nowrap font-bold max-sm:min-h-11 2xl:hidden" onClick={() => setShowForm(true)}>
               <PackagePlus size={18} strokeWidth={2.5} /> Nuevo Registro Global
             </Button>
           )}
@@ -443,7 +457,7 @@ function PackagesPage() {
            <div className="rounded-[2.2rem] border border-surface-100 bg-white p-5 shadow-xl shadow-surface-200/20 h-fit max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
               {/* registrar paquetes es del personal: al cliente el backend se lo rechazaría (403) */}
               {!isClient && (
-                <Button size="lg" className="max-2xl:hidden w-full h-14 mb-6 gap-3 text-sm font-bold shadow-xl shadow-primary-500/25 rounded-2xl" onClick={() => setShowForm(true)}>
+                <Button size="lg" data-logi="nuevo-paquete" className="max-2xl:hidden w-full h-14 mb-6 gap-3 text-sm font-bold shadow-xl shadow-primary-500/25 rounded-2xl" onClick={() => setShowForm(true)}>
                   <PackagePlus size={20} strokeWidth={2.5} /> Nuevo Registro Global
                 </Button>
               )}

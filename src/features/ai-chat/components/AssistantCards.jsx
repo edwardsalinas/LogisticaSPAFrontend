@@ -8,6 +8,8 @@ import { ChatContext } from '../useAssistantChat';
 import { BOLIVIA_CITIES } from '../../../constants/bolivia';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
+import AssistantAvatar from './AssistantAvatar';
+import { canGuide, useGuidedRun } from '../guided/GuidedRunProvider';
 
 /** Tarjetas con los datos estructurados que devuelven las herramientas del asistente. */
 
@@ -260,23 +262,45 @@ export function FleetCard({ data }) {
  */
 export function ActionProposalCard({ data }) {
   const action = data.action;
-  const [state, setState] = useState({ status: 'pending' }); // pending | working | done | cancelled | error
   const role = useRoleIfSignedIn();
   const chat = useContext(ChatContext); // avisa al botón flotante de que ya no hay nada por confirmar
+  const guided = useGuidedRun(); // «Que Logi lo haga»: null fuera del layout
+  // si la acción ya se resolvió (p. ej. Logi la hizo con el panel cerrado), la tarjeta nace con su resultado
+  const [state, setState] = useState(() => chat?.actionOutcomes?.get(action.id) ?? { status: 'pending' }); // pending | working | done | cancelled | error
   const canOpenPackage = role !== 'driver'; // el conductor no tiene la ficha de paquete
 
   const call = async (verb) => {
     setState({ status: 'working', verb });
     try {
       const res = await apiService.post(`/ai-agent/actions/${action.id}/${verb}`);
-      chat?.settleAction?.(action.id);
-      setState({ status: verb === 'confirm' ? 'done' : 'cancelled', message: res?.result?.message, results: res?.result?.data?.results, records: res?.result?.data?.records });
+      const outcome = { status: verb === 'confirm' ? 'done' : 'cancelled', message: res?.result?.message, results: res?.result?.data?.results, records: res?.result?.data?.records };
+      chat?.settleAction?.(action.id, outcome);
+      setState(outcome);
       // el detalle ya se ve en la tarjeta: el aviso solo nombra la acción
       if (verb === 'confirm') toast.success('Acción ejecutada', { description: action.title });
       else toast('Acción cancelada', { description: action.title });
     } catch (err) {
       setState({ status: 'error', message: err?.message || 'No se pudo completar la acción.' });
       toast.error('No se pudo completar la acción', { description: err?.message });
+    }
+  };
+
+  // Logi hace la acción a la vista de todos; al terminar, queda igual que si se hubiera pulsado «Confirmar»
+  const callGuided = async () => {
+    setState({ status: 'working', verb: 'confirm' });
+    const out = await guided.start(action);
+    if (out.stopped) {
+      setState({ status: 'pending' });
+      toast('Logi se detuvo', { description: 'No se hizo ningún cambio. Puedes confirmar o pedirle que lo intente otra vez.' });
+    } else if (out.error) {
+      setState({ status: 'error', message: out.error.message || 'No se pudo completar la acción.' });
+      toast.error('No se pudo completar la acción', { description: out.error.message });
+    } else {
+      const res = out.result;
+      const outcome = { status: 'done', message: res?.result?.message, results: res?.result?.data?.results, records: res?.result?.data?.records };
+      chat?.settleAction?.(action.id, outcome);
+      setState(outcome);
+      toast.success('Acción ejecutada', { description: action.title });
     }
   };
 
@@ -342,6 +366,11 @@ export function ActionProposalCard({ data }) {
           <p className="text-xs text-surface-500">Nada se ha hecho todavía. Revisa los datos antes de confirmar.</p>
           <div className="flex shrink-0 gap-2">
             <Button variant="secondary" onClick={() => call('cancel')} disabled={working} className="min-h-11 flex-1 sm:flex-none">Cancelar</Button>
+            {guided && canGuide(action) && (
+              <Button variant="secondary" onClick={callGuided} disabled={working} className="min-h-11 flex-1 gap-2 sm:flex-none" title="Logi va a la pantalla y lo hace paso a paso">
+                <AssistantAvatar size={22} mood="idle" /> Que Logi lo haga
+              </Button>
+            )}
             <Button onClick={() => call('confirm')} disabled={working} className="min-h-11 flex-1 sm:flex-none">
               {working && state.verb === 'confirm' ? 'Ejecutando…' : 'Confirmar'}
             </Button>

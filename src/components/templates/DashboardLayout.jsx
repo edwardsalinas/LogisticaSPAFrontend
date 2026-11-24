@@ -1,7 +1,8 @@
-﻿import { useEffect, useState } from 'react';
+﻿import { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import AiAssistantPanel from '../../features/ai-chat/components/AiAssistantPanel';
 import LogiCompanion from '../../features/ai-chat/components/LogiCompanion';
+import { GuidedRunProvider } from '../../features/ai-chat/guided/GuidedRunProvider';
 import CommandPalette from '../organisms/CommandPalette';
 import Navbar from '../organisms/Navbar';
 import Sidebar, { getNavItems } from '../organisms/Sidebar';
@@ -53,6 +54,8 @@ function DashboardLayout() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const showFloatingAssistant = !onAssistantPage;
   const aiPanelId = 'ai-assistant-panel';
+  // Cuando Logi va a hacer una acción a la vista de todos, el panel se cierra para dejar el escenario libre
+  const closePanelForLogi = useCallback(() => setIsAiOpen(false), [setIsAiOpen]);
 
   // En el celular el panel ocupa casi toda la pantalla: al navegar se cierra para dejar ver la pantalla de destino
   // (la conversación se conserva y vuelve al abrirlo)
@@ -64,7 +67,7 @@ function DashboardLayout() {
   useEffect(() => {
     if (!isAiOpen) return undefined;
     // Escape cierra primero lo que esté encima (chat de voz, diálogos); el panel se cierra con la siguiente pulsación
-    const onEsc = (e) => { if (e.key === 'Escape' && !document.querySelector('[role="dialog"]')) setIsAiOpen(false); };
+    const onEsc = (e) => { if (e.key === 'Escape' && !document.querySelector('[role="dialog"], [data-logi-run]')) setIsAiOpen(false); };
     window.addEventListener('keydown', onEsc);
     return () => window.removeEventListener('keydown', onEsc);
   }, [isAiOpen, setIsAiOpen]);
@@ -82,6 +85,7 @@ function DashboardLayout() {
   }, []);
 
   return (
+    <GuidedRunProvider onBegin={closePanelForLogi}>
     <div className="app-shell flex min-h-screen bg-[radial-gradient(circle_at_top,rgba(19,127,236,0.08),transparent_34%),linear-gradient(180deg,#f5f8fc_0%,#eef3f9_100%)]">
       <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
@@ -161,6 +165,7 @@ function DashboardLayout() {
         </>
       )}
     </div>
+    </GuidedRunProvider>
   );
 }
 

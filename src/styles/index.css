@@ -816,3 +816,13 @@
 @media (prefers-reduced-motion: reduce) {
   .logi__body, .logi__eye, .logi__eyes, .logi__bulb, .logi__mouth, .logi__antenna, .logi__leg, .logi__arm, .logi-bubble { animation: none !important; }
 }
+
+/* ---- Logi guiado: campo que está llenando y botón que "pulsa" ---- */
+[data-logi-active] { outline: 3px solid rgba(37, 99, 235, 0.9) !important; outline-offset: 3px; border-radius: 12px; box-shadow: 0 0 0 7px rgba(56, 189, 248, 0.22); }
+.logi-press { animation: logi-press 0.45s ease-out; }
+@keyframes logi-press {
+  0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.55); transform: scale(1); }
+  40% { transform: scale(0.96); }
+  100% { box-shadow: 0 0 0 16px rgba(37, 99, 235, 0); transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) { .logi-press { animation: none !important; } }

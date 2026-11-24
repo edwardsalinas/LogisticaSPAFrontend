@@ -4,6 +4,7 @@ import AssistantAvatar from './AssistantAvatar';
 import { prefersReducedMotion, stripForSpeech } from '../voice';
 import { useSpeechSynthesis } from '../useVoice';
 import { useSpeakPref } from '../speakPref';
+import { useGuidedRun } from '../guided/GuidedRunProvider';
 
 const WIDTH = 60; // ancho del robot en pantalla (px)
 const MARGIN = 12;
@@ -53,6 +54,8 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
   const [waving, setWaving] = useState(false);
   const calm = prefersReducedMotion();
   const synth = useSpeechSynthesis();
+  const guided = useGuidedRun();
+  const working = Boolean(guided?.active); // mientras Logi hace una acción en pantalla, el compañero se oculta
   const [speakOn, setSpeakOn] = useSpeakPref(); // el mismo interruptor de «Leer las respuestas en voz alta»
   const speakingRef = useRef(false);
   speakingRef.current = synth.speaking;
@@ -78,7 +81,7 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
   }, []);
 
   // mientras habla se detiene: así el globo queda pegado a donde está de verdad (no a donde iba)
-  const roaming = wander && !calm && !open && status === 'idle' && !hovered && !speech;
+  const roaming = wander && !calm && !open && !working && status === 'idle' && !hovered && !speech;
 
   // Paseo: camina a un punto al azar, descansa unos segundos (a veces saluda) y repite
   useEffect(() => {
@@ -151,7 +154,7 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
   useEffect(() => { if (open) synth.cancel(); }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggle = useCallback(() => { setSpeech(''); synth.cancel(); onToggle(); }, [onToggle, synth]);
-  if (open) return null; // abierto, Logi está en el encabezado del chat
+  if (open || working) return null; // abierto, Logi está en el encabezado del chat
 
   const mood = synth.speaking ? 'talking' : ['confirm', 'thinking', 'unread'].includes(status) ? status : 'idle';
   const nearRight = (pos.x ?? 0) > window.innerWidth / 2;

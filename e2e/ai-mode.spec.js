@@ -102,8 +102,9 @@ test('3. un cliente activa el Modo IA, consulta sus paquetes y ubica uno', async
   // toca el paquete de la tarjeta: el asistente lo ubica y muestra la ficha
   await clientPage.getByRole('button', { name: new RegExp(pkg.tracking_code) }).click();
   await expect(clientPage.locator('p:not(.sr-only)').filter({ hasText: /consultando…/i })).toBeHidden({ timeout: 120_000 });
-  await expect(clientPage.getByText('Conductor', { exact: true })).toBeVisible();
-  await expect(clientPage.getByText('Llegada estimada', { exact: true })).toBeVisible();
+  // la ficha llega cuando la IA termina (puede tardar): con el margen de la respuesta, no los 5 s por defecto
+  await expect(clientPage.getByText('Conductor', { exact: true })).toBeVisible({ timeout: 90_000 });
+  await expect(clientPage.getByText('Llegada estimada', { exact: true })).toBeVisible({ timeout: 30_000 });
   await shot(clientPage, 'ia_5_ficha_paquete');
   await clientCtx.close();
 });

@@ -3,12 +3,16 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ActionProposalCard, AttachmentCard } from './AssistantCards';
+import { ChatContext } from '../useAssistantChat';
 import ChatBubble from './ChatBubble';
 import apiService from '../../../services/apiService';
 
 vi.mock('../../../services/apiService', () => ({ default: { post: vi.fn() } }));
 let mockRole = 'admin';
 vi.mock('../../../app/useRole', () => ({ default: () => ({ role: mockRole }) }));
+// «Que Logi lo haga»: el motor se simula (null = fuera del layout)
+let mockGuided = null;
+vi.mock('../guided/GuidedRunProvider', () => ({ useGuidedRun: () => mockGuided, canGuide: (a) => !!a?.ui?.fill?.values }));
 
 const ACTION = {
   kind: 'action_proposal',
@@ -125,5 +129,68 @@ describe('Acciones del asistente: tarjeta de confirmación', () => {
     await userEvent.click(screen.getByRole('button', { name: /^confirmar$/i }));
     expect(await screen.findByText('Hecho.')).toBeInTheDocument();
     expect(screen.queryByText(/comprobado en el sistema/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('Acciones del asistente: «Que Logi lo haga»', () => {
+  const GUIDABLE = {
+    kind: 'action_proposal',
+    action: { id: '22222222-2222-4222-8222-222222222222', type: 'create_package', title: 'Registrar un paquete nuevo', lines: ['Ruta: La Paz → Oruro'], expires_at: '2026-11-21T20:00:00Z', ui: { fill: { form: 'package', values: { origen: 'La Paz' } } } },
+  };
+  const renderGuidable = (ctx) => render(
+    <MemoryRouter><ChatContext.Provider value={ctx}><ActionProposalCard data={GUIDABLE} /></ChatContext.Provider></MemoryRouter>,
+  );
+  beforeEach(() => { apiService.post.mockReset(); mockGuided = null; mockRole = 'admin'; });
+
+  it('sin el motor (fuera del layout) o sin datos para llenar, no aparece el botón', () => {
+    renderGuidable({});
+    expect(screen.queryByRole('button', { name: /que logi lo haga/i })).not.toBeInTheDocument();
+    mockGuided = { start: vi.fn() };
+    render(<MemoryRouter><ActionProposalCard data={ACTION} /></MemoryRouter>); // entrega: no tiene coreografía
+    expect(screen.queryByRole('button', { name: /que logi lo haga/i })).not.toBeInTheDocument();
+  });
+
+  it('con el motor y datos, ofrece el botón junto a Confirmar y Cancelar', () => {
+    mockGuided = { start: vi.fn() };
+    renderGuidable({});
+    expect(screen.getByRole('button', { name: /que logi lo haga/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^confirmar$/i })).toBeInTheDocument();
+  });
+
+  it('al terminar Logi, la tarjeta queda igual que si se hubiera confirmado (y se recuerda)', async () => {
+    mockGuided = { start: vi.fn().mockResolvedValue({ result: { result: { message: 'Paquete creado con el código TRK-5.' } } }) };
+    const settleAction = vi.fn();
+    renderGuidable({ settleAction });
+    await userEvent.click(screen.getByRole('button', { name: /que logi lo haga/i }));
+    expect(mockGuided.start).toHaveBeenCalledWith(GUIDABLE.action);
+    expect(await screen.findByText(/TRK-5/)).toBeInTheDocument();
+    expect(screen.getByText(/^hecho$/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^confirmar$/i })).not.toBeInTheDocument();
+    expect(settleAction).toHaveBeenCalledWith(GUIDABLE.action.id, expect.objectContaining({ status: 'done' }));
+    expect(apiService.post).not.toHaveBeenCalled(); // la confirmación la hizo el motor, no la tarjeta
+  });
+
+  it('si detienen a Logi, no se hizo nada y se puede confirmar o intentar otra vez', async () => {
+    mockGuided = { start: vi.fn().mockResolvedValue({ stopped: true }) };
+    renderGuidable({ settleAction: vi.fn() });
+    await userEvent.click(screen.getByRole('button', { name: /que logi lo haga/i }));
+    expect(await screen.findByRole('button', { name: /^confirmar$/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /que logi lo haga/i })).toBeEnabled();
+    expect(screen.queryByText(/^hecho$/i)).not.toBeInTheDocument();
+  });
+
+  it('si Logi falla, muestra el error', async () => {
+    mockGuided = { start: vi.fn().mockResolvedValue({ error: new Error('El viaje ya está lleno') }) };
+    renderGuidable({ settleAction: vi.fn() });
+    await userEvent.click(screen.getByRole('button', { name: /que logi lo haga/i }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('El viaje ya está lleno');
+  });
+
+  it('si Logi ya la resolvió con el panel cerrado, al reabrirlo la tarjeta nace con su resultado (sin pedir confirmar otra vez)', () => {
+    mockGuided = { start: vi.fn() };
+    const outcomes = new Map([[GUIDABLE.action.id, { status: 'done', message: 'Paquete creado con el código TRK-6.' }]]);
+    renderGuidable({ actionOutcomes: outcomes });
+    expect(screen.getByText(/TRK-6/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^confirmar$/i })).not.toBeInTheDocument();
   });
 });

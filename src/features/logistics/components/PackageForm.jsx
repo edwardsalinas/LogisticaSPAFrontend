@@ -9,6 +9,7 @@ import Input from '../../../components/atoms/Input';
 import Select from '../../../components/atoms/Select';
 import Autocomplete from '../../../components/atoms/Autocomplete';
 import apiService from '../../../services/apiService';
+import { registerGuidedForm } from '../../ai-chat/guided/guidedForms';
 
 // Esquema de validación (React Hook Form + Zod). Refleja las reglas del backend (logistics.schema.js).
 const packageFormSchema = z.object({
@@ -126,6 +127,22 @@ function PackageForm({ onSuccess, onCancel, initialRouteId = '', initialOrigin =
     if (!form.origen || !form.destino) return [];
     return activeRoutes.filter(r => r.origin === form.origen && r.destination === form.destino);
   }, [activeRoutes, form.origen, form.destino]);
+
+  // Logi puede llenar este formulario a la vista de todos (solo pone valores; el envío real es la confirmación del servidor)
+  const readyRef = useRef(false);
+  readyRef.current = !loadingData;
+  const applyField = (name, value) => {
+    setValue(name, value, { shouldDirty: true });
+    if (name === 'origen') { setValue('destino', ''); setValue('route_id', ''); }
+    else if (name === 'destino') setValue('route_id', '');
+  };
+  const applyFieldRef = useRef(applyField);
+  applyFieldRef.current = applyField;
+  useEffect(() => registerGuidedForm('package', {
+    isReady: () => readyRef.current,
+    setValue: (name, value) => applyFieldRef.current(name, value),
+    getElement: (name) => formRef.current?.querySelector(`[name="${name}"]`) ?? null,
+  }), []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

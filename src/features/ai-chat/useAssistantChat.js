@@ -19,6 +19,7 @@ export function useChatState(initialMessages = []) {
   const [conversationId, setConversationId] = useState(null); // conversación guardada a la que pertenece este chat
   const conversationRef = useRef(null);
   const [settledActions, setSettledActions] = useState(() => new Set()); // acciones propuestas ya confirmadas o canceladas
+  const [actionOutcomes, setActionOutcomes] = useState(() => new Map()); // y cómo terminaron (para volver a dibujar la tarjeta)
   const [status, setStatus] = useState(''); // qué está consultando el asistente ("Buscando tu paquete…")
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
@@ -170,13 +171,17 @@ export function useChatState(initialMessages = []) {
     }
   }, []);
 
-  const settleAction = useCallback((id) => setSettledActions((prev) => new Set(prev).add(id)), []);
+  const settleAction = useCallback((id, outcome) => {
+    setSettledActions((prev) => new Set(prev).add(id));
+    if (outcome) setActionOutcomes((prev) => new Map(prev).set(id, outcome));
+  }, []);
 
   /** Empieza de cero: mensajes nuevos y sin conversación guardada asociada. */
   const reset = useCallback((nextMessages = []) => {
     conversationRef.current = null;
     setConversationId(null);
     setSettledActions(new Set());
+    setActionOutcomes(new Map());
     setMessages(nextMessages);
   }, []);
 
@@ -195,7 +200,7 @@ export function useChatState(initialMessages = []) {
     }
   }, []);
 
-  return { messages, loading, status, conversationId, settledActions, settleAction, send, reset, openConversation, readDocument };
+  return { messages, loading, status, conversationId, settledActions, actionOutcomes, settleAction, send, reset, openConversation, readDocument };
 }
 
 /**
