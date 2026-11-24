@@ -53,7 +53,7 @@ function RouteCard({ route, isSelected = false, onClick, onEdit, onDelete }) {
 
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex flex-col">
-          <span className="text-xs font-bold uppercase tracking-[0.15em] text-surface-500 leading-none mb-1.5">Ruta</span>
+          <span className="text-xs font-bold text-surface-500 leading-none mb-1.5">Ruta</span>
           <span className="text-sm font-bold text-surface-900 tracking-tight leading-none group-hover:text-primary-600 transition-colors">
             {routeName(route)}
           </span>
@@ -120,7 +120,7 @@ function RouteCard({ route, isSelected = false, onClick, onEdit, onDelete }) {
         <div className="flex items-center gap-2 rounded-xl bg-primary-50/50 px-3 py-3 min-w-0 border border-primary-100/50">
           <Clock3 size={15} strokeWidth={2.5} className="shrink-0 text-primary-600" />
           <div className="min-w-0">
-            <p className="text-xs font-bold text-primary-600 uppercase tracking-[0.15em] leading-none mb-1">Recurrencia</p>
+            <p className="text-xs font-bold text-primary-600 leading-none mb-1">Recurrencia</p>
             <p className="text-xs font-bold text-surface-900 truncate">{scheduleFreq}</p>
           </div>
         </div>

@@ -69,7 +69,7 @@ const Field = ({ icon: Icon, label, children }) => (
   <div className="flex items-start gap-2.5">
     <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600"><Icon size={14} strokeWidth={2.4} /></span>
     <div className="min-w-0">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">{label}</p>
+      <p className="text-xs font-semibold text-surface-500">{label}</p>
       <p className="text-sm font-medium text-surface-900">{children}</p>
     </div>
   </div>
@@ -114,7 +114,7 @@ export function PackageTrackingCard({ data, canOpenTracking = true }) {
 
       {timeline.length > 0 && (
         <div className="border-t border-surface-100 px-4 py-3">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">Últimos eventos</p>
+          <p className="mb-2 text-xs font-semibold text-surface-500">Últimos eventos</p>
           <ol className="space-y-2">
             {timeline.slice(0, 4).map((e, i) => (
               <li key={`${e.at}-${i}`} className="flex items-start gap-2.5 text-sm">
@@ -176,7 +176,7 @@ export function PackageListCard({ data, onAsk }) {
 
 const Kpi = ({ label, value, tone = 'text-surface-900' }) => (
   <div className="rounded-xl border border-surface-100 bg-surface-50 px-3 py-3">
-    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">{label}</p>
+    <p className="text-xs font-semibold text-surface-500">{label}</p>
     <p className={`mt-1 text-2xl font-bold tracking-tight ${tone}`}>{value ?? 0}</p>
   </div>
 );
@@ -289,7 +289,7 @@ export function ActionProposalCard({ data }) {
       <div className="flex items-center gap-2 border-b border-surface-100 bg-surface-50 px-4 py-3">
         {state.status === 'done' ? <CheckCircle2 size={16} className="text-emerald-600" /> : state.status === 'cancelled' ? <XCircle size={16} className="text-surface-500" /> : <ShieldAlert size={16} className="text-amber-600" />}
         <p className="text-sm font-bold text-surface-900">{action.title}</p>
-        <span className="ml-auto text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">
+        <span className="ml-auto text-xs font-semibold text-surface-500">
           {state.status === 'done' ? 'Hecho' : state.status === 'cancelled' ? 'Cancelada' : 'Requiere tu confirmación'}
         </span>
       </div>
@@ -397,7 +397,7 @@ export function AvailableTripsCard({ data, onAsk }) {
           <p className="px-4 py-3 text-sm text-surface-600">No hay viajes en ese horario.</p>
           {alternatives.length > 0 && (
             <>
-              <p className="border-t border-surface-100 px-4 pt-3 text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">Los más cercanos</p>
+              <p className="border-t border-surface-100 px-4 pt-3 text-xs font-semibold text-surface-500">Los más cercanos</p>
               <ul className="divide-y divide-surface-100">{alternatives.map((t) => <TripRow key={t.ref} trip={t} canSchedule={canSchedule} onAsk={onAsk} weightKg={query.weight_kg} />)}</ul>
             </>
           )}
@@ -412,7 +412,7 @@ export function FleetAvailabilityCard({ data }) {
   const { window: w = {}, vehicles_free: vf = [], vehicles_busy: vb = [], drivers_free: df = [], drivers_busy: db = [] } = data;
   const Col = ({ title, items, tone, label }) => (
     <div>
-      <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${tone}`}>{title} ({items.length})</p>
+      <p className={`text-xs font-semibold ${tone}`}>{title} ({items.length})</p>
       {items.length === 0 ? <p className="mt-1 text-sm text-surface-500">—</p> : <ul className="mt-1 space-y-1">{items.map((i) => <li key={label(i)} className="text-sm text-surface-800">{label(i)}</li>)}</ul>}
     </div>
   );
@@ -446,7 +446,7 @@ export function DailyBriefingCard({ data, onAsk }) {
       </div>
 
       <div className="px-4 pt-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">Prioridades</p>
+        <p className="text-xs font-semibold text-surface-500">Prioridades</p>
         <ol className="mt-1.5 space-y-1">
           {(data.priorities ?? []).map((p, i) => (
             <li key={p} className="flex gap-2 text-sm text-surface-900">
@@ -466,7 +466,7 @@ export function DailyBriefingCard({ data, onAsk }) {
 
       {attention.length > 0 && (
         <div className="border-t border-surface-100">
-          <p className="px-4 pt-3 text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">Requieren atención</p>
+          <p className="px-4 pt-3 text-xs font-semibold text-surface-500">Requieren atención</p>
           <ul className="divide-y divide-surface-100">
             {attention.map((a) => (
               <li key={`${a.tracking_code}-${a.reason}`}>
@@ -491,7 +491,7 @@ export function DailyBriefingCard({ data, onAsk }) {
 
       {departures.length > 0 && (
         <div className="border-t border-surface-100 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">Salen hoy</p>
+          <p className="text-xs font-semibold text-surface-500">Salen hoy</p>
           <ul className="mt-1 space-y-0.5 text-sm text-surface-900">
             {departures.map((d, i) => <li key={`${d.departure_time}-${i}`}>{d.origin} → {d.destination} · {formatDateTime(d.departure_time)}</li>)}
           </ul>
@@ -521,7 +521,7 @@ export function AnalyticsSummaryCard({ data }) {
       </div>
       {(data.top_drivers ?? []).length > 0 && (
         <div className="border-t border-surface-100 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">Conductores</p>
+          <p className="text-xs font-semibold text-surface-500">Conductores</p>
           <ul className="mt-1 space-y-0.5 text-sm text-surface-900">
             {data.top_drivers.map((d) => <li key={d.name}>{d.name} · {d.deliveries} {d.deliveries === 1 ? 'entrega' : 'entregas'}{d.efficiency_pct != null ? ` · ${d.efficiency_pct}% a tiempo` : ''}</li>)}
           </ul>
@@ -529,7 +529,7 @@ export function AnalyticsSummaryCard({ data }) {
       )}
       {(data.busiest_days ?? []).length > 0 && (
         <div className="flex flex-wrap items-center gap-2 border-t border-surface-100 px-4 py-3">
-          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">Más movimiento</span>
+          <span className="text-xs font-semibold text-surface-500">Más movimiento</span>
           {data.busiest_days.map((d) => <span key={d.date} className="rounded-full border border-surface-200 bg-surface-50 px-2.5 py-1 text-xs text-surface-700">{d.date}: {d.packages}</span>)}
         </div>
       )}

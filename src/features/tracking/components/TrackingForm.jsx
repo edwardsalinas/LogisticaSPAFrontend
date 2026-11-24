@@ -82,7 +82,7 @@ function TrackingForm({ packages = [], onSuccess, onCancel }) {
             <Route size={18} strokeWidth={2.2} />
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-surface-500">Nuevo evento</p>
+            <p className="text-xs text-surface-500">Nuevo evento</p>
             <p className="text-sm text-surface-600">Asocia el paquete, define el estado y indica dónde está.</p>
           </div>
         </div>

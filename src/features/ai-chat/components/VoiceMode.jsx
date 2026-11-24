@@ -116,7 +116,7 @@ export default function VoiceMode({ chat, onClose }) {
   return createPortal(
     <div ref={dialogRef} tabIndex={-1} onKeyDown={trapTab} role="dialog" aria-modal="true" aria-label="Chat de voz" className="[&_:focus-visible]:outline-sky-300 fixed inset-0 z-50 flex flex-col items-center justify-between bg-[radial-gradient(circle_at_top,#133a6b_0%,#06111f_70%)] px-6 py-8 text-white">
       <div className="flex w-full max-w-3xl items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-200/80">Chat de voz</p>
+        <p className="text-xs font-semibold text-sky-200/80">Chat de voz</p>
         <button ref={closeRef} type="button" onClick={onClose} aria-label="Salir del chat de voz" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 hover:bg-white/20">
           <X size={20} aria-hidden="true" />
         </button>

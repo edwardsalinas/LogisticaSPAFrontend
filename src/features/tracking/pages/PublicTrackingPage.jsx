@@ -156,7 +156,7 @@ function PublicTrackingPage() {
               <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 backdrop-blur-xl shadow-2xl">
                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-8 border-b border-white/5">
                   <div className="space-y-1">
-                     <p className="text-xs uppercase tracking-[0.3em] text-primary-400 font-bold">Estado del Envío</p>
+                     <p className="text-xs text-primary-400 font-bold">Estado del Envío</p>
                      <div className="flex items-center gap-4">
                         <h2 className="text-3xl font-bold text-white">{statusMapValue[trackingData.package.status.trim().toLowerCase()]?.label || trackingData.package.status}</h2>
                         <div className="h-2 w-2 rounded-full bg-success-500 animate-pulse shadow-[0_0_12px_rgba(34,197,94,0.5)]" />
@@ -235,7 +235,7 @@ function PublicTrackingPage() {
             </div>
 
             <div className="text-center pt-8 opacity-40">
-               <p className="text-xs font-bold uppercase tracking-[0.4em] text-slate-500">Seguridad Garantizada • LogisticaSPA Cloud</p>
+               <p className="text-xs font-bold text-slate-500">Seguridad Garantizada • LogisticaSPA Cloud</p>
             </div>
           </div>
         )}

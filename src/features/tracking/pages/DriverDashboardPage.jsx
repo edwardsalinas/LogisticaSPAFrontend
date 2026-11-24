@@ -239,9 +239,9 @@ function DriverDashboardPage() {
         isEstimated = true;
       }
 
-      let bgColor = '#2563eb'; // con texto blanco: contraste >= 4,5:1
-      if (isActiveStatus) bgColor = '#047857';
-      if (isCompleted) bgColor = '#18181b';
+      let bgColor = 'var(--color-event-planned)';
+      if (isActiveStatus) bgColor = 'var(--color-event-active)';
+      if (isCompleted) bgColor = 'var(--color-surface-900)';
 
       return {
         id: String(r.id),
@@ -633,7 +633,7 @@ function DriverDashboardPage() {
                 .custom-driver-calendar .fc-toolbar-title { font-size: 0.9rem !important; font-weight: 800; }
                 .custom-driver-calendar .fc-button { padding: 4px 8px !important; font-size: 0.75rem !important; border-radius: 8px !important; }
                 @media (max-width: 639px) { .custom-driver-calendar .fc-button { min-height: 44px; min-width: 44px; } }
-                .custom-driver-calendar .fc-theme-standard td, .custom-driver-calendar .fc-theme-standard th { border-color: #f1f5f9; }
+                .custom-driver-calendar .fc-theme-standard td, .custom-driver-calendar .fc-theme-standard th { border-color: var(--color-surface-100); }
                 .custom-driver-calendar .fc-event { cursor: pointer; border: none; }
               `}</style>
               <DashboardCalendar
@@ -714,7 +714,7 @@ function DriverDashboardPage() {
 
                   {isActive && (activeRouteData?.checkpoints?.length > 0) && (
                     <div className="pt-0">
-                      <p className="text-xs font-bold text-surface-500 uppercase tracking-[0.2em] mb-3 px-1">Puntos de control</p>
+                      <p className="text-xs font-bold text-surface-500 mb-3 px-1">Puntos de control</p>
                       <div className="space-y-2.5 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
                         {[...(activeRouteData?.checkpoints || [])]
                           .sort((a,b) => (a.sequence_order || 0) - (b.sequence_order || 0))
@@ -748,7 +748,7 @@ function DriverDashboardPage() {
 
                   {isActive && (activeRouteData?.packages?.length > 0) && (
                     <div className="pt-2 border-t border-surface-100/80">
-                      <p className="text-xs font-bold text-surface-500 uppercase tracking-[0.2em] mb-3 px-1">Carga a Entregar</p>
+                      <p className="text-xs font-bold text-surface-500 mb-3 px-1">Carga a Entregar</p>
                       <div className="space-y-2.5 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
                         {activeRouteData.packages.map(pkg => {
                           const isDelivered = isPackageDelivered(pkg.status);

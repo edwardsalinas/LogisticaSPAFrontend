@@ -71,7 +71,7 @@ function StatCard({
       </div>
 
       <div className="relative mt-4 sm:mt-5 space-y-2">
-        <p className="text-xs sm:text-xs font-semibold uppercase tracking-[0.22em] text-surface-500">
+        <p className="text-xs sm:text-xs font-semibold text-surface-500">
           {label}
         </p>
         <p className="font-display text-[clamp(1.6rem,4vw,2.6rem)] font-semibold tracking-[-0.04em] text-surface-950 break-words">

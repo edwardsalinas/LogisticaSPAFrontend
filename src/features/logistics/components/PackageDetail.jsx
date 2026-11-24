@@ -54,23 +54,23 @@ function PackageDetail({ pkg }) {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4"><p className="text-xs uppercase tracking-[0.18em] text-surface-500">Código</p><p className="mt-2 text-sm font-semibold text-surface-900">{pkg.tracking_code}</p></div>
-        <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4"><p className="text-xs uppercase tracking-[0.18em] text-surface-500">Estado</p><div className="mt-2"><Badge variant={currentStatus.variant} dot>{currentStatus.label}</Badge></div></div>
-        <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4"><p className="text-xs uppercase tracking-[0.18em] text-surface-500">Origen</p><p className="mt-2 text-sm font-semibold text-surface-900">{pkg.origen}</p></div>
-        <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4"><p className="text-xs uppercase tracking-[0.18em] text-surface-500">Destino</p><p className="mt-2 text-sm font-semibold text-surface-900">{pkg.destino}</p></div>
+        <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4"><p className="text-xs text-surface-500">Código</p><p className="mt-2 text-sm font-semibold text-surface-900">{pkg.tracking_code}</p></div>
+        <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4"><p className="text-xs text-surface-500">Estado</p><div className="mt-2"><Badge variant={currentStatus.variant} dot>{currentStatus.label}</Badge></div></div>
+        <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4"><p className="text-xs text-surface-500">Origen</p><p className="mt-2 text-sm font-semibold text-surface-900">{pkg.origen}</p></div>
+        <div className="rounded-[1.2rem] border border-surface-100 bg-surface-50 p-4"><p className="text-xs text-surface-500">Destino</p><p className="mt-2 text-sm font-semibold text-surface-900">{pkg.destino}</p></div>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
         <div className="rounded-[1.4rem] border border-surface-100 bg-white p-5 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.2)]">
-          <div className="mb-5 flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700"><Package size={18} strokeWidth={2.2} /></div><div><p className="text-xs uppercase tracking-[0.18em] text-surface-500">Ficha del paquete</p><p className="text-sm text-surface-600">Datos base y descripción operativa.</p></div></div>
+          <div className="mb-5 flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700"><Package size={18} strokeWidth={2.2} /></div><div><p className="text-xs text-surface-500">Ficha del paquete</p><p className="text-sm text-surface-600">Datos base y descripción operativa.</p></div></div>
           <div className="grid gap-4 md:grid-cols-2">
-            <div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Peso</p><p className="mt-2 text-sm font-semibold text-surface-900">{pkg.peso} kg</p></div>
-            <div><p className="text-xs uppercase tracking-[0.16em] text-surface-500">Descripción</p><p className="mt-2 text-sm font-semibold text-surface-900">{pkg.description || 'Sin descripción'}</p></div>
+            <div><p className="text-xs text-surface-500">Peso</p><p className="mt-2 text-sm font-semibold text-surface-900">{pkg.peso} kg</p></div>
+            <div><p className="text-xs text-surface-500">Descripción</p><p className="mt-2 text-sm font-semibold text-surface-900">{pkg.description || 'Sin descripción'}</p></div>
           </div>
         </div>
 
         <div className="rounded-[1.4rem] border border-surface-100 bg-white p-5 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.2)]">
-          <div className="mb-5 flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"><ShieldCheck size={18} strokeWidth={2.2} /></div><div><p className="text-xs uppercase tracking-[0.18em] text-surface-500">Estado del envío</p><p className="text-sm text-surface-600">Secuencia operacional actual.</p></div></div>
+          <div className="mb-5 flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"><ShieldCheck size={18} strokeWidth={2.2} /></div><div><p className="text-xs text-surface-500">Estado del envío</p><p className="text-sm text-surface-600">Secuencia operacional actual.</p></div></div>
           <div className="space-y-4">
             {statusSteps.map((step, idx) => {
               const isCompleted = idx <= currentStepIndex;
@@ -87,7 +87,7 @@ function PackageDetail({ pkg }) {
       </div>
 
       <div className="rounded-[1.4rem] border border-surface-100 bg-white p-5 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.2)]">
-        <div className="mb-5 flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-100 text-sky-700"><MapPinned size={18} strokeWidth={2.2} /></div><div><p className="text-xs uppercase tracking-[0.18em] text-surface-500">Historial de trazabilidad</p><p className="text-sm text-surface-600">Eventos y coordenadas registrados hasta ahora.</p></div></div>
+        <div className="mb-5 flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-100 text-sky-700"><MapPinned size={18} strokeWidth={2.2} /></div><div><p className="text-xs text-surface-500">Historial de trazabilidad</p><p className="text-sm text-surface-600">Eventos y coordenadas registrados hasta ahora.</p></div></div>
         {loadingLogs ? (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, idx) => (

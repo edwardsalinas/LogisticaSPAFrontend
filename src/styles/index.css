@@ -35,6 +35,12 @@
   --color-danger: #ef4444;
   --color-info: #3b82f6;
 
+  /* Eventos de los calendarios (Viajes y conductor): todos con texto blanco, contraste >= 4,5:1 */
+  --color-event-planned: var(--color-primary-600);
+  --color-event-recurring: #7c3aed;
+  --color-event-active: #047857;
+  --color-event-done: var(--color-surface-600);
+
   --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
   --font-display: 'Manrope Variable', 'Manrope', 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
 

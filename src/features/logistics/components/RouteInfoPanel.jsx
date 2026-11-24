@@ -42,14 +42,14 @@ function RouteInfoPanel({ route, onClose, onEdit, onDelete, onAssign, realProgre
           <>
             <div className="grid grid-cols-2 gap-4">
               <div className="rounded-[1.4rem] border border-surface-100 bg-surface-50/50 p-4 transition-all hover:border-surface-200">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-surface-400">Progreso</p>
+                <p className="text-xs font-bold text-surface-600">Progreso</p>
                 <div className="mt-2 flex items-baseline gap-1">
                   <span className="text-2xl font-bold text-surface-900 tracking-tight">{realProgress || route.progress || 0}</span>
                   <span className="text-xs font-bold text-surface-400">%</span>
                 </div>
               </div>
               <div className="rounded-[1.4rem] border border-surface-100 bg-surface-50/50 p-4 transition-all hover:border-surface-200">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-surface-400">Distancia</p>
+                <p className="text-xs font-bold text-surface-600">Distancia</p>
                 <div className="mt-2 flex items-baseline gap-1">
                   <span className="text-2xl font-bold text-surface-900 tracking-tight">{realRemainingDistance || route.remaining_distance || '--'}</span>
                   <span className="text-xs font-bold text-surface-400">km</span>
@@ -58,7 +58,7 @@ function RouteInfoPanel({ route, onClose, onEdit, onDelete, onAssign, realProgre
             </div>
 
             <div className="rounded-[1.5rem] border border-primary-100 bg-primary-50/30 p-4 group transition-all hover:bg-primary-50/50">
-              <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary-600">Siguiente parada</p>
+              <p className="mb-3 text-xs font-bold text-primary-600">Siguiente parada</p>
               <div className="flex items-start gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-500 text-white shadow-lg shadow-primary-200 group-hover:scale-110 transition-transform">
                   <MapPinned size={22} strokeWidth={2.2} />
@@ -75,7 +75,7 @@ function RouteInfoPanel({ route, onClose, onEdit, onDelete, onAssign, realProgre
           </>
         ) : (
           <div className="rounded-[1.5rem] border border-primary-100 bg-primary-50/40 p-5">
-            <p className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-primary-600">Frecuencia Automatizada</p>
+            <p className="mb-4 text-xs font-bold text-primary-600">Frecuencia Automatizada</p>
             <div className="flex items-start gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-primary-600 shadow-md border border-primary-50">
                 <Clock3 size={24} strokeWidth={3} />
@@ -89,7 +89,7 @@ function RouteInfoPanel({ route, onClose, onEdit, onDelete, onAssign, realProgre
         )}
 
         <div className="rounded-[1.5rem] border border-surface-100 bg-white p-4 shadow-sm">
-           <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-surface-400">Responsable asignado</p>
+           <p className="mb-3 text-xs font-bold text-surface-600">Responsable asignado</p>
            <div className="flex items-center gap-4">
              <div className="relative">
                 <div className="flex h-13 w-13 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#3b82f6_0%,#1e3a8a_100%)] text-base font-bold text-white shadow-lg shadow-primary-100">{(route.driver_name || 'C').charAt(0)}</div>

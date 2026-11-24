@@ -110,7 +110,7 @@ const RoutesMap = memo(({
       <div className="relative z-10 flex h-full flex-col">
         <div className="flex items-start justify-between p-6 text-white">
           <div className="drop-shadow-sm">
-            <p className="text-xs uppercase tracking-[0.24em] text-sky-100/70">{extendedSelectedRoute.type === 'schedule' ? 'Cronograma' : 'Despacho'} seleccionado</p>
+            <p className="text-xs text-sky-100/70">{extendedSelectedRoute.type === 'schedule' ? 'Cronograma' : 'Despacho'} seleccionado</p>
             <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em]">{extendedSelectedRoute.origin} - {extendedSelectedRoute.destination}</h2>
             <p className="mt-2 text-sm text-white/72">{extendedSelectedRoute.route_code} - {extendedSelectedRoute.driver_name || 'Sin conductor'}</p>
           </div>
@@ -119,9 +119,9 @@ const RoutesMap = memo(({
         <div className="pointer-events-none mt-auto flex flex-wrap items-end justify-between gap-4 p-6">
           <div className="pointer-events-auto rounded-[1.5rem] border border-white/40 bg-white/80 p-4 shadow-xl backdrop-blur-xl">
             <div className="flex gap-5">
-              <div className="min-w-[5rem]"><p className="text-xs uppercase tracking-[0.18em] text-surface-500">Progreso</p><p className="mt-2 text-lg font-bold text-primary-700">{realProgress}%</p></div>
-              <div className="min-w-[5rem]"><p className="text-xs uppercase tracking-[0.18em] text-surface-500">ETA</p><p className="mt-2 text-lg font-bold text-primary-700">{extendedSelectedRoute.eta || '--'}</p></div>
-              <div className="min-w-[5rem]"><p className="text-xs uppercase tracking-[0.18em] text-surface-500">Distancia</p><p className="mt-2 text-lg font-bold text-primary-700">{realRemainingDistance || '--'} km</p></div>
+              <div className="min-w-[5rem]"><p className="text-xs text-surface-500">Progreso</p><p className="mt-2 text-lg font-bold text-primary-700">{realProgress}%</p></div>
+              <div className="min-w-[5rem]"><p className="text-xs text-surface-500">ETA</p><p className="mt-2 text-lg font-bold text-primary-700">{extendedSelectedRoute.eta || '--'}</p></div>
+              <div className="min-w-[5rem]"><p className="text-xs text-surface-500">Distancia</p><p className="mt-2 text-lg font-bold text-primary-700">{realRemainingDistance || '--'} km</p></div>
             </div>
           </div>
           <div className="pointer-events-auto"><MapLegend /></div>
@@ -324,9 +324,9 @@ function RoutesPage() {
       isEstimated = true;
     }
     
-    let bgColor = r.schedule_id ? '#7c3aed' : '#2563eb'; // con texto blanco: contraste >= 4,5:1
-    if (isActiveStatus) bgColor = '#047857';
-    if (isCompleted) bgColor = '#475569';
+    let bgColor = r.schedule_id ? 'var(--color-event-recurring)' : 'var(--color-event-planned)';
+    if (isActiveStatus) bgColor = 'var(--color-event-active)';
+    if (isCompleted) bgColor = 'var(--color-event-done)';
 
     return {
       id: String(r.id),
@@ -582,10 +582,10 @@ function RoutesPage() {
             {viewMode === 'calendar' ? (
               <div className="h-full bg-white rounded-2xl overflow-hidden shadow-sm border border-surface-100 text-xs sm:text-sm custom-calendar">
                 <style>{`
-                  .custom-calendar .fc-theme-standard th { border:none; padding: 10px 0; background-color: #f8fafc; font-weight: 600; color: #475569; }
-                  .custom-calendar .fc-toolbar-title { font-size: 1.1rem !important; font-weight: 700; color: #0f172a; }
-                  .custom-calendar .fc-button-primary { background-color: #0f172a !important; border-color: #0f172a !important; border-radius: 0.5rem; text-transform: capitalize; font-weight: 600; }
-                  .custom-calendar .fc-button-active { background-color: #2563eb !important; border-color: #2563eb !important; }
+                  .custom-calendar .fc-theme-standard th { border:none; padding: 10px 0; background-color: var(--color-surface-50); font-weight: 600; color: var(--color-surface-600); }
+                  .custom-calendar .fc-toolbar-title { font-size: 1.1rem !important; font-weight: 700; color: var(--color-surface-900); }
+                  .custom-calendar .fc-button-primary { background-color: var(--color-surface-900) !important; border-color: var(--color-surface-900) !important; border-radius: 0.5rem; text-transform: capitalize; font-weight: 600; }
+                  .custom-calendar .fc-button-active { background-color: var(--color-primary-600) !important; border-color: var(--color-primary-600) !important; }
                   @media (max-width: 639px) { .custom-calendar .fc-button { min-height: 44px; min-width: 44px; } }
                   .custom-calendar .fc-event { cursor: pointer; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.2); }
                   .custom-calendar .fc-timegrid-slot { height: 2.5em; }

@@ -47,7 +47,7 @@ function Sidebar() {
           </div>
           <div>
             <p className="text-[1.05rem] font-bold tracking-tight text-white">LogisticaSPA</p>
-            <p className="text-xs uppercase tracking-[0.28em] text-sky-200/55">Enterprise Control</p>
+            <p className="text-xs text-sky-200/55">Enterprise Control</p>
           </div>
         </div>
       </div>
