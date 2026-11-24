@@ -13,7 +13,7 @@ import useRole from '../../app/useRole';
 import { useAiMode } from '../../app/AiModeContext';
 
 export const navItems = [
-  { path: '/', label: 'Dashboard', eyebrow: 'Resumen', icon: LayoutDashboard, roles: ['admin'] },
+  { path: '/', label: 'Dashboard', eyebrow: 'Resumen', icon: LayoutDashboard, roles: ['admin', 'logistics_operator'] },
   { path: '/driver', label: 'Mi Viaje', eyebrow: 'Operación', icon: Truck, roles: ['driver'] },
   { path: '/logistics/packages', label: 'Paquetes', eyebrow: 'Operación', icon: Package, roles: ['admin', 'logistics_operator', 'client'] },
   { path: '/logistics/routes', label: 'Viajes', eyebrow: 'Planificación', icon: Map, roles: ['admin', 'logistics_operator'] },
