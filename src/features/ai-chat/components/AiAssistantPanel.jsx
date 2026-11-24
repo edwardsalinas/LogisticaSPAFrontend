@@ -19,7 +19,7 @@ const WELCOME_MESSAGE = {
 /**
  * Panel flotante del asistente (Modo clásico). Comparte la conversación y las tarjetas con la vista del Modo IA.
  */
-function AiAssistantPanel({ mode = 'panel', onClose = null, role }) {
+function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = null, onToggleLogiWalk = null }) {
   const chat = useAssistantChat();
   const { loading, send, reset } = chat;
   // el saludo no es parte de la conversación compartida: se muestra solo mientras está vacía
@@ -84,6 +84,16 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role }) {
           <button onClick={handleNewConversation} className="rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 transition-colors hover:bg-primary-100">
             Nueva conversación
           </button>
+          {onToggleLogiWalk && (
+            <button
+              type="button"
+              onClick={onToggleLogiWalk}
+              aria-pressed={!logiWalks}
+              className="rounded-full border border-surface-200 bg-white px-3 py-1.5 text-xs font-semibold text-surface-700 transition-colors hover:bg-surface-50"
+            >
+              {logiWalks ? 'Dejar quieto a Logi' : 'Que Logi pasee'}
+            </button>
+          )}
         </div>
       </div>
 

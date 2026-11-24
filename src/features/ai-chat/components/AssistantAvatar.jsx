@@ -8,20 +8,22 @@
  *  confirm  – antena ámbar y ojos atentos (espera tu confirmación)
  *  unread   – saluda moviendo la antena (hay una respuesta nueva)
  *
- * Las animaciones viven en index.css (.logi-*) y se apagan con prefers-reduced-motion.
+ * body: dibuja también el cuerpo (torso, brazos y piernas). walking lo hace caminar; waving, saludar con la mano.
+ * Las animaciones viven en index.css (.logi*) y se apagan con prefers-reduced-motion.
  */
 const ANTENNA = { idle: '#38bdf8', thinking: '#38bdf8', talking: '#38bdf8', confirm: '#f59e0b', unread: '#38bdf8' };
 
-function AssistantAvatar({ mood = 'idle', size = 40, className = '' }) {
+function AssistantAvatar({ mood = 'idle', size = 40, className = '', body = false, walking = false, waving = false }) {
+  const classes = ['logi', `logi--${mood}`, body && 'logi--full', walking && 'logi--walking', waving && 'logi--waving', 'shrink-0', className].filter(Boolean).join(' ');
   return (
     <svg
-      viewBox="0 0 64 64"
+      viewBox={body ? '0 0 64 96' : '0 0 64 64'}
       width={size}
-      height={size}
+      height={body ? Math.round((size * 96) / 64) : size}
       aria-hidden="true"
       focusable="false"
       data-mood={mood}
-      className={`logi logi--${mood} shrink-0 ${className}`}
+      className={classes}
     >
       <defs>
         <linearGradient id="logi-head" x1="0" y1="0" x2="1" y2="1">
@@ -30,6 +32,19 @@ function AssistantAvatar({ mood = 'idle', size = 40, className = '' }) {
         </linearGradient>
       </defs>
       <g className="logi__body">
+        {body && (
+          <g className="logi__limbs">
+            {/* piernas: giran desde la cadera */}
+            <g className="logi__leg logi__leg--a"><rect x="24" y="74" width="8" height="15" rx="4" fill="#1e40af" /><ellipse cx="28.5" cy="90.5" rx="6" ry="3.4" fill="#0b1b3a" /></g>
+            <g className="logi__leg logi__leg--b"><rect x="35" y="74" width="8" height="15" rx="4" fill="#1e40af" /><ellipse cx="39.5" cy="90.5" rx="6" ry="3.4" fill="#0b1b3a" /></g>
+            {/* torso */}
+            <rect x="19" y="54" width="26" height="24" rx="9" fill="url(#logi-head)" />
+            <circle cx="32" cy="66" r="3.2" fill="#7dd3fc" opacity="0.9" />
+            {/* brazos: giran desde el hombro */}
+            <g className="logi__arm logi__arm--a"><rect x="12.5" y="57" width="7" height="17" rx="3.5" fill="#1e40af" /></g>
+            <g className="logi__arm logi__arm--b"><rect x="44.5" y="57" width="7" height="17" rx="3.5" fill="#1e40af" /></g>
+          </g>
+        )}
         {/* antena */}
         <g className="logi__antenna">
           <line x1="32" y1="14" x2="32" y2="7" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" />

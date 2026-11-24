@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import AiAssistantPanel from '../../features/ai-chat/components/AiAssistantPanel';
-import AssistantAvatar from '../../features/ai-chat/components/AssistantAvatar';
+import LogiCompanion from '../../features/ai-chat/components/LogiCompanion';
 import CommandPalette from '../organisms/CommandPalette';
 import Navbar from '../organisms/Navbar';
 import Sidebar, { getNavItems } from '../organisms/Sidebar';
@@ -46,6 +46,9 @@ function DashboardLayout() {
   const [isAiOpen, setIsAiOpen] = usePersistentState('asistente:panel', false);
   const isWide = useMediaQuery('(min-width: 640px)');
   const chat = useAssistantChat();
+  // Logi pasea por la pantalla; se puede dejar quieto desde el chat (se recuerda en esta pestaña)
+  const [logiWalks, setLogiWalks] = usePersistentState('asistente:logi-camina', true);
+  const lastReply = [...chat.messages].reverse().find((m) => m.role === 'assistant')?.content ?? '';
   const assistant = useAssistantStatus(chat, isAiOpen);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const showFloatingAssistant = !onAssistantPage;
@@ -118,35 +121,23 @@ function DashboardLayout() {
 
       {showFloatingAssistant && (
         <>
-          {/* Bajo lg hay barra de navegación inferior: el botón se coloca por encima para no taparla */}
-          <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-end px-4 pb-24 sm:px-6 lg:px-8 lg:pb-4">
-            <button
-              type="button"
-              onClick={() => setIsAiOpen((prev) => !prev)}
-              className={`pointer-events-auto relative flex items-center gap-3 rounded-2xl border px-4 py-3 text-left shadow-lg backdrop-blur-xl transition-all duration-300 ${
-                isAiOpen
-                  ? 'border-sky-300/70 bg-[#0a2745] text-white'
-                  : 'bg-white/90 text-surface-900 border-white/75 hover:-translate-y-0.5 hover:bg-white'
-              }`}
-              aria-label={`${isAiOpen ? 'Cerrar asistente IA' : 'Abrir asistente IA'}${assistant.text ? `, ${assistant.text.toLowerCase()}` : ''}`}
-              aria-expanded={isAiOpen}
-              aria-controls={aiPanelId}
-              title={isAiOpen ? 'Cerrar el asistente' : 'Abrir el asistente'}
-            >
-              <AssistantAvatar mood={['confirm', 'thinking', 'unread'].includes(assistant.status) ? assistant.status : 'idle'} size={46} />
-              {!isAiOpen && (assistant.status === 'confirm' || assistant.status === 'unread') && (
-                <span
-                  aria-hidden="true"
-                  data-testid="assistant-badge"
-                  className={`absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-white ${assistant.status === 'confirm' ? 'bg-amber-500' : 'bg-sky-500'}`}
-                />
-              )}
-              <div className="hidden min-w-0 2xl:block">
-                <p className="text-sm font-semibold">{isAiOpen ? 'Cerrar chat' : 'Asistente'}</p>
-                {assistant.text && !isAiOpen && <p className="text-xs text-surface-600">{assistant.text}</p>}
-              </div>
-            </button>
-          </div>
+          {/* Logi pasea por la parte baja (sobre el menú inferior en celular) y dice lo que el asistente tenga pendiente */}
+          <LogiCompanion
+            open={isAiOpen}
+            status={assistant.status}
+            text={assistant.text}
+            reply={lastReply}
+            wander={logiWalks}
+            onToggle={() => setIsAiOpen((prev) => !prev)}
+            panelId={aiPanelId}
+            badge={!isAiOpen && (assistant.status === 'confirm' || assistant.status === 'unread') ? (
+              <span
+                aria-hidden="true"
+                data-testid="assistant-badge"
+                className={`absolute right-0 top-3 h-3.5 w-3.5 rounded-full border-2 border-white ${assistant.status === 'confirm' ? 'bg-amber-500' : 'bg-sky-500'}`}
+              />
+            ) : null}
+          />
           <p role="status" className="sr-only">{isAiOpen ? '' : assistant.text}</p>
 
           {isAiOpen && (
@@ -162,7 +153,7 @@ function DashboardLayout() {
                 />
               )}
               <div id={aiPanelId} className="fixed inset-x-4 bottom-24 top-20 z-50 sm:left-auto sm:right-6 sm:top-24 sm:w-[26rem] lg:right-8 lg:w-[28rem]">
-                <AiAssistantPanel mode="panel" role={role} onClose={() => setIsAiOpen(false)} />
+                <AiAssistantPanel mode="panel" role={role} onClose={() => setIsAiOpen(false)} logiWalks={logiWalks} onToggleLogiWalk={() => setLogiWalks((v) => !v)} />
               </div>
             </>
           )}

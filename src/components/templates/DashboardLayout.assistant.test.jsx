@@ -72,7 +72,7 @@ describe('Panel flotante del asistente al navegar', () => {
     await userEvent.click(screen.getByRole('button', { name: /abrir asistente ia/i }));
 
     expect(reserved(container)).toBeNull(); // el contenido conserva todo su ancho
-    expect(screen.getByRole('button', { name: /cerrar asistente ia/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /abrir asistente ia/i })).not.toBeInTheDocument(); // Logi pasa al encabezado del chat
     expect(screen.getByText('Panel del asistente')).toBeInTheDocument();
   });
 
@@ -96,7 +96,7 @@ describe('Panel flotante del asistente al navegar', () => {
     const { container } = renderApp();
     await userEvent.click(screen.getByRole('button', { name: /abrir asistente ia/i }));
     expect(reserved(container)).toBeNull();
-    expect(screen.getByRole('button', { name: /cerrar asistente ia/i })).toBeInTheDocument();
+    expect(screen.getByText('Panel del asistente')).toBeInTheDocument();
   });
 
   it('el botón avisa cuando el asistente espera una confirmación (con punto y texto)', () => {

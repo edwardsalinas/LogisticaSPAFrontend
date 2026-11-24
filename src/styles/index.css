@@ -797,6 +797,22 @@
 @keyframes logi-talk { from { transform: scaleY(0.5); } to { transform: scaleY(1.9); } }
 @keyframes logi-wave { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-16deg); } 75% { transform: rotate(16deg); } }
 
+/* Cuerpo: brazos y piernas giran desde la cadera y el hombro; al caminar se alternan */
+.logi__leg, .logi__arm { transform-origin: 50% 0%; }
+.logi--walking .logi__body { animation: logi-bob 0.5s ease-in-out infinite; }
+.logi--walking .logi__leg--a, .logi--walking .logi__arm--b { animation: logi-swing-a 0.5s ease-in-out infinite alternate; }
+.logi--walking .logi__leg--b, .logi--walking .logi__arm--a { animation: logi-swing-b 0.5s ease-in-out infinite alternate; }
+.logi--waving .logi__arm--b { animation: logi-wave-arm 0.6s ease-in-out infinite alternate; transform-origin: 50% 8%; }
+
+@keyframes logi-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
+@keyframes logi-swing-a { from { transform: rotate(26deg); } to { transform: rotate(-26deg); } }
+@keyframes logi-swing-b { from { transform: rotate(-26deg); } to { transform: rotate(26deg); } }
+@keyframes logi-wave-arm { from { transform: rotate(-150deg); } to { transform: rotate(-115deg); } }
+
+/* Globo de voz de Logi */
+.logi-bubble { animation: logi-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes logi-pop { from { opacity: 0; transform: translateY(6px) scale(0.92); } to { opacity: 1; transform: none; } }
+
 @media (prefers-reduced-motion: reduce) {
-  .logi__body, .logi__eye, .logi__eyes, .logi__bulb, .logi__mouth, .logi__antenna { animation: none !important; }
+  .logi__body, .logi__eye, .logi__eyes, .logi__bulb, .logi__mouth, .logi__antenna, .logi__leg, .logi__arm, .logi-bubble { animation: none !important; }
 }
