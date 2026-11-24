@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { Check, CheckCircle2, FileText, ListChecks, Clock, MapPin, Package, ShieldAlert, Truck, User, X, XCircle } from 'lucide-react';
 import apiService from '../../../services/apiService';
 import useRole from '../../../app/useRole';
+import { ChatContext } from '../useAssistantChat';
 import { BOLIVIA_CITIES } from '../../../constants/bolivia';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
@@ -261,12 +262,14 @@ export function ActionProposalCard({ data }) {
   const action = data.action;
   const [state, setState] = useState({ status: 'pending' }); // pending | working | done | cancelled | error
   const role = useRoleIfSignedIn();
+  const chat = useContext(ChatContext); // avisa al botón flotante de que ya no hay nada por confirmar
   const canOpenPackage = role !== 'driver'; // el conductor no tiene la ficha de paquete
 
   const call = async (verb) => {
     setState({ status: 'working', verb });
     try {
       const res = await apiService.post(`/ai-agent/actions/${action.id}/${verb}`);
+      chat?.settleAction?.(action.id);
       setState({ status: verb === 'confirm' ? 'done' : 'cancelled', message: res?.result?.message, results: res?.result?.data?.results, records: res?.result?.data?.records });
       // el detalle ya se ve en la tarjeta: el aviso solo nombra la acción
       if (verb === 'confirm') toast.success('Acción ejecutada', { description: action.title });

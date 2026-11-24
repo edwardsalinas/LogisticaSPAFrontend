@@ -62,8 +62,7 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role }) {
       <div className="border-b border-surface-100 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.96))] px-5 py-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-surface-500">Asistente operativo</p>
-            <h2 className="mt-1 text-lg font-bold tracking-tight text-primary-700">Copiloto IA LogisticaSPA</h2>
+            <h2 className="text-lg font-bold tracking-tight text-primary-700">Copiloto IA LogisticaSPA</h2>
             <p className="mt-1 text-xs text-surface-500">{introForRole(role)}</p>
           </div>
 
@@ -91,7 +90,7 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role }) {
           {loading && !(messages.length > 0 && messages[messages.length - 1].streaming) && (
             <div className="flex justify-start">
               <div className="w-[17rem] rounded-[1.35rem] rounded-bl-md border border-surface-100 bg-surface-50 px-4 py-4">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.16em] text-surface-500">
+                <div className="flex items-center gap-2 text-sm text-surface-600">
                   <span className="h-2 w-2 animate-pulse motion-reduce:animate-none rounded-full bg-primary-400" />
                   {chat.status || 'Pensando respuesta'}
                 </div>
@@ -108,7 +107,7 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role }) {
 
       {onlyWelcome && (
         <div className="border-t border-surface-100 px-4 pb-4 pt-4 sm:px-5">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-surface-500">Sugerencias rápidas</p>
+          <p className="mb-2 text-sm font-medium text-surface-700">Sugerencias rápidas</p>
           <AiSuggestionButtons suggestions={suggestions.map((s) => ({ icon: s.icon, label: s.label, value: s.value }))} onSelect={handleSend} />
         </div>
       )}

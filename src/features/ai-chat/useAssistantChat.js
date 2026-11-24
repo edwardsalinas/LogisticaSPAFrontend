@@ -18,6 +18,7 @@ export function useChatState(initialMessages = []) {
   const [loading, setLoading] = useState(false);
   const [conversationId, setConversationId] = useState(null); // conversación guardada a la que pertenece este chat
   const conversationRef = useRef(null);
+  const [settledActions, setSettledActions] = useState(() => new Set()); // acciones propuestas ya confirmadas o canceladas
   const [status, setStatus] = useState(''); // qué está consultando el asistente ("Buscando tu paquete…")
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
@@ -169,10 +170,13 @@ export function useChatState(initialMessages = []) {
     }
   }, []);
 
+  const settleAction = useCallback((id) => setSettledActions((prev) => new Set(prev).add(id)), []);
+
   /** Empieza de cero: mensajes nuevos y sin conversación guardada asociada. */
   const reset = useCallback((nextMessages = []) => {
     conversationRef.current = null;
     setConversationId(null);
+    setSettledActions(new Set());
     setMessages(nextMessages);
   }, []);
 
@@ -191,7 +195,7 @@ export function useChatState(initialMessages = []) {
     }
   }, []);
 
-  return { messages, loading, status, conversationId, send, reset, openConversation, readDocument };
+  return { messages, loading, status, conversationId, settledActions, settleAction, send, reset, openConversation, readDocument };
 }
 
 /**
