@@ -98,6 +98,9 @@ test('2. crear el paquete confirmando; otro usuario no puede confirmar la propue
   // el dueño sí, desde la tarjeta
   await page.getByRole('button', { name: /^confirmar$/i }).click();
   await expect(page.getByText(/paquete creado con el código TRK-/i)).toBeVisible({ timeout: 30_000 });
+  // recibo: el estado leído de la base tras crear, con enlace a la ficha del paquete
+  await expect(page.getByText(/comprobado en el sistema/i)).toBeVisible();
+  await expect(page.getByRole('link', { name: /ver paquete trk-/i })).toHaveAttribute('href', /\/logistics\/packages\/[0-9a-f-]{36}/);
   const pkg = await myPackage(adminCtx);
   expect(pkg, 'tras confirmar, el paquete existe').toBeTruthy();
   expect(pkg.status).toBe('pendiente');

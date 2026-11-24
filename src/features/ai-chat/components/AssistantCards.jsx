@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { Check, CheckCircle2, FileText, ListChecks, Clock, MapPin, Package, ShieldAlert, Truck, User, X, XCircle } from 'lucide-react';
 import apiService from '../../../services/apiService';
+import useRole from '../../../app/useRole';
 import { BOLIVIA_CITIES } from '../../../constants/bolivia';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
@@ -22,6 +23,15 @@ const STATUS = {
   planeada: { label: 'Planeada', variant: 'info' },
   completada: { label: 'Completada', variant: 'success' },
 };
+
+// Fuera de la sesión (pruebas, vistas sueltas) no hay rol: se muestra todo y el servidor sigue siendo quien autoriza
+function useRoleIfSignedIn() {
+  try {
+    return useRole().role;
+  } catch {
+    return null;
+  }
+}
 
 export function StatusBadge({ status }) {
   const s = STATUS[status] ?? { label: status ?? '—', variant: 'neutral' };
@@ -250,12 +260,14 @@ export function FleetCard({ data }) {
 export function ActionProposalCard({ data }) {
   const action = data.action;
   const [state, setState] = useState({ status: 'pending' }); // pending | working | done | cancelled | error
+  const role = useRoleIfSignedIn();
+  const canOpenPackage = role !== 'driver'; // el conductor no tiene la ficha de paquete
 
   const call = async (verb) => {
     setState({ status: 'working', verb });
     try {
       const res = await apiService.post(`/ai-agent/actions/${action.id}/${verb}`);
-      setState({ status: verb === 'confirm' ? 'done' : 'cancelled', message: res?.result?.message, results: res?.result?.data?.results });
+      setState({ status: verb === 'confirm' ? 'done' : 'cancelled', message: res?.result?.message, results: res?.result?.data?.results, records: res?.result?.data?.records });
       // el detalle ya se ve en la tarjeta: el aviso solo nombra la acción
       if (verb === 'confirm') toast.success('Acción ejecutada', { description: action.title });
       else toast('Acción cancelada', { description: action.title });
@@ -297,6 +309,26 @@ export function ActionProposalCard({ data }) {
               ))}
             </ul>
           )}
+        </div>
+      )}
+      {state.status === 'done' && (state.records?.length ?? 0) > 0 && (
+        <div className="border-t border-surface-100 px-4 py-3">
+          <p className="text-xs font-semibold text-surface-700">Comprobado en el sistema ahora mismo</p>
+          <ul aria-label="Estado real de los paquetes" className="mt-2 divide-y divide-surface-100">
+            {state.records.map((rec) => (
+              <li key={rec.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <div className="min-w-0 text-sm">
+                  <p className="flex flex-wrap items-center gap-2"><span className="font-mono text-xs font-bold text-surface-800">{rec.tracking_code}</span><StatusBadge status={rec.status} /></p>
+                  <p className="mt-1 text-xs text-surface-600">{rec.origen} → {rec.destino}{rec.peso != null ? ` · ${Number(rec.peso).toLocaleString('es-BO')} kg` : ''}{rec.recipient_name ? ` · ${rec.recipient_name}` : ''}{rec.trip ? ` · Viaje ${rec.trip}` : ''}</p>
+                </div>
+                {canOpenPackage && (
+                  <Link to={`/logistics/packages/${rec.id}`} className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-primary-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-500">
+                    Ver paquete{' '}<span className="sr-only">{rec.tracking_code}</span><span aria-hidden="true"> →</span>
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
       {state.status === 'cancelled' && <p role="status" className="border-t border-surface-100 bg-surface-50 px-4 py-3 text-sm text-surface-600">{state.message ?? 'Acción cancelada. No se hizo ningún cambio.'}</p>}

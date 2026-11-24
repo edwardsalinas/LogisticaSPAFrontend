@@ -7,16 +7,20 @@ import ChatBubble from './ChatBubble';
 import apiService from '../../../services/apiService';
 
 vi.mock('../../../services/apiService', () => ({ default: { post: vi.fn() } }));
+let mockRole = 'admin';
+vi.mock('../../../app/useRole', () => ({ default: () => ({ role: mockRole }) }));
 
 const ACTION = {
   kind: 'action_proposal',
   action: { id: '11111111-1111-4111-8111-111111111111', type: 'deliver_package', title: 'Confirmar entrega de un paquete', lines: ['Paquete: TRK-1', 'Destino: Oruro', 'Pasará a: Entregado'], expires_at: '2026-11-21T20:00:00Z' },
 };
 
+const RECORD = { id: 'pk-1', tracking_code: 'TRK-1', status: 'entregado', origen: 'La Paz', destino: 'Oruro', peso: 3, recipient_name: 'Ana Gómez', trip: 'La Paz → Oruro' };
+
 const renderCard = () => render(<MemoryRouter><ActionProposalCard data={ACTION} /></MemoryRouter>);
 
 describe('Acciones del asistente: tarjeta de confirmación', () => {
-  beforeEach(() => apiService.post.mockReset());
+  beforeEach(() => { apiService.post.mockReset(); mockRole = 'admin'; });
 
   it('muestra el resumen y deja claro que todavía no se hizo nada', () => {
     renderCard();
@@ -91,5 +95,35 @@ describe('Acciones del asistente: tarjeta de confirmación', () => {
   it('un tipo de tarjeta desconocido no rompe el chat', () => {
     const { container } = render(<AttachmentCard attachment={{ kind: 'otra_cosa' }} />);
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it('tras confirmar muestra el estado real leído del sistema con un enlace a la ficha', async () => {
+    apiService.post.mockResolvedValue({ success: true, result: { message: 'Hecho.', data: { records: [RECORD] } } });
+    renderCard();
+    await userEvent.click(screen.getByRole('button', { name: /^confirmar$/i }));
+
+    expect(await screen.findByText(/comprobado en el sistema/i)).toBeInTheDocument();
+    const lista = screen.getByRole('list', { name: /estado real de los paquetes/i });
+    expect(lista).toHaveTextContent('La Paz → Oruro');
+    expect(lista).toHaveTextContent('Ana Gómez');
+    expect(screen.getByRole('link', { name: /ver paquete trk-1/i })).toHaveAttribute('href', '/logistics/packages/pk-1');
+  });
+
+  it('un conductor ve el estado pero no el enlace (no tiene la ficha de paquete)', async () => {
+    mockRole = 'driver';
+    apiService.post.mockResolvedValue({ success: true, result: { message: 'Hecho.', data: { records: [RECORD] } } });
+    renderCard();
+    await userEvent.click(screen.getByRole('button', { name: /^confirmar$/i }));
+
+    expect(await screen.findByText(/comprobado en el sistema/i)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /ver paquete/i })).not.toBeInTheDocument();
+  });
+
+  it('si el servidor no pudo armar el recibo, el resultado se muestra igual sin esa sección', async () => {
+    apiService.post.mockResolvedValue({ success: true, result: { message: 'Hecho.' } });
+    renderCard();
+    await userEvent.click(screen.getByRole('button', { name: /^confirmar$/i }));
+    expect(await screen.findByText('Hecho.')).toBeInTheDocument();
+    expect(screen.queryByText(/comprobado en el sistema/i)).not.toBeInTheDocument();
   });
 });

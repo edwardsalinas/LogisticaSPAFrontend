@@ -7,6 +7,8 @@ import Navbar from '../organisms/Navbar';
 import Sidebar, { getNavItems } from '../organisms/Sidebar';
 import { useAiMode } from '../../app/AiModeContext';
 import useRole from '../../app/useRole';
+import usePersistentState from '../../hooks/usePersistentState';
+import useMediaQuery from '../../hooks/useMediaQuery';
 
 const pageTitles = {
   '/': 'Dashboard',
@@ -37,14 +39,27 @@ function DashboardLayout() {
   const { hasRole, role } = useRole();
   const onAssistantPage = location.pathname === '/assistant' || (location.pathname === '/' && aiMode);
   const title = onAssistantPage ? 'Asistente' : titleFor(location.pathname);
-  const [isAiOpen, setIsAiOpen] = useState(false);
+  // El panel del asistente sigue abierto al cambiar de pantalla (en escritorio) para poder ir a comprobar algo y volver
+  // a la conversación; también se recuerda al recargar la pestaña.
+  const [isAiOpen, setIsAiOpen] = usePersistentState('asistente:panel', false);
+  const isWide = useMediaQuery('(min-width: 640px)');
   const [paletteOpen, setPaletteOpen] = useState(false);
   const showFloatingAssistant = !onAssistantPage;
   const aiPanelId = 'ai-assistant-panel';
 
+  // En el celular el panel ocupa casi toda la pantalla: al navegar se cierra para dejar ver la pantalla de destino
+  // (la conversación se conserva y vuelve al abrirlo)
   useEffect(() => {
-    setIsAiOpen(false);
+    if (!isWide) setIsAiOpen(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo debe reaccionar al cambio de pantalla
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!isAiOpen) return undefined;
+    const onEsc = (e) => { if (e.key === 'Escape') setIsAiOpen(false); };
+    window.addEventListener('keydown', onEsc);
+    return () => window.removeEventListener('keydown', onEsc);
+  }, [isAiOpen, setIsAiOpen]);
 
   // Ctrl+K (o Cmd+K) abre la paleta de comandos desde cualquier pantalla
   useEffect(() => {
@@ -129,12 +144,15 @@ function DashboardLayout() {
 
           {isAiOpen && (
             <>
-              <button
-                type="button"
-                className="fixed inset-0 z-40 bg-slate-950/20 backdrop-blur-[2px]"
-                onClick={() => setIsAiOpen(false)}
-                aria-label="Cerrar panel del asistente"
-              />
+              {/* Solo en celular el panel tapa la pantalla y necesita fondo; en escritorio la pantalla sigue usable detrás */}
+              {!isWide && (
+                <button
+                  type="button"
+                  className="fixed inset-0 z-40 bg-slate-950/20 backdrop-blur-[2px]"
+                  onClick={() => setIsAiOpen(false)}
+                  aria-label="Cerrar panel del asistente"
+                />
+              )}
               <div id={aiPanelId} className="fixed inset-x-4 bottom-24 top-20 z-50 sm:left-auto sm:right-6 sm:top-24 sm:w-[26rem] lg:right-8 lg:w-[28rem]">
                 <AiAssistantPanel mode="panel" role={role} onClose={() => setIsAiOpen(false)} />
               </div>
