@@ -179,18 +179,26 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
   useEffect(() => {
     if (calm || open || working) { setLook(null); return undefined; }
     let frame = null;
+    const lookAt = (cx, cy) => {
+      const r = botRef.current?.getBoundingClientRect();
+      if (!r || !r.width) return;
+      const clamp = (v) => Math.max(-1, Math.min(1, v));
+      setLook({ x: clamp((cx - (r.left + r.width / 2)) / 320), y: clamp((cy - (r.top + r.height * 0.3)) / 240) });
+    };
     const onMove = (e) => {
       if (frame) return;
-      frame = requestAnimationFrame(() => {
-        frame = null;
-        const r = botRef.current?.getBoundingClientRect();
-        if (!r || !r.width) return;
-        const clamp = (v) => Math.max(-1, Math.min(1, v));
-        setLook({ x: clamp((e.clientX - (r.left + r.width / 2)) / 320), y: clamp((e.clientY - (r.top + r.height * 0.3)) / 240) });
-      });
+      frame = requestAnimationFrame(() => { frame = null; lookAt(e.clientX, e.clientY); });
+    };
+    // al entrar a un campo de formulario (con teclado o toque) Logi mira hacia él
+    const onFocus = (e) => {
+      const el = e.target;
+      if (!(el instanceof HTMLElement) || !el.matches('input, select, textarea') || botRef.current?.contains(el)) return;
+      const f = el.getBoundingClientRect();
+      lookAt(f.left + f.width / 2, f.top + f.height / 2);
     };
     window.addEventListener('pointermove', onMove);
-    return () => { window.removeEventListener('pointermove', onMove); if (frame) cancelAnimationFrame(frame); };
+    window.addEventListener('focusin', onFocus);
+    return () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('focusin', onFocus); if (frame) cancelAnimationFrame(frame); };
   }, [calm, open, working]);
 
   const toggle = useCallback(() => { setSpeech(''); synth.cancel(); onToggle(); }, [onToggle, synth]);
