@@ -45,7 +45,7 @@ function LoginPage() {
         if (response.success) {
           const s = response.data;
           setStats({
-            efficiency: `${s.efficiency}%`,
+            efficiency: `${Number(s.efficiency).toLocaleString('es-BO')}%`,
             movements: s.totalPackages?.toLocaleString() || '0',
             activeUnits: s.activeUnits > 0 ? `${s.activeUnits}` : '24/7'
           });

@@ -38,7 +38,7 @@ describe('Analítica con datos reales', () => {
     expect(from).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(to).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(screen.getAllByText('75%').length).toBeGreaterThanOrEqual(2); // a tiempo (resumen) y eficiencia del conductor
-    expect(screen.getByText('5.5 h')).toBeInTheDocument(); // entrega promedio
+    expect(screen.getByText('5,5 h')).toBeInTheDocument(); // entrega promedio
     expect(screen.getByTestId('trend')).toHaveTextContent('total=7;cambio=40');
     expect(screen.getByTestId('status')).toHaveTextContent('Entregado:4');
   });
@@ -66,7 +66,7 @@ describe('Analítica con datos reales', () => {
 
   it('formatDuration: minutos si es menos de una hora, horas si no, guion sin dato', () => {
     expect(formatDuration(0.05)).toBe('3 min');
-    expect(formatDuration(5.5)).toBe('5.5 h');
+    expect(formatDuration(5.5)).toBe('5,5 h');
     expect(formatDuration(null)).toBe('—');
   });
 });

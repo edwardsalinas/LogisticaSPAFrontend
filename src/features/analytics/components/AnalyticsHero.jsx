@@ -5,7 +5,7 @@ const dash = (value, suffix = '') => (value === null || value === undefined ? 'â
 // Menos de una hora se muestra en minutos ("0 h" no dice nada)
 export const formatDuration = (hours) => {
   if (hours === null || hours === undefined) return 'â€”';
-  return hours < 1 ? `${Math.round(hours * 60)} min` : `${hours} h`;
+  return hours < 1 ? `${Math.round(hours * 60)} min` : `${hours.toLocaleString('es-BO')} h`;
 };
 
 export default function AnalyticsHero({ totals }) {
