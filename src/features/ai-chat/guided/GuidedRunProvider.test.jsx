@@ -65,7 +65,7 @@ describe('Logi guiado: motor de ejecución', () => {
     expect(apiService.post).toHaveBeenCalledTimes(1);
     expect(apiService.post).toHaveBeenCalledWith('/ai-agent/actions/act-1/confirm');
     expect(out.result.result.message).toMatch(/TRK-9/);
-    expect(events).toContain(GUIDED_EVENTS.packageCreated); // la página refresca su lista
+    expect(events).toContain(GUIDED_EVENTS.changed); // la página refresca su lista
     expect(screen.queryByText(/trabajando por ti/i)).not.toBeInTheDocument(); // todo vuelve a la normalidad
   });
 

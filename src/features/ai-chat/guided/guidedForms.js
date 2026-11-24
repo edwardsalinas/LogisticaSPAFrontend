@@ -18,8 +18,8 @@ export const getGuidedForm = (name) => {
 
 /** Eventos con los que Logi pide cosas a la pantalla (la página dueña del formulario los escucha). */
 export const GUIDED_EVENTS = {
-  packageCreated: 'logi:paquete-creado',
-  cancelForm: 'logi:cancelar-formulario',
+  changed: 'logi:datos-cambiaron', // la acción se ejecutó: la pantalla cierra su formulario y recarga sus datos
+  cancelForm: 'logi:cancelar-formulario', // se detuvo o falló antes de ejecutar: la pantalla solo cierra su formulario
 };
 export const emitGuided = (name) => window.dispatchEvent(new CustomEvent(name));
 

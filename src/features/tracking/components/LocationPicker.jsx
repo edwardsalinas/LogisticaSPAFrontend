@@ -66,7 +66,7 @@ export default function LocationPicker({ register, errors, setValue, lat, lng, s
   else if (near) placeLabel = `a ${Math.round(near.km)} km de ${near.city.name}`;
 
   return (
-    <fieldset className="space-y-3">
+    <fieldset data-logi-field="location" className="space-y-3">
       <legend className="mb-1.5 text-sm font-medium text-surface-700">
         {title} <span className="text-danger" aria-hidden="true">*</span>
       </legend>

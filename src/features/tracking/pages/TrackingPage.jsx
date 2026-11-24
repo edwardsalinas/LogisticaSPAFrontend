@@ -9,6 +9,7 @@ import Modal from '../../../components/molecules/Modal';
 import Skeleton from '../../../components/atoms/Skeleton';
 import apiService from '../../../services/apiService';
 import TrackingForm from '../components/TrackingForm';
+import { GUIDED_EVENTS } from '../../ai-chat/guided/guidedForms';
 import TrackingHistory from '../components/TrackingHistory';
 import TrackingMap from '../components/TrackingMap';
 import useRole from '../../../app/useRole';
@@ -83,6 +84,19 @@ function TrackingPage() {
     };
     fetchRouteData();
   }, [selectedPackageId, packages]);
+
+  // Logi (asistente) registra un evento a la vista de todos: al terminar cierra el formulario y recarga; si lo detienen, solo lo cierra
+  useEffect(() => {
+    const onChanged = () => { setShowForm(false); fetchPackages(); };
+    const onCancel = () => setShowForm(false);
+    window.addEventListener(GUIDED_EVENTS.changed, onChanged);
+    window.addEventListener(GUIDED_EVENTS.cancelForm, onCancel);
+    return () => {
+      window.removeEventListener(GUIDED_EVENTS.changed, onChanged);
+      window.removeEventListener(GUIDED_EVENTS.cancelForm, onCancel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchPackages solo usa setters de estado
+  }, []);
 
   const handleRegisterSuccess = async () => {
     setShowForm(false);
@@ -224,7 +238,7 @@ function TrackingPage() {
       {/* 3. LAYER: FLOATING ACTION BUTTONS (TOP RIGHT) */}
       <div className="absolute top-6 right-6 z-10 flex flex-col gap-3">
          {!isClient && (
-           <Button size="lg" className="h-14 px-8 rounded-2xl shadow-xl shadow-primary-500/25 gap-3 font-bold text-sm" onClick={() => setShowForm(true)}>
+           <Button size="lg" data-logi="nuevo-evento" className="h-14 px-8 rounded-2xl shadow-xl shadow-primary-500/25 gap-3 font-bold text-sm" onClick={() => setShowForm(true)}>
              <Activity size={20} strokeWidth={2.5} /> Registrar Evento
            </Button>
          )}

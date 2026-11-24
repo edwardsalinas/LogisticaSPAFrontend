@@ -1,5 +1,5 @@
 import { Route, Save } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,6 +10,7 @@ import { PACKAGE_STATUS } from '../../../constants/status';
 import { matchCity } from '../../../constants/bolivia';
 import { latField, lngField, requireInsideBolivia } from '../../../constants/locationSchema';
 import LocationPicker from './LocationPicker';
+import { registerGuidedForm } from '../../ai-chat/guided/guidedForms';
 
 const STATUS_OPTIONS = [
   { value: PACKAGE_STATUS.PENDING, label: 'Pendiente' },
@@ -54,6 +55,14 @@ function TrackingForm({ packages = [], onSuccess, onCancel }) {
   const [packageId, status, lat, lng] = watch(['package_id', 'status', 'lat', 'lng']);
   const suggestion = suggestedCityFor(packages.find((p) => p.id === packageId), status);
 
+  // Logi puede llenar este formulario a la vista de todos (solo pone valores; el registro real es la confirmación del servidor)
+  const formRef = useRef(null);
+  useEffect(() => registerGuidedForm('event', {
+    setValue: (name, value) => setValue(name, value, { shouldDirty: true, shouldValidate: true }),
+    // «location» es el bloque del mapa y las coordenadas
+    getElement: (name) => formRef.current?.querySelector(name === 'location' ? '[data-logi-field="location"]' : `[name="${name}"]`) ?? null,
+  }), [setValue]);
+
   const onSubmit = async (values) => {
     setLoading(true);
     setError('');
@@ -75,7 +84,7 @@ function TrackingForm({ packages = [], onSuccess, onCancel }) {
   }));
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
+    <form ref={formRef} onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
       <div className="rounded-[1.4rem] border border-surface-100 bg-surface-50/80 p-5">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">

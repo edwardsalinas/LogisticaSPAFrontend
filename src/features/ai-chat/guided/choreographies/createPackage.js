@@ -72,7 +72,7 @@ export default async function createPackage(ctx, action) {
   }
 
   const res = await ctx.confirm(action);
-  emitGuided(GUIDED_EVENTS.packageCreated);
+  emitGuided(GUIDED_EVENTS.changed);
   await ctx.say(`¡Listo! ${res?.result?.message ?? 'Paquete registrado.'}`, { wait: true });
   return res;
 }

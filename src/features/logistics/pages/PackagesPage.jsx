@@ -99,15 +99,15 @@ function PackagesPage() {
     fetchData();
   };
 
-  // Logi (asistente) crea un paquete a la vista de todos: al terminar refresca la lista y cierra el formulario; si lo detienen, solo lo cierra
+  // Logi (asistente) hace una acción a la vista de todos: al terminar refresca la lista y cierra el formulario; si lo detienen, solo lo cierra
   useEffect(() => {
-    const onCreated = () => handleCreateSuccess();
-    const onCancel = () => { setShowForm(false); setContextualRoute(null); };
-    window.addEventListener(GUIDED_EVENTS.packageCreated, onCreated);
-    window.addEventListener(GUIDED_EVENTS.cancelForm, onCancel);
+    const closeForms = () => { setShowForm(false); setContextualRoute(null); setShowAssignModal(false); setAssignPackage(null); };
+    const onChanged = () => { closeForms(); fetchData(true); };
+    window.addEventListener(GUIDED_EVENTS.changed, onChanged);
+    window.addEventListener(GUIDED_EVENTS.cancelForm, closeForms);
     return () => {
-      window.removeEventListener(GUIDED_EVENTS.packageCreated, onCreated);
-      window.removeEventListener(GUIDED_EVENTS.cancelForm, onCancel);
+      window.removeEventListener(GUIDED_EVENTS.changed, onChanged);
+      window.removeEventListener(GUIDED_EVENTS.cancelForm, closeForms);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchData solo usa setters de estado
   }, []);
@@ -482,7 +482,7 @@ function PackagesPage() {
                              <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
                              <span className="text-xs font-bold uppercase text-surface-500 tracking-widest">En Almacén</span>
                           </div>
-                          <Button variant="secondary" size="xs" className="h-8 px-4 text-xs font-bold uppercase gap-2 opacity-0 group-hover:opacity-100 transition-all rounded-xl border-primary-200 text-primary-700 bg-white hover:bg-primary-50" onClick={(e) => { e.stopPropagation(); setAssignPackage(pkg); setShowAssignModal(true); }}>
+                          <Button variant="secondary" size="xs" data-logi-vincular={pkg.tracking_code} className="h-8 px-4 text-xs font-bold uppercase gap-2 opacity-0 group-hover:opacity-100 transition-all rounded-xl border-primary-200 text-primary-700 bg-white hover:bg-primary-50" onClick={(e) => { e.stopPropagation(); setAssignPackage(pkg); setShowAssignModal(true); }}>
                              <Link size={12} strokeWidth={2.5} /> Vincular
                           </Button>
                        </div>

@@ -818,7 +818,7 @@
 }
 
 /* ---- Logi guiado: campo que está llenando y botón que "pulsa" ---- */
-[data-logi-active] { outline: 3px solid rgba(37, 99, 235, 0.9) !important; outline-offset: 3px; border-radius: 12px; box-shadow: 0 0 0 7px rgba(56, 189, 248, 0.22); }
+[data-logi-active] { opacity: 1 !important; /* botones que solo aparecen al pasar el cursor (p. ej. «Vincular») */ outline: 3px solid rgba(37, 99, 235, 0.9) !important; outline-offset: 3px; border-radius: 12px; box-shadow: 0 0 0 7px rgba(56, 189, 248, 0.22); }
 .logi-press { animation: logi-press 0.45s ease-out; }
 @keyframes logi-press {
   0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.55); transform: scale(1); }

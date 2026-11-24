@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { routeName } from '../../../utils/routeLabel';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,6 +9,7 @@ import Spinner from '../../../components/atoms/Spinner';
 import apiService from '../../../services/apiService';
 import { Truck, MapPin } from 'lucide-react';
 import { ROUTE_STATUS, normalizeRouteStatus } from '../../../constants/status';
+import { registerGuidedForm } from '../../ai-chat/guided/guidedForms';
 
 const shipmentAssignmentSchema = z.object({
   routeId: z.string().min(1, 'Por favor selecciona un despacho'),
@@ -20,6 +21,7 @@ function ShipmentAssignmentForm({ pkg, onSuccess, onCancel }) {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm({ resolver: zodResolver(shipmentAssignmentSchema), defaultValues: { routeId: '' } });
   const selectedRouteId = watch('routeId');
@@ -42,6 +44,16 @@ function ShipmentAssignmentForm({ pkg, onSuccess, onCancel }) {
     };
     fetchRoutes();
   }, []);
+
+  // Logi puede elegir el despacho a la vista de todos (solo pone el valor; la asignación real es la confirmación del servidor)
+  const formRef = useRef(null);
+  const readyRef = useRef(false);
+  readyRef.current = !loading;
+  useEffect(() => registerGuidedForm('assignment', {
+    isReady: () => readyRef.current,
+    setValue: (name, value) => setValue(name, value, { shouldDirty: true }),
+    getElement: (name) => formRef.current?.querySelector(`[name="${name}"]`) ?? null,
+  }), [setValue]);
 
   const compatibleRoutes = useMemo(() => {
     return routes.filter(r => 
@@ -74,7 +86,7 @@ function ShipmentAssignmentForm({ pkg, onSuccess, onCancel }) {
   );
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
+    <form ref={formRef} onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
       <div className="rounded-[1.4rem] border border-primary-100 bg-primary-50/50 p-4">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-primary-600 shadow-sm border border-primary-100">
