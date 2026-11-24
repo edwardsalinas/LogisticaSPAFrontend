@@ -235,7 +235,7 @@ function PackagesPage() {
           pendingCount={pendingCount}
           actions={!isClient && (
             // En pantallas medianas el panel "Carga suelta" queda debajo de la tabla: la acción principal sube a la cabecera
-            <Button size="md" className="gap-2 whitespace-nowrap font-bold 2xl:hidden" onClick={() => setShowForm(true)}>
+            <Button size="md" className="gap-2 whitespace-nowrap font-bold max-sm:min-h-11 2xl:hidden" onClick={() => setShowForm(true)}>
               <PackagePlus size={18} strokeWidth={2.5} /> Nuevo Registro Global
             </Button>
           )}
@@ -268,7 +268,7 @@ function PackagesPage() {
                {/* SMART DATE STEPPER (Only for active tab) */}
                {activeTab !== 'delivered' && (
                  <div className="flex items-center bg-white border border-surface-200 rounded-2xl p-1 shadow-sm mr-2 ring-1 ring-surface-100">
-                    <button onClick={() => stepDate(-1)} className="h-8 w-8 flex items-center justify-center rounded-xl hover:bg-surface-50 text-surface-500 hover:text-primary-600 transition-all">
+                    <button type="button" aria-label="Día anterior" onClick={() => stepDate(-1)} className="h-11 w-11 sm:h-8 sm:w-8 flex items-center justify-center rounded-xl hover:bg-surface-50 text-surface-500 hover:text-primary-600 transition-all">
                        <ChevronRight size={18} className="rotate-180" />
                     </button>
                     
@@ -282,20 +282,20 @@ function PackagesPage() {
                           )}
                        </div>
                        {selectedDate.toDateString() !== new Date().toDateString() ? (
-                          <button onClick={resetToToday} className="text-xs font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-md hover:bg-primary-100 transition-all uppercase tracking-tighter">
+                          <button onClick={resetToToday} className="text-xs font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-md hover:bg-primary-100 transition-all">
                              Volver a hoy
                           </button>
                        ) : (
-                          <span className="text-xs font-bold text-surface-500 uppercase tracking-tighter -mt-0.5">Vista Operativa</span>
+                          <span className="text-xs font-medium text-surface-600 -mt-0.5">Vista operativa</span>
                        )}
                     </div>
 
-                    <button onClick={() => stepDate(1)} className="h-8 w-8 flex items-center justify-center rounded-xl hover:bg-surface-50 text-surface-500 hover:text-primary-600 transition-all">
+                    <button type="button" aria-label="Día siguiente" onClick={() => stepDate(1)} className="h-11 w-11 sm:h-8 sm:w-8 flex items-center justify-center rounded-xl hover:bg-surface-50 text-surface-500 hover:text-primary-600 transition-all">
                        <ChevronRight size={18} />
                     </button>
                     <div className="h-6 w-px bg-surface-100 mx-1" />
-                    <label className="h-8 w-8 flex items-center justify-center rounded-xl hover:bg-surface-50 text-surface-500 cursor-pointer relative">
-                       <Clock size={16} /><input type="date" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => setSelectedDate(new Date(e.target.value + 'T00:00:00'))} />
+                    <label className="h-11 w-11 sm:h-8 sm:w-8 flex items-center justify-center rounded-xl hover:bg-surface-50 text-surface-500 cursor-pointer relative">
+                       <Clock size={16} aria-hidden="true" /><input type="date" aria-label="Elegir otra fecha" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => setSelectedDate(new Date(e.target.value + 'T00:00:00'))} />
                     </label>
                  </div>
                )}
@@ -305,6 +305,7 @@ function PackagesPage() {
                 <input 
                   type="text" 
                   placeholder="Buscar viaje o ruta..." 
+                  aria-label="Buscar viaje o ruta"
                   className="pl-9 pr-4 py-2 bg-white border border-surface-200 rounded-xl text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all outline-none w-full sm:w-44 lg:w-48"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -360,7 +361,7 @@ function PackagesPage() {
                                <span className="font-bold text-surface-900 text-sm">
                                  {route.departure_time ? new Date(route.departure_time).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit' }) : '--'}
                                </span>
-                               <span className="text-xs font-bold text-primary-500 uppercase tracking-tighter">
+                               <span className="text-xs font-semibold text-primary-700">
                                  {route.departure_time ? new Date(route.departure_time).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }) : 'S/H'}
                                </span>
                             </div>
@@ -383,7 +384,7 @@ function PackagesPage() {
                          </td>
                          <td className="px-4 py-5 text-right pr-8">
                             {!isClient && (
-<Button variant="secondary" size="xs" className="h-8 px-4 rounded-xl text-xs font-bold uppercase tracking-tight gap-1.5 border-primary-200 text-primary-700 bg-white hover:bg-primary-600 hover:text-white transition-all shadow-sm disabled:opacity-30 disabled:grayscale disabled:pointer-events-none" disabled={(isPast && activeTab !== 'delivered') || ['completada', 'finalizada', 'completed', 'entregado'].includes(route.status?.toLowerCase())} onClick={(e) => { e.stopPropagation(); handleOpenContextualForm(route); }}>
+<Button variant="secondary" size="xs" className="h-8 max-sm:min-h-11 px-4 rounded-xl text-xs font-bold gap-1.5 border-primary-200 text-primary-700 bg-white hover:bg-primary-600 hover:text-white transition-all shadow-sm disabled:opacity-30 disabled:grayscale disabled:pointer-events-none" disabled={(isPast && activeTab !== 'delivered') || ['completada', 'finalizada', 'completed', 'entregado'].includes(route.status?.toLowerCase())} onClick={(e) => { e.stopPropagation(); handleOpenContextualForm(route); }}>
                                <PackagePlus size={14} strokeWidth={2.5} /> {['completada', 'finalizada', 'completed', 'entregado'].includes(route.status?.toLowerCase()) ? 'Cerrado' : 'Cargar'}
                             </Button>
                             )}

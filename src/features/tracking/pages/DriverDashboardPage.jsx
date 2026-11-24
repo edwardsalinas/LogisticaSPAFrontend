@@ -239,8 +239,8 @@ function DriverDashboardPage() {
         isEstimated = true;
       }
 
-      let bgColor = '#3b82f6';
-      if (isActiveStatus) bgColor = '#10b981';
+      let bgColor = '#2563eb'; // con texto blanco: contraste >= 4,5:1
+      if (isActiveStatus) bgColor = '#047857';
       if (isCompleted) bgColor = '#18181b';
 
       return {
@@ -267,7 +267,7 @@ function DriverDashboardPage() {
     if (isMonthView) {
       return (
         <div className={`w-full overflow-hidden flex items-center gap-1 px-1 py-0.5 rounded-md ${isPast && routeStatus === 'planeada' ? 'opacity-60' : ''}`} style={isEstimated ? { maskImage: 'linear-gradient(to right, black 80%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, black 80%, transparent 100%)' } : {}}>
-          <span className="font-bold text-[8px] text-white/90 whitespace-nowrap">{eventInfo.timeText.split(' - ')[0]}</span>
+          <span className="font-bold text-[11px] text-white whitespace-nowrap">{eventInfo.timeText.split(' - ')[0]}</span>
           <span className="text-xs font-semibold text-white truncate max-w-[60px]">{event.title.split('|')[0].trim()}</span>
           {(['active', 'en_transito'].includes(routeStatus)) && <Truck size={8} className="animate-pulse text-white ml-auto shrink-0" />}
         </div>
@@ -299,13 +299,13 @@ function DriverDashboardPage() {
           <p className="text-xs font-bold text-white leading-tight truncate">
             {event.title.split('|')[0].trim()}
           </p>
-          <p className="text-[8px] font-bold text-white/50 truncate uppercase tracking-tighter mt-0.5">
+          <p className="text-xs font-medium text-white/80 truncate mt-0.5">
             {event.title.split('|')[1]?.trim() || '---'}
           </p>
         </div>
 
         <div className="mt-1 flex items-center justify-between gap-1 border-t border-white/10 pt-1 shrink-0">
-          <span className="text-[7px] font-bold text-white/30 uppercase tracking-tighter">
+          <span className="text-xs font-medium text-white/80 tracking-tighter">
             {isEstimated ? 'EST.' : 'REAL'}
           </span>
           <div className="flex items-center gap-1 min-w-0">
@@ -665,7 +665,7 @@ function DriverDashboardPage() {
                           <p className="text-sm font-bold text-surface-900 truncate tracking-tight">
                             {(activeRouteData || activeTrip?.route)?.route_code || '---'}
                           </p>
-                          <span className={`text-[8px] font-bold uppercase tracking-[0.1em] px-2 py-0.5 rounded-full border ${isActive ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-primary-50 border-primary-100 text-primary-600'} shrink-0`}>
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${isActive ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-primary-50 border-primary-100 text-primary-600'} shrink-0`}>
                             {isActive ? 'En Curso' : 'Seleccionada'}
                           </span>
                         </div>
@@ -727,7 +727,7 @@ function DriverDashboardPage() {
                                   </div>
                                   <div className="min-w-0">
                                     <span className={`text-xs font-bold block truncate leading-none ${isReached ? 'text-emerald-900' : 'text-surface-700'}`}>{cp.name}</span>
-                                    {isReached && <span className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest mt-0.5 block">Alcanzado</span>}
+                                    {isReached && <span className="text-xs font-semibold text-emerald-700 mt-0.5 block">Alcanzado</span>}
                                   </div>
                                 </div>
                                 {!isReached && (

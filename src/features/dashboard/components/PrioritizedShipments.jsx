@@ -1,4 +1,5 @@
 import { Boxes, MoveRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Avatar from '../../../components/atoms/Avatar';
 import Badge from '../../../components/atoms/Badge';
 import ProgressBar from '../../../components/atoms/ProgressBar';
@@ -47,9 +48,9 @@ export default function PrioritizedShipments() {
           <h2 className="font-display text-xl font-semibold tracking-[-0.03em] text-surface-950">Despachos prioritarios</h2>
           <p className="mt-1 text-sm text-surface-600">Lo que requiere seguimiento hoy.</p>
         </div>
-        <button className="inline-flex items-center gap-2 text-sm font-semibold text-primary-700 transition-colors hover:text-primary-800">
-          Ver operación completa<MoveRight size={16} strokeWidth={2.2} />
-        </button>
+        <Link to="/logistics/packages" className="inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-semibold text-primary-700 transition-colors hover:text-primary-800">
+          Ver operación completa<MoveRight size={16} strokeWidth={2.2} aria-hidden="true" />
+        </Link>
       </div>
       <div className="overflow-x-auto px-2 pb-2 sm:px-4 sm:pb-4">
         <table className="w-full border-collapse tabular-nums">

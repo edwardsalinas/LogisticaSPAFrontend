@@ -24,7 +24,7 @@ function Navbar({ title, onOpenSearch }) {
             onClick={onOpenSearch}
             aria-label="Buscar o ir a (Ctrl+K)"
             aria-keyshortcuts="Control+K"
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-surface-200 bg-white px-2.5 py-2 text-sm text-surface-600 transition-colors hover:bg-surface-100 sm:px-3"
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-surface-200 bg-white px-2.5 py-2 text-sm text-surface-600 sm:min-h-0 sm:min-w-0 transition-colors hover:bg-surface-100 sm:px-3"
           >
             <Search size={16} strokeWidth={2.2} aria-hidden="true" />
             <span className="hidden md:inline">Buscar o ir a…</span>
@@ -45,7 +45,7 @@ function Navbar({ title, onOpenSearch }) {
             aria-label="Modo IA"
             title={aiMode ? 'Modo IA activado: la aplicación abre en el asistente' : 'Activa el Modo IA para abrir la aplicación en el asistente'}
             onClick={handleToggleAiMode}
-            className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition-all duration-200 sm:px-3.5 ${aiMode ? 'border-primary-300 bg-primary-50 text-primary-700' : 'border-surface-200 bg-white text-surface-600 hover:bg-surface-50'}`}
+            className={`inline-flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition-all duration-200 sm:min-h-0 sm:px-3.5 ${aiMode ? 'border-primary-300 bg-primary-50 text-primary-700' : 'border-surface-200 bg-white text-surface-600 hover:bg-surface-50'}`}
           >
             <Sparkles size={16} strokeWidth={2.2} aria-hidden="true" />
             <span className="hidden sm:inline">Modo IA</span>
@@ -57,7 +57,7 @@ function Navbar({ title, onOpenSearch }) {
           <button
             onClick={logout}
             aria-label="Cerrar sesión"
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-surface-200 bg-white px-3 py-2 text-sm font-semibold text-surface-700 transition-all duration-200 hover:bg-surface-100 sm:px-3.5"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl border border-surface-200 bg-white px-3 py-2 text-sm font-semibold text-surface-700 sm:min-h-0 sm:min-w-0 transition-all duration-200 hover:bg-surface-100 sm:px-3.5"
           >
             <LogOut size={16} strokeWidth={2.2} />
             <span className="hidden sm:inline">Cerrar sesión</span>

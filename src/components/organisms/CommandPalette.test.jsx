@@ -84,4 +84,12 @@ describe('CommandPalette (Ctrl+K)', () => {
     await userEvent.click(screen.getByRole('option', { name: /Cerrar sesión/ }));
     expect(logout).toHaveBeenCalledTimes(1);
   });
+
+  it('cerrada no deja ningún encabezado suelto en la página; abierta, el diálogo tiene nombre', () => {
+    const { unmount } = render(<MemoryRouter><CommandPalette open={false} onOpenChange={vi.fn()} /></MemoryRouter>);
+    expect(screen.queryByRole('heading', { name: /buscar o ir a/i })).not.toBeInTheDocument();
+    unmount();
+    renderPalette();
+    expect(screen.getByRole('dialog', { name: /buscar o ir a/i })).toBeInTheDocument();
+  });
 });

@@ -17,14 +17,15 @@ function Avatar({ name = '', src = null, size = 'md', className = '' }) {
   // Generar color basado en el nombre (hash simple)
   const getColor = (fullName) => {
     const colors = [
-      'bg-primary-500',
-      'bg-success',
-      'bg-info',
-      'bg-warning',
-      'bg-purple-500',
-      'bg-pink-500',
-      'bg-indigo-500',
-      'bg-teal-500',
+      // tonos 600-700: el texto blanco de las iniciales mantiene contraste AA (>= 4,5:1)
+      'bg-primary-600',
+      'bg-emerald-700',
+      'bg-blue-700',
+      'bg-amber-700',
+      'bg-purple-700',
+      'bg-pink-700',
+      'bg-indigo-700',
+      'bg-teal-700',
     ];
     
     if (!fullName) return 'bg-surface-400';

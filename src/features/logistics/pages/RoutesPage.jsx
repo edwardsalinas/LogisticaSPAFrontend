@@ -324,8 +324,8 @@ function RoutesPage() {
       isEstimated = true;
     }
     
-    let bgColor = r.schedule_id ? '#8b5cf6' : '#3b82f6';
-    if (isActiveStatus) bgColor = '#059669';
+    let bgColor = r.schedule_id ? '#7c3aed' : '#2563eb'; // con texto blanco: contraste >= 4,5:1
+    if (isActiveStatus) bgColor = '#047857';
     if (isCompleted) bgColor = '#475569';
 
     return {
@@ -390,7 +390,7 @@ function RoutesPage() {
     if (isMonthView) {
       return (
         <div className={`w-full overflow-hidden flex items-center gap-1 px-1 py-0.5 rounded-md ${isPast && status === 'planeada' ? 'opacity-60' : ''}`} style={isEstimated ? { maskImage: 'linear-gradient(to right, black 80%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, black 80%, transparent 100%)' } : {}}>
-          <span className="font-bold text-[8px] text-white/90 whitespace-nowrap">{eventInfo.timeText.split(' - ')[0]}</span>
+          <span className="font-bold text-[11px] text-white whitespace-nowrap">{eventInfo.timeText.split(' - ')[0]}</span>
           <span className="text-xs font-semibold text-white truncate max-w-[60px]">{event.title.split('|')[0].trim()}</span>
           {(status === 'active' || status === 'en_transito') && <Truck size={8} className="animate-pulse text-white ml-auto shrink-0" />}
         </div>
@@ -423,13 +423,13 @@ function RoutesPage() {
           <p className="text-xs font-bold text-white leading-tight truncate">
             {event.title.split('|')[0].trim()}
           </p>
-          <p className="text-[8px] font-bold text-white/50 truncate uppercase tracking-tighter mt-0.5">
+          <p className="text-xs font-medium text-white/80 truncate mt-0.5">
             {route.driver_name || 'Sin conductor'}
           </p>
         </div>
 
         <div className="mt-1 flex items-center justify-between gap-1 border-t border-white/10 pt-1 shrink-0">
-          <span className="text-[7px] font-bold text-white/30 uppercase tracking-tighter">
+          <span className="text-xs font-medium text-white/80">
             {isEstimated ? 'EST.' : 'REAL'}
           </span>
           <div className="flex items-center gap-1 min-w-0">
@@ -460,7 +460,8 @@ function RoutesPage() {
         <select
           value={value}
           onChange={onChange}
-          className={`w-full appearance-none h-[40px] pl-10 pr-9 text-[13px] font-bold rounded-xl border transition-all duration-300 outline-none cursor-pointer
+          aria-label={placeholder}
+          className={`w-full appearance-none h-11 sm:h-[40px] pl-10 pr-9 text-[13px] font-bold rounded-xl border transition-all duration-300 outline-none cursor-pointer
             ${isActive 
               ? 'bg-primary-50/80 border-primary-300 text-primary-900 ring-2 ring-primary-500/10' 
               : 'bg-white border-surface-200 text-surface-700 hover:border-surface-400 hover:shadow-sm'
@@ -498,32 +499,29 @@ function RoutesPage() {
         <RoutesHero active={stats.active} pending={stats.pending} completed={stats.completed} />
       )}
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(22rem,40%)_minmax(0,1fr)]">
+      <section className="grid gap-6 2xl:grid-cols-[minmax(30rem,42%)_minmax(0,1fr)]">
         <div className="overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/88 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
           <div className="p-5 border-b border-surface-100">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-4 mb-5">
               <div className="flex items-center gap-3.5">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-lg shadow-primary-500/20">
                   <Truck size={22} strokeWidth={2.5} />
                 </div>
-                <div>
-                  <h2 className="font-display text-xl font-bold tracking-tight text-surface-950 leading-tight">Control de Rutas</h2>
-                  <p className="text-xs font-bold text-surface-500 uppercase tracking-[0.2em] mt-0.5">Operativa Logística</p>
-                </div>
+                <h2 className="font-display text-xl font-bold tracking-tight text-surface-950 leading-tight">Control de Rutas</h2>
               </div>
               
               <div className="flex items-center gap-2.5 w-full sm:w-auto">
                 <div className="flex bg-surface-100 p-1 rounded-xl border border-surface-200/50 flex-1 sm:flex-none">
-                  <button onClick={() => setViewMode('calendar')} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all ${viewMode === 'calendar' ? 'bg-white shadow-sm text-primary-700' : 'text-surface-500 hover:text-surface-700'}`}><Calendar size={13} strokeWidth={2.5}/> Calendario</button>
-                  <button onClick={() => setViewMode('list')} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-primary-700' : 'text-surface-500 hover:text-surface-700'}`}><List size={13} strokeWidth={2.5}/> Lista</button>
+                  <button onClick={() => setViewMode('calendar')} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-1.5 max-sm:min-h-11 text-xs font-bold rounded-lg transition-all ${viewMode === 'calendar' ? 'bg-white shadow-sm text-primary-700' : 'text-surface-600 hover:text-surface-800'}`}><Calendar size={13} strokeWidth={2.5}/> Calendario</button>
+                  <button onClick={() => setViewMode('list')} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-1.5 max-sm:min-h-11 text-xs font-bold rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-primary-700' : 'text-surface-600 hover:text-surface-800'}`}><List size={13} strokeWidth={2.5}/> Lista</button>
                 </div>
-                <Button size="md" className="flex-1 sm:flex-none whitespace-nowrap px-5 h-9 text-xs" onClick={() => { setEditingRoute(null); setShowForm(true); }}>
+                <Button size="md" className="flex-1 sm:flex-none whitespace-nowrap px-5 h-9 max-sm:min-h-11 text-xs" onClick={() => { setEditingRoute(null); setShowForm(true); }}>
                   <Plus size={16} strokeWidth={3} className="mr-1.5" /> Nuevo
                 </Button>
               </div>
             </div>
 
-            <div className="bg-surface-50/50 rounded-2xl border border-surface-100/80 px-3 py-2 flex items-center gap-3">
+            <div className="bg-surface-50/50 rounded-2xl border border-surface-100/80 px-3 py-2 flex flex-wrap items-center gap-3">
               <div className="relative group shrink-0">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-surface-500 group-focus-within:text-primary-500 transition-colors">
                   <Search size={16} strokeWidth={2.5} />
@@ -534,12 +532,13 @@ function RoutesPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="h-10 w-10 group-focus-within:w-44 bg-white border border-surface-200 rounded-xl outline-none transition-all duration-300 focus:pl-10 focus:pr-4 cursor-pointer focus:cursor-text shadow-sm"
                   placeholder=""
+                  aria-label="Buscar viaje o ruta"
                 />
               </div>
 
               <div className="h-6 w-px bg-surface-200/60 hidden md:block" />
 
-              <div className="grid grid-cols-2 lg:flex lg:items-center gap-2 flex-1">
+              <div className="grid grid-cols-2 lg:flex lg:flex-wrap lg:items-center gap-2 flex-1">
                 <FilterSelect 
                   icon={User}
                   value={selectedDriverId}
@@ -586,7 +585,7 @@ function RoutesPage() {
                   .custom-calendar .fc-theme-standard th { border:none; padding: 10px 0; background-color: #f8fafc; font-weight: 600; color: #475569; }
                   .custom-calendar .fc-toolbar-title { font-size: 1.1rem !important; font-weight: 700; color: #0f172a; }
                   .custom-calendar .fc-button-primary { background-color: #0f172a !important; border-color: #0f172a !important; border-radius: 0.5rem; text-transform: capitalize; font-weight: 600; }
-                  .custom-calendar .fc-button-active { background-color: #3b82f6 !important; border-color: #3b82f6 !important; }
+                  .custom-calendar .fc-button-active { background-color: #2563eb !important; border-color: #2563eb !important; }
                   .custom-calendar .fc-event { cursor: pointer; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.2); }
                   .custom-calendar .fc-timegrid-slot { height: 2.5em; }
                   .custom-calendar .fc-v-event .fc-event-main { padding: 4px; }
