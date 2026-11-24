@@ -1,5 +1,5 @@
 import { lazy, memo, Suspense } from 'react';
-import { Sparkles } from 'lucide-react';
+import AssistantAvatar from './AssistantAvatar';
 import { AttachmentCard } from './AssistantCards';
 import AiSuggestionButtons from './AiSuggestionButtons';
 import { plainText } from '../voice';
@@ -36,7 +36,7 @@ function ChatBubble({ message, onAsk, role, showFollowUps = false }) {
   const attachments = message.attachments ?? [];
   return (
     <div className="motion-fade-up flex items-start gap-3" data-role="assistant">
-      <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600" aria-hidden="true"><Sparkles size={16} /></span>
+      <AssistantAvatar size={36} mood={message.streaming ? 'talking' : 'idle'} className="mt-0.5" />
       <div className={`min-w-0 max-w-[90%] flex-1 rounded-2xl rounded-tl-md border px-4 py-3 ${message.isError ? 'border-red-200 bg-red-50 text-red-800' : 'border-surface-100 bg-white text-surface-800 shadow-sm'}`}>
         <span className="sr-only">Asistente: </span>
         {message.streaming ? (

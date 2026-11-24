@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BarChart3, FileText, Headphones, History, Mic, RotateCcw, Send, Sparkles, Volume2, VolumeX } from 'lucide-react';
+import { BarChart3, FileText, Headphones, History, Mic, RotateCcw, Send, Volume2, VolumeX } from 'lucide-react';
 import { useAuth } from '../../../app/AuthContext';
 import useRole from '../../../app/useRole';
 import Skeleton from '../../../components/atoms/Skeleton';
 import Announcer from '../components/Announcer';
 import ConversationHistory, { refreshConversationList } from '../components/ConversationHistory';
+import AssistantAvatar from '../components/AssistantAvatar';
 import ChatBubble from '../components/ChatBubble';
 import BlurText from '@/components/BlurText';
 import ShinyText from '@/components/ShinyText';
@@ -223,9 +224,7 @@ function AssistantHome() {
       {voiceOpen && <VoiceMode chat={chat} onClose={() => setVoiceOpen(false)} />}
       {empty ? (
         <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">
-          <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-brand-gradient text-white shadow-lg shadow-primary-500/25">
-            <Sparkles size={28} aria-hidden="true" />
-          </span>
+          <AssistantAvatar size={88} mood="idle" />
           {/* El texto completo va en un span solo para lectores de pantalla; la animación se apaga con prefers-reduced-motion */}
           <div role="heading" aria-level={2} className="mt-6 flex justify-center text-3xl font-bold tracking-tight text-surface-950 sm:text-4xl">
             <BlurText text={name ? `Hola, ${name}` : 'Hola'} animateBy="words" delay={120} stepDuration={0.3} blur={6} distance={16} className="justify-center" />
@@ -292,7 +291,7 @@ function AssistantHome() {
             ))}
             {loading && !streaming && (
               <div className="flex items-start gap-3">
-                <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Sparkles size={16} className="animate-pulse motion-reduce:animate-none" /></span>
+                <AssistantAvatar size={36} mood="thinking" className="mt-0.5" />
                 <div className="w-72 rounded-2xl rounded-tl-md border border-surface-100 bg-white px-4 py-4 shadow-sm">
                   <p className="text-xs font-semibold tracking-[0.04em]"><ShinyText text={status || 'Consultando…'} color="#475569" shineColor="#1d4ed8" speed={2.4} /></p>
                   <Skeleton className="mt-3 h-3 w-11/12" />

@@ -16,7 +16,7 @@ vi.mock('../organisms/Navbar', () => ({ default: () => <header>Navbar</header> }
 vi.mock('../organisms/Sidebar', () => ({ default: () => <nav>Sidebar</nav>, getNavItems: () => [] }));
 vi.mock('../organisms/CommandPalette', () => ({ default: () => null }));
 
-// el contenedor del contenido lleva la clase que reserva el espacio del panel cuando está acoplado
+// el panel ya no se acopla: ningún contenedor debe reservarle espacio
 const reserved = (container) => [...container.querySelectorAll('div')].find((d) => d.className.includes('xl:pr-[28rem]')) ?? null;
 
 const renderApp = () => render(
@@ -66,15 +66,30 @@ describe('Panel flotante del asistente al navegar', () => {
     expect(screen.queryByText('Panel del asistente')).not.toBeInTheDocument();
   });
 
-  it('en pantalla ancha el panel se acopla: el contenido se estrecha y el botón flotante se oculta', async () => {
+  it('en pantalla ancha el panel flota encima: no reserva espacio y el botón sigue para cerrarlo', async () => {
     docking = true;
     const { container } = renderApp();
-    expect(reserved(container)).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: /abrir asistente ia/i }));
 
-    expect(reserved(container)).not.toBeNull(); // espacio reservado para el panel
-    expect(screen.queryByRole('button', { name: /cerrar asistente ia/i })).not.toBeInTheDocument();
+    expect(reserved(container)).toBeNull(); // el contenido conserva todo su ancho
+    expect(screen.getByRole('button', { name: /cerrar asistente ia/i })).toBeInTheDocument();
     expect(screen.getByText('Panel del asistente')).toBeInTheDocument();
+  });
+
+  it('en celular la capa del chat deja libres la barra superior y el menú inferior', async () => {
+    wide = false;
+    renderApp();
+    await userEvent.click(screen.getByRole('button', { name: /abrir asistente ia/i }));
+    const layer = screen.getByRole('button', { name: /cerrar panel del asistente/i });
+    expect(layer.className).not.toContain('inset-0'); // no cubre toda la pantalla
+    expect(layer.className).toContain('top-[5.25rem]');
+    expect(layer.className).toContain('bottom-24');
+  });
+
+  it('el robot del botón refleja lo que hace el asistente', () => {
+    mockChat = { messages: [], loading: true, settledActions: new Set() };
+    const { container } = renderApp();
+    expect(container.querySelector('svg.logi')).toHaveAttribute('data-mood', 'thinking');
   });
 
   it('en pantalla mediana el panel flota encima y el contenido no cambia', async () => {

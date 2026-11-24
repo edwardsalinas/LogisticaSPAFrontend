@@ -1,7 +1,7 @@
-﻿import { Sparkles } from 'lucide-react';
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import AiAssistantPanel from '../../features/ai-chat/components/AiAssistantPanel';
+import AssistantAvatar from '../../features/ai-chat/components/AssistantAvatar';
 import CommandPalette from '../organisms/CommandPalette';
 import Navbar from '../organisms/Navbar';
 import Sidebar, { getNavItems } from '../organisms/Sidebar';
@@ -45,13 +45,10 @@ function DashboardLayout() {
   // a la conversación; también se recuerda al recargar la pestaña.
   const [isAiOpen, setIsAiOpen] = usePersistentState('asistente:panel', false);
   const isWide = useMediaQuery('(min-width: 640px)');
-  // En pantallas anchas el panel se acopla a un lado y el contenido se estrecha (no tapa nada); en medianas flota encima
-  const isDockable = useMediaQuery('(min-width: 1280px)');
   const chat = useAssistantChat();
   const assistant = useAssistantStatus(chat, isAiOpen);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const showFloatingAssistant = !onAssistantPage;
-  const docked = showFloatingAssistant && isAiOpen && isDockable;
   const aiPanelId = 'ai-assistant-panel';
 
   // En el celular el panel ocupa casi toda la pantalla: al navegar se cierra para dejar ver la pantalla de destino
@@ -85,7 +82,7 @@ function DashboardLayout() {
       <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
       <Sidebar />
-      <div className={`flex min-w-0 flex-1 flex-col transition-[padding] duration-300 lg:pl-[17rem] ${docked ? 'xl:pr-[28rem]' : ''}`}>
+      <div className="flex min-w-0 flex-1 flex-col lg:pl-[17rem]">
         <Navbar title={title} onOpenSearch={() => setPaletteOpen(true)} />
         <main id="main-content" tabIndex={-1} className="flex-1 px-4 pb-28 pt-24 outline-none sm:px-6 sm:pb-8 lg:px-8 lg:pb-20">
           <div className="motion-fade-up">
@@ -121,55 +118,50 @@ function DashboardLayout() {
 
       {showFloatingAssistant && (
         <>
-          {!docked && (
-            <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-end px-4 pb-24 sm:px-6 sm:pb-4 lg:px-8 lg:pb-4">
-              <button
-                type="button"
-                onClick={() => setIsAiOpen((prev) => !prev)}
-                className={`pointer-events-auto relative flex items-center gap-3 rounded-2xl border px-4 py-3 text-left shadow-lg backdrop-blur-xl transition-all duration-300 ${
-                  isAiOpen
-                    ? 'border-sky-300/70 bg-[#0a2745] text-white'
-                    : 'bg-white/90 text-surface-900 border-white/75 hover:-translate-y-0.5 hover:bg-white'
-                }`}
-                aria-label={`${isAiOpen ? 'Cerrar asistente IA' : 'Abrir asistente IA'}${assistant.text ? `, ${assistant.text.toLowerCase()}` : ''}`}
-                aria-expanded={isAiOpen}
-                aria-controls={aiPanelId}
-                title={isAiOpen ? 'Cerrar el asistente' : 'Abrir el asistente'}
-              >
-                <div className={`relative flex h-11 w-11 items-center justify-center rounded-2xl transition-transform duration-300 ${isAiOpen ? 'bg-sky-400 text-[#06203b] rotate-[10deg]' : 'bg-brand-gradient text-white'}`}>
-                  {assistant.status === 'thinking' && (
-                    <span aria-hidden="true" className="absolute inset-0 animate-ping rounded-2xl bg-primary-400/50 motion-reduce:hidden" />
-                  )}
-                  <Sparkles size={18} strokeWidth={2.2} className="relative" />
-                </div>
-                {!isAiOpen && (assistant.status === 'confirm' || assistant.status === 'unread') && (
-                  <span
-                    aria-hidden="true"
-                    data-testid="assistant-badge"
-                    className={`absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-white ${assistant.status === 'confirm' ? 'bg-amber-500' : 'bg-sky-500'}`}
-                  />
-                )}
-                <div className="hidden min-w-0 2xl:block">
-                  <p className="text-sm font-semibold">{isAiOpen ? 'Cerrar chat' : 'Asistente'}</p>
-                  {assistant.text && !isAiOpen && <p className="text-xs text-surface-600">{assistant.text}</p>}
-                </div>
-              </button>
-            </div>
-          )}
+          {/* Bajo lg hay barra de navegación inferior: el botón se coloca por encima para no taparla */}
+          <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-end px-4 pb-24 sm:px-6 lg:px-8 lg:pb-4">
+            <button
+              type="button"
+              onClick={() => setIsAiOpen((prev) => !prev)}
+              className={`pointer-events-auto relative flex items-center gap-3 rounded-2xl border px-4 py-3 text-left shadow-lg backdrop-blur-xl transition-all duration-300 ${
+                isAiOpen
+                  ? 'border-sky-300/70 bg-[#0a2745] text-white'
+                  : 'bg-white/90 text-surface-900 border-white/75 hover:-translate-y-0.5 hover:bg-white'
+              }`}
+              aria-label={`${isAiOpen ? 'Cerrar asistente IA' : 'Abrir asistente IA'}${assistant.text ? `, ${assistant.text.toLowerCase()}` : ''}`}
+              aria-expanded={isAiOpen}
+              aria-controls={aiPanelId}
+              title={isAiOpen ? 'Cerrar el asistente' : 'Abrir el asistente'}
+            >
+              <AssistantAvatar mood={['confirm', 'thinking', 'unread'].includes(assistant.status) ? assistant.status : 'idle'} size={46} />
+              {!isAiOpen && (assistant.status === 'confirm' || assistant.status === 'unread') && (
+                <span
+                  aria-hidden="true"
+                  data-testid="assistant-badge"
+                  className={`absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-white ${assistant.status === 'confirm' ? 'bg-amber-500' : 'bg-sky-500'}`}
+                />
+              )}
+              <div className="hidden min-w-0 2xl:block">
+                <p className="text-sm font-semibold">{isAiOpen ? 'Cerrar chat' : 'Asistente'}</p>
+                {assistant.text && !isAiOpen && <p className="text-xs text-surface-600">{assistant.text}</p>}
+              </div>
+            </button>
+          </div>
           <p role="status" className="sr-only">{isAiOpen ? '' : assistant.text}</p>
 
           {isAiOpen && (
             <>
-              {/* Solo en celular el panel tapa la pantalla y necesita fondo; en escritorio la pantalla sigue usable detrás */}
+              {/* Solo en celular el panel tapa la pantalla y necesita fondo. La capa deja libres la barra superior
+                  (Modo IA, buscar, cerrar sesión) y la inferior (menú) para que sigan usándose con el chat abierto */}
               {!isWide && (
                 <button
                   type="button"
-                  className="fixed inset-0 z-40 bg-slate-950/20 backdrop-blur-[2px]"
+                  className="fixed inset-x-0 bottom-24 top-[5.25rem] z-40 bg-slate-950/20"
                   onClick={() => setIsAiOpen(false)}
                   aria-label="Cerrar panel del asistente"
                 />
               )}
-              <div id={aiPanelId} className={`fixed inset-x-4 z-50 sm:left-auto sm:right-6 sm:w-[26rem] lg:right-8 lg:w-[28rem] ${docked ? 'bottom-4 top-24 xl:right-4 xl:w-[26rem]' : 'bottom-24 top-20 sm:top-24'}`}>
+              <div id={aiPanelId} className="fixed inset-x-4 bottom-24 top-20 z-50 sm:left-auto sm:right-6 sm:top-24 sm:w-[26rem] lg:right-8 lg:w-[28rem]">
                 <AiAssistantPanel mode="panel" role={role} onClose={() => setIsAiOpen(false)} />
               </div>
             </>

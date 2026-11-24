@@ -4,6 +4,7 @@ import Button from '../../../components/atoms/Button';
 import Skeleton from '../../../components/atoms/Skeleton';
 import AiSuggestionButtons from './AiSuggestionButtons';
 import Announcer from './Announcer';
+import AssistantAvatar from './AssistantAvatar';
 import ChatBubble from './ChatBubble';
 import useAssistantChat, { MAX_MESSAGE_LENGTH } from '../useAssistantChat';
 import { introForRole, suggestionsForRole } from '../suggestions';
@@ -12,7 +13,7 @@ import { prefersReducedMotion } from '../voice';
 const WELCOME_MESSAGE = {
   role: 'assistant',
   local: true,
-  content: 'Hola. Soy el asistente logístico de LogisticaSPA. Pregúntame lo que necesites sobre tus envíos en lenguaje natural.',
+  content: '¡Hola! Soy Logi, tu copiloto de LogisticaSPA. Pregúntame lo que necesites sobre tus envíos, como si le hablaras a un compañero de trabajo.',
 };
 
 /**
@@ -28,6 +29,9 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role }) {
 
   const isPanel = mode === 'panel';
   const onlyWelcome = chat.messages.length === 0;
+  // el robot refleja lo que hace: escribiendo la respuesta, pensando o en reposo
+  const streaming = chat.messages.length > 0 && chat.messages[chat.messages.length - 1].streaming;
+  const mood = streaming ? 'talking' : loading ? 'thinking' : 'idle';
   const suggestions = suggestionsForRole(role).filter((s) => !s.prefill).slice(0, 3);
 
   useEffect(() => {
@@ -61,9 +65,12 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role }) {
     >
       <div className="border-b border-surface-100 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.96))] px-5 py-4">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-bold tracking-tight text-primary-700">Copiloto IA LogisticaSPA</h2>
-            <p className="mt-1 text-xs text-surface-500">{introForRole(role)}</p>
+          <div className="flex min-w-0 items-start gap-3">
+            <AssistantAvatar mood={mood} size={52} />
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold tracking-tight text-primary-700">Logi, tu copiloto</h2>
+              <p className="mt-1 text-xs text-surface-600 max-sm:line-clamp-2">{introForRole(role)}</p>
+            </div>
           </div>
 
           {onClose && (
