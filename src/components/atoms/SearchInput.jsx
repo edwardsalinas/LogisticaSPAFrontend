@@ -15,7 +15,7 @@ function SearchInput({
 
   return (
     <div className={`relative ${className}`}>
-      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-surface-400" aria-hidden="true">
+      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-surface-500" aria-hidden="true">
         <Search size={17} strokeWidth={2.2} />
       </div>
       <input

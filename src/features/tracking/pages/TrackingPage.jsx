@@ -131,14 +131,14 @@ function TrackingPage() {
                         <Navigation size={20} strokeWidth={2.5} />
                      </div>
                      <div>
-                        <h2 className="font-display text-xl font-bold text-surface-950 tracking-tight">Trazabilidad</h2>
+                        <h2 className="font-display text-xl font-bold text-surface-950 tracking-tight">Paquetes en seguimiento</h2>
                         <div className="flex items-center gap-1.5">
                            <div className="h-1.5 w-1.5 rounded-full bg-success-500 animate-pulse" />
-                           <span className="text-xs font-bold text-surface-500 uppercase tracking-widest">Sistema Operativo</span>
+                           <span className="text-xs font-medium text-surface-600">Sistema operativo</span>
                         </div>
                      </div>
                   </div>
-                  <button onClick={() => setShowSidebar(false)} className="h-8 w-8 rounded-lg hover:bg-surface-100 flex items-center justify-center text-surface-500 transition-colors xl:hidden">
+                  <button type="button" aria-label="Ocultar la lista de paquetes" onClick={() => setShowSidebar(false)} className="h-11 w-11 rounded-lg hover:bg-surface-100 flex items-center justify-center text-surface-500 transition-colors xl:hidden">
                      <ChevronRight size={18} className="rotate-180" />
                   </button>
                </div>
@@ -148,6 +148,7 @@ function TrackingPage() {
                   <input 
                     type="text" 
                     placeholder="Buscar por código..." 
+                    aria-label="Buscar paquete por código"
                     className="w-full pl-10 pr-4 py-3 bg-white/50 border border-surface-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-medium"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -175,7 +176,7 @@ function TrackingPage() {
                         }`}
                       >
                          <div className="flex items-center justify-between mb-2">
-                            <span className={`font-mono text-[10px] font-black italic px-2 py-0.5 rounded ${
+                            <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded ${
                                isSelected ? 'bg-white/20 text-white' : 'bg-primary-50 text-primary-700'
                             }`}>
                                {pkg.tracking_code}
@@ -187,14 +188,11 @@ function TrackingPage() {
                          <p className={`font-bold text-sm ${isSelected ? 'text-white' : 'text-surface-900'}`}>
                             {pkg.origen} → {pkg.destino}
                          </p>
-                         <div className={`mt-2 flex items-center justify-between ${isSelected ? 'text-white/70' : 'text-surface-400'}`}>
+                         <div className={`mt-2 flex items-center justify-between ${isSelected ? 'text-white/90' : 'text-surface-600'}`}>
                             <span className="text-xs font-bold">Peso: {pkg.peso} kg</span>
                             <ChevronRight size={14} className={`transition-transform duration-300 ${isSelected ? 'translate-x-1' : 'group-hover:translate-x-1'}`} />
                          </div>
                          
-                         {isSelected && (
-                           <div className="absolute top-0 right-0 h-full w-1 bg-white/40" />
-                         )}
                       </button>
                     )
                  })

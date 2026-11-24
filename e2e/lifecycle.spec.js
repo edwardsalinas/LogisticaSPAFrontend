@@ -40,7 +40,10 @@ test('1. el administrador crea un viaje único desde el formulario', async ({ pa
   await dialog.locator('select').nth(1).selectOption({ index: 1 });
   await pickByText(dialog.locator('select').nth(2), /La Paz → Oruro/);
   await page.getByRole('button', { name: /viaje único/i }).click();
-  const departure = new Date(Date.now() + 40 * 60 * 1000);
+  // 40 minutos adelante, pero SIEMPRE dentro del día de hoy: el calendario del conductor muestra solo el día actual
+  // (cerca de medianoche, ahora + 40 min caería mañana y el viaje no aparecería)
+  const endOfToday = new Date(); endOfToday.setHours(23, 58, 0, 0);
+  const departure = new Date(Math.min(Date.now() + 40 * 60 * 1000, endOfToday.getTime()));
   await dialog.locator('input[name="departure_time"]').fill(localInput(departure));
 
   const [response] = await Promise.all([
@@ -124,9 +127,11 @@ test('4. el conductor ve el viaje, lo inicia y entrega el paquete con una nota',
   await page.waitForLoadState('networkidle').catch(() => {});
 
   // Selecciona el viaje en el calendario (evento del día) y lo inicia
-  const eventLocator = page.locator('.fc-event').filter({ hasText: /LA PAZ\s*-\s*ORURO/i }).last();
+  // Ignora viajes ya completados (con hora REAL) de corridas anteriores que caigan en el mismo horario
+  const eventLocator = page.locator('.fc-event').filter({ hasText: /LA PAZ\s*-\s*ORURO/i }).filter({ hasNotText: /REAL/ }).last();
   await expect(eventLocator, 'el viaje recién creado debe aparecer en el calendario del conductor').toBeVisible({ timeout: 15_000 });
-  await eventLocator.click();
+  // dispatchEvent: cerca de medianoche el evento dura 2 min y queda apilado junto a otro; un clic con puntero caería en el vecino
+  await eventLocator.dispatchEvent('click');
   await page.getByRole('button', { name: /iniciar/i }).first().click();
   await expect(page.getByText(state.trackingCode)).toBeVisible({ timeout: 20_000 });
 

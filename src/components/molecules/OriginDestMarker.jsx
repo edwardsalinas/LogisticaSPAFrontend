@@ -22,10 +22,10 @@ const createIcon = (type) => {
 function OriginDestMarker({ type, position, title, subtitle }) {
   if (!position || !position[0] || !position[1]) return null;
   return (
-    <Marker position={position} icon={createIcon(type)}>
+    <Marker position={position} icon={createIcon(type)} title={`${type === 'origin' ? 'Origen' : 'Destino'}: ${title}`} alt={`${type === 'origin' ? 'Origen' : 'Destino'}: ${title}`}>
       <Popup>
         <div className="p-1 min-w-[140px]">
-          <p className="text-xs font-bold uppercase tracking-wider text-surface-500">{type === 'origin' ? 'Origen' : 'Destino'}</p>
+          <p className="text-xs font-medium text-surface-600">{type === 'origin' ? 'Origen' : 'Destino'}</p>
           <h3 className="mt-1 text-sm font-semibold text-surface-900 leading-tight">{title}</h3>
           {subtitle && <p className="mt-[2px] text-xs text-surface-600">{subtitle}</p>}
         </div>

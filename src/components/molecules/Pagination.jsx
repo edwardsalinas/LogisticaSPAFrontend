@@ -29,7 +29,7 @@ function Pagination({
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="inline-flex h-10 items-center gap-2 rounded-xl border border-surface-200 bg-white px-3 text-sm font-semibold text-surface-600 transition-colors hover:bg-surface-50 disabled:cursor-not-allowed disabled:opacity-45"
+          className="inline-flex h-10 max-sm:min-h-11 items-center gap-2 rounded-xl border border-surface-200 bg-white px-3 text-sm font-semibold text-surface-600 transition-colors hover:bg-surface-50 disabled:cursor-not-allowed disabled:opacity-45"
         >
           <ChevronLeft size={16} strokeWidth={2.2} />
           Anterior
@@ -40,7 +40,9 @@ function Pagination({
             <button
               key={pageNum}
               onClick={() => onPageChange(pageNum)}
-              className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm font-semibold transition-all ${
+              aria-label={`Página ${pageNum}`}
+              aria-current={currentPage === pageNum ? 'page' : undefined}
+              className={`flex h-10 w-10 max-sm:h-11 max-sm:w-11 items-center justify-center rounded-xl text-sm font-semibold transition-all ${
                 currentPage === pageNum
                   ? 'bg-brand-gradient text-white shadow-[0_14px_32px_-20px_rgba(19,127,236,0.7)]'
                   : 'border border-transparent text-surface-600 hover:border-surface-200 hover:bg-white'
@@ -54,7 +56,7 @@ function Pagination({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="inline-flex h-10 items-center gap-2 rounded-xl border border-surface-200 bg-white px-3 text-sm font-semibold text-surface-600 transition-colors hover:bg-surface-50 disabled:cursor-not-allowed disabled:opacity-45"
+          className="inline-flex h-10 max-sm:min-h-11 items-center gap-2 rounded-xl border border-surface-200 bg-white px-3 text-sm font-semibold text-surface-600 transition-colors hover:bg-surface-50 disabled:cursor-not-allowed disabled:opacity-45"
         >
           Siguiente
           <ChevronRight size={16} strokeWidth={2.2} />
