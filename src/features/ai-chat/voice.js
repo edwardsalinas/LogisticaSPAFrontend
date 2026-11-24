@@ -45,6 +45,21 @@ export const stripForSpeech = (text) => {
 };
 
 /** Parte el texto en trozos cortos: Chrome corta las locuciones largas (~15 s) si se envían de una vez. */
+/**
+ * Cuánto abre la boca Logi al decir una palabra (0.2 a 1). El navegador no da visemas: solo avisa cuándo empieza cada palabra
+ * (evento «boundary»), así que se aproxima con las vocales abiertas de la palabra (a, o, e abren más; i, u menos). No es
+ * sincronía fonética exacta, pero la boca se mueve a la vez que la voz y no en un bucle ciego.
+ */
+export const mouthOpenFor = (word = '') => {
+  const letters = word.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]/g, '');
+  if (!letters) return 0.2;
+  const weight = { a: 1, o: 0.85, e: 0.7, i: 0.45, u: 0.4 };
+  const vowels = [...letters].filter((c) => c in weight);
+  if (vowels.length === 0) return 0.3; // consonantes: boca casi cerrada
+  const strongest = Math.max(...vowels.map((c) => weight[c]));
+  return Math.min(1, 0.3 + strongest * 0.7);
+};
+
 export const chunkForSpeech = (text, max = 180) => {
   // se parte DESPUÉS de . ! ? (conservando los signos de apertura ¡ ¿ de la oración siguiente)
   const sentences = String(text ?? '').split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter(Boolean);

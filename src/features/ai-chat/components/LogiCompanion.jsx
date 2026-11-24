@@ -285,7 +285,7 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
           title="Abrir el asistente"
         >
           <span className="block" style={{ transform: `scaleX(${pos.dir === 1 ? -1 : 1})` }}>
-            <AssistantAvatar body size={WIDTH} mood={mood} walking={pos.walking} waving={waving || talkingNow} look={look} />
+            <AssistantAvatar body size={WIDTH} mood={mood} walking={pos.walking} waving={waving || talkingNow} look={look} mouth={synth.speaking ? synth.mouth : null} />
           </span>
           {badge}
         </button>

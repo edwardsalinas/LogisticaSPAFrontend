@@ -11,6 +11,8 @@ const apiService = {
   // Convierte un grupo de las sugerencias de asignación en una propuesta a confirmar (sin llamar al modelo)
   // Deshace la asignación de un paquete a un viaje (solo mientras siga «asignado» y el viaje no haya salido)
   unassignPackage: (id) => api.post(`/logistics/packages/${id}/unassign`),
+  // Anula un paquete recién creado (queda «cancelado»; solo si sigue pendiente, sin viaje y creado hace menos de 2 horas)
+  cancelPackage: (id) => api.post(`/logistics/packages/${id}/cancel`),
   prepareAssignment: (body) => api.post('/ai-agent/suggestions/assign', body),
   // Leer la foto de una guía de remisión (devuelve los campos para revisarlos) y, ya revisados, preparar el registro
   extractDocument: (body) => api.post('/ai-agent/documents/extract', body, { timeout: 60000 }),

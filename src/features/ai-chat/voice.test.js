@@ -87,3 +87,14 @@ describe('plainText', () => {
     expect(plainText('El paquete **TRK-1-ABCD** está `en camino`\n- uno')).toBe('El paquete TRK-1-ABCD está en camino uno');
   });
 });
+
+describe('mouthOpenFor: apertura de la boca de Logi según la palabra', () => {
+  it('las vocales abiertas abren más que las cerradas y las consonantes casi nada', async () => {
+    const { mouthOpenFor } = await import('./voice');
+    expect(mouthOpenFor('hola')).toBeGreaterThan(mouthOpenFor('si'));
+    expect(mouthOpenFor('si')).toBeGreaterThan(mouthOpenFor('mm'));
+    expect(mouthOpenFor('')).toBe(0.2);
+    expect(mouthOpenFor('¡Árbol!')).toBe(1);
+    for (const w of ['ñandú', 'ABC', '123', 'z']) expect(mouthOpenFor(w)).toBeLessThanOrEqual(1);
+  });
+});

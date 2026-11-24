@@ -18,7 +18,7 @@
  */
 const ANTENNA = { idle: '#38bdf8', thinking: '#38bdf8', talking: '#38bdf8', confirm: '#f59e0b', unread: '#38bdf8', happy: '#34d399', worried: '#f59e0b' };
 
-function AssistantAvatar({ mood = 'idle', size = 40, className = '', body = false, walking = false, waving = false, look = null }) {
+function AssistantAvatar({ mood = 'idle', size = 40, className = '', body = false, walking = false, waving = false, look = null, mouth = null }) {
   const eyeShift = look && ['idle', 'unread', 'talking', 'worried'].includes(mood)
     ? { transform: `translate(${(look.x * 2.4).toFixed(2)}px, ${(look.y * 1.6).toFixed(2)}px)`, transition: 'transform 120ms ease-out' }
     : undefined;
@@ -93,6 +93,7 @@ function AssistantAvatar({ mood = 'idle', size = 40, className = '', body = fals
         {/* boca */}
         <path
           className="logi__mouth"
+          style={mouth == null ? undefined : { animation: 'none', transform: `scaleY(${(0.5 + mouth * 1.4).toFixed(2)})`, transition: 'transform 70ms ease-out' }}
           d={mood === 'happy' ? 'M25 40 Q32 49 39 40' : mood === 'worried' ? 'M27 44.5 Q32 41 37 44.5' : 'M27 40.5 Q32 45 37 40.5'}
           fill="none"
           stroke="#7dd3fc"

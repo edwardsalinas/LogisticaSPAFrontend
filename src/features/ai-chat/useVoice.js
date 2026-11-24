@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { chunkForSpeech, getRecognitionClass, pickSpanishVoice, recognitionErrorMessage, synthesisSupported } from './voice';
+import { chunkForSpeech, getRecognitionClass, mouthOpenFor, pickSpanishVoice, recognitionErrorMessage, synthesisSupported } from './voice';
 
 const RECOGNITION_LANG = 'es-BO';
 
@@ -93,6 +93,8 @@ export function useSpeechRecognition({ onFinal, onEnd, lang = RECOGNITION_LANG }
 export function useSpeechSynthesis() {
   const supported = synthesisSupported();
   const [speaking, setSpeaking] = useState(false);
+  const [mouth, setMouth] = useState(null); // apertura de la boca (0 a 1) mientras suena una palabra; null si la voz no avisa palabras
+  const mouthTimer = useRef(null);
   const voiceRef = useRef(null);
   const tokenRef = useRef(0);
 
@@ -108,6 +110,8 @@ export function useSpeechSynthesis() {
   const cancel = useCallback(() => {
     tokenRef.current += 1; // invalida los trozos pendientes
     if (supported) window.speechSynthesis?.cancel();
+    clearTimeout(mouthTimer.current);
+    setMouth(null);
     setSpeaking(false);
   }, [supported]);
 
@@ -121,11 +125,19 @@ export function useSpeechSynthesis() {
 
     const next = (i) => {
       if (token !== tokenRef.current) return; // llegó otra orden (o cancel): se abandona
-      if (i >= chunks.length) { setSpeaking(false); onEnd?.(); return; }
+      if (i >= chunks.length) { clearTimeout(mouthTimer.current); setMouth(null); setSpeaking(false); onEnd?.(); return; }
       const u = new window.SpeechSynthesisUtterance(chunks[i]);
       u.lang = voiceRef.current?.lang || 'es-ES';
       if (voiceRef.current) u.voice = voiceRef.current;
       u.rate = 1.02;
+      // la boca sigue las palabras: se abre al empezar cada una y se entrecierra enseguida
+      u.onboundary = (e) => {
+        if (token !== tokenRef.current || (e.name && e.name !== 'word')) return;
+        const word = chunks[i].slice(e.charIndex ?? 0).match(/^\S+/)?.[0] ?? '';
+        setMouth(mouthOpenFor(word));
+        clearTimeout(mouthTimer.current);
+        mouthTimer.current = setTimeout(() => setMouth(0.15), 130);
+      };
       u.onend = () => next(i + 1);
       u.onerror = () => next(i + 1);
       window.speechSynthesis.speak(u);
@@ -138,5 +150,5 @@ export function useSpeechSynthesis() {
     return () => synthesis?.cancel();
   }, [supported]);
 
-  return { supported, speaking, speak, cancel };
+  return { supported, speaking, mouth, speak, cancel };
 }
