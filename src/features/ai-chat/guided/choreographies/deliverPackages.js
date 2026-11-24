@@ -2,7 +2,7 @@ import { emitGuided, GUIDED_EVENTS, StopError } from '../guidedForms';
 
 const DRIVER_PATH = '/driver';
 
-/** Hasta cuántos paquetes se muestran uno a uno (más se confirman con el botón de siempre). */
+/** Cuántos paquetes se muestran uno a uno; si hay más, Logi hace lo mismo con el resto de una vez (una sola confirmación). */
 export const MAX_GUIDED_DELIVER_ITEMS = 3;
 
 /**
@@ -13,16 +13,18 @@ export const MAX_GUIDED_DELIVER_ITEMS = 3;
  */
 export default async function deliverPackages(ctx, action) {
   const { note, items } = action.ui.fill.values;
+  const shown = items.slice(0, MAX_GUIDED_DELIVER_ITEMS);
+  const rest = items.length - shown.length;
   try {
     const que = items.length === 1 ? `el paquete ${items[0].tracking_code}` : `${items.length} paquetes`;
-    await ctx.say(`Voy a entregar ${que}. Mira cómo lo hago.`, { wait: true });
+    await ctx.say(`Voy a entregar ${que}. ${rest > 0 ? `Te muestro ${shown.length === 1 ? 'el primero' : `los primeros ${shown.length}`}.` : 'Mira cómo lo hago.'}`, { wait: true });
 
     if (window.location.pathname !== DRIVER_PATH) {
       await ctx.say('Primero voy a tu panel de viaje.');
       ctx.navigate(DRIVER_PATH);
     }
 
-    for (const [i, item] of items.entries()) {
+    for (const [i, item] of shown.entries()) {
       const deliver = await ctx.waitFor(() => ctx.findVisible(`[data-logi-entregar="${item.tracking_code}"]`), 12000);
       await ctx.pointAt(deliver);
       await ctx.say(`Entrego ${item.tracking_code}`);
@@ -40,11 +42,12 @@ export default async function deliverPackages(ctx, action) {
       await ctx.say('Confirmo la entrega.');
       await ctx.press(confirmButton, { click: false }); // solo se ve la pulsación; la entrega real es la confirmación del servidor
 
-      if (i < items.length - 1) {
+      if (i < shown.length - 1) {
         emitGuided(GUIDED_EVENTS.cancelForm); // cierra este formulario para seguir con el siguiente paquete
         await ctx.waitFor(() => !ctx.getForm('delivery'), 4000);
       }
     }
+    if (rest > 0) await ctx.say(`Los otros ${rest} paquetes los entrego igual, de una vez.`, { wait: true });
   } catch (e) {
     if (e instanceof StopError) throw e;
     await ctx.say('No pude seguir en pantalla; lo entrego directamente.', { wait: true });

@@ -101,7 +101,14 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
       const max = Math.max(MARGIN, window.innerWidth - WIDTH - MARGIN);
       const cur = xRef.current ?? max;
       let target = rand(MARGIN, max);
-      if (Math.abs(target - cur) < 90) target = clamp(cur + (Math.random() < 0.5 ? -1 : 1) * rand(120, 260), MARGIN, max);
+      if (Math.abs(target - cur) < 90) {
+        // muy cerca: da un paseíto de 120 a 260 px hacia donde HAYA sitio (en un borde, el recorte lo dejaba sin moverse)
+        const step = rand(120, 260);
+        const dir = Math.random() < 0.5 ? -1 : 1;
+        target = cur + dir * step;
+        if (target > max || target < MARGIN) target = cur - dir * step;
+        target = clamp(target, MARGIN, max);
+      }
       const dur = Math.abs(target - cur) / SPEED;
       setPos({ x: target, dur, dir: target > cur ? 1 : -1, walking: true });
       timer = setTimeout(rest, dur * 1000);

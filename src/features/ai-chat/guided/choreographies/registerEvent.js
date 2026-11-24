@@ -2,7 +2,7 @@ import { emitGuided, GUIDED_EVENTS, StopError } from '../guidedForms';
 
 const TRACKING_PATH = '/tracking';
 
-/** Un solo paquete por evento: con varios, la animación se haría muy larga (se confirman con el botón de siempre). */
+/** Se muestra el primer paquete; con varios, Logi avisa que registra el mismo evento en el resto de una vez (una sola confirmación). */
 export const MAX_GUIDED_EVENT_ITEMS = 1;
 
 const STATUS_LABEL = {
@@ -24,7 +24,7 @@ export default async function registerEvent(ctx, action) {
   const item = items[0];
   const label = STATUS_LABEL[status] ?? status;
   try {
-    await ctx.say(`Voy a registrar un evento: el paquete ${item.tracking_code} pasa a ${label}. Mira cómo lo hago.`, { wait: true });
+    await ctx.say(`Voy a registrar un evento: ${items.length > 1 ? `${items.length} paquetes pasan` : `el paquete ${item.tracking_code} pasa`} a ${label}. ${items.length > 1 ? 'Te muestro el primero.' : 'Mira cómo lo hago.'}`, { wait: true });
 
     if (!ctx.getForm('event')) {
       if (window.location.pathname !== TRACKING_PATH) {
@@ -58,6 +58,7 @@ export default async function registerEvent(ctx, action) {
     await ctx.sleep(700);
 
     if (observations) await ctx.say(`Nota: ${observations}`, { wait: true }); // el formulario no tiene campo de nota: solo se cuenta
+    if (items.length > MAX_GUIDED_EVENT_ITEMS) await ctx.say(`Los otros ${items.length - 1} paquetes llevan el mismo evento; los registro igual, de una vez.`, { wait: true });
 
     const submit = ctx.findVisible('form button[type="submit"]');
     if (submit) {

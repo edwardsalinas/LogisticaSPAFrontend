@@ -35,24 +35,23 @@ const renderApp = (action) => render(<MemoryRouter><GuidedRunProvider><Starter a
 const input = (name) => Object.assign(document.body.appendChild(document.createElement('input')), { name });
 
 describe('Logi guiado, fase 2: topes de paquetes', () => {
-  it('asignar se muestra con 1 a 3 paquetes; con más, solo el botón de siempre', () => {
+  it('asignar se ofrece con cualquier cantidad de paquetes (Logi muestra los primeros y hace el resto de una vez)', () => {
     expect(canGuide(ASSIGN(['A']))).toBe(true);
-    expect(canGuide(ASSIGN(['A', 'B', 'C']))).toBe(true);
-    expect(canGuide(ASSIGN(['A', 'B', 'C', 'D']))).toBe(false);
+    expect(canGuide(ASSIGN(['A', 'B', 'C', 'D', 'E', 'F']))).toBe(true);
+    expect(canGuide(ASSIGN([]))).toBe(false); // sin paquetes no hay nada que mostrar
   });
 
-  it('el evento se muestra con un solo paquete', () => {
+  it('el evento se ofrece con uno o varios paquetes (muestra el primero)', () => {
     expect(canGuide(EVENT())).toBe(true);
-    expect(canGuide(EVENT([{ package_id: 'a', tracking_code: 'A' }, { package_id: 'b', tracking_code: 'B' }]))).toBe(false);
+    expect(canGuide(EVENT([{ package_id: 'a', tracking_code: 'A' }, { package_id: 'b', tracking_code: 'B' }]))).toBe(true);
     expect(canGuide({ ...EVENT(), ui: { fill: { form: 'event', values: { status: 'x' } } } })).toBe(false); // sin lista de paquetes
   });
 });
 
 describe('Logi guiado: entregar', () => {
-  it('se muestra con 1 a 3 paquetes; con más, solo el botón de siempre', () => {
+  it('se ofrece con cualquier cantidad de paquetes', () => {
     expect(canGuide(DELIVER(['A']))).toBe(true);
-    expect(canGuide(DELIVER(['A', 'B', 'C']))).toBe(true);
-    expect(canGuide(DELIVER(['A', 'B', 'C', 'D']))).toBe(false);
+    expect(canGuide(DELIVER(['A', 'B', 'C', 'D', 'E']))).toBe(true);
   });
 });
 
@@ -122,6 +121,35 @@ describe('Logi guiado, fase 2: coreografías', () => {
     expect(events).toContain(GUIDED_EVENTS.changed);
     off();
   }, 15000);
+
+  it('con más de 3 paquetes anima los 3 primeros, avisa del resto y confirma UNA vez para todos', async () => {
+    apiService.post.mockResolvedValue({ success: true, result: { message: 'Asignados 5 de 5 paquetes al viaje.' } });
+    const codes = ['TRK-1', 'TRK-2', 'TRK-3', 'TRK-4', 'TRK-5'];
+    const shown = [];
+    let off = null;
+    codes.forEach((code) => {
+      const b = Object.assign(document.createElement('button'), { textContent: 'Vincular' });
+      b.setAttribute('data-logi-vincular', code);
+      b.addEventListener('click', () => {
+        const select = Object.assign(document.createElement('select'), { name: 'routeId' });
+        select.add(new Option('La Paz → Oruro', 'route-9'));
+        document.body.appendChild(select);
+        off = registerGuidedForm('assignment', { isReady: () => true, setValue: (n, v) => shown.push(code), getElement: () => select });
+      });
+      document.body.appendChild(b);
+    });
+    window.addEventListener(GUIDED_EVENTS.cancelForm, () => { off?.(); off = null; });
+
+    renderApp(ASSIGN(codes));
+    await userEvent.click(screen.getByText('empezar'));
+    await waitFor(() => expect(out).toBeDefined(), { timeout: 12000 });
+
+    expect(shown).toEqual(['TRK-1', 'TRK-2', 'TRK-3']); // solo se animan los 3 primeros
+    expect(apiService.post).toHaveBeenCalledTimes(1); // y la confirmación es una sola, para los 5
+    expect(apiService.post).toHaveBeenCalledWith('/ai-agent/actions/asg-1/confirm');
+    expect(events).toContain(GUIDED_EVENTS.changed);
+    off?.();
+  }, 20000);
 
   it('entregar: pulsa «Entregar», escribe la nota y «pulsa» Confirmar entrega; confirma UNA vez', async () => {
     apiService.post.mockResolvedValue({ success: true, result: { message: 'Paquete TRK-1 marcado como entregado.' } });

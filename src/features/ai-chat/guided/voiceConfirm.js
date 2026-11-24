@@ -30,9 +30,15 @@ export const parseVoiceConfirmation = (text) => {
 };
 
 /** Lo que Logi dice en voz alta antes de pedir el «sí»: el resumen que redactó el servidor, no el modelo. */
-export const spokenProposal = (action) => stripForSpeech(
-  `${action.title}. ${(action.lines ?? []).join('. ')}.`,
-);
+const MAX_SPOKEN = 420; // caracteres: con 10 paquetes la lista completa se leería durante minutos
+
+export const spokenProposal = (action) => {
+  const full = stripForSpeech(`${action.title}. ${(action.lines ?? []).join('. ')}.`);
+  if (full.length <= MAX_SPOKEN) return full;
+  const cut = full.slice(0, MAX_SPOKEN);
+  const end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf(', '));
+  return `${(end > 120 ? cut.slice(0, end) : cut).trim()}. El resto del detalle está en pantalla.`;
+};
 
 /**
  * Qué acciones se pueden confirmar por voz. La entrega NO: es la más difícil de deshacer, así que, aunque Logi sepa

@@ -35,6 +35,16 @@ describe('isVoiceConfirmable: qué acciones se confirman por voz', () => {
   });
 });
 
+describe('spokenProposal con listas largas', () => {
+  it('no lee durante minutos: se acorta y manda al resto del detalle en pantalla', () => {
+    const lines = ['Viaje: Oruro → La Paz', ...Array.from({ length: 10 }, (_, i) => `Paquete número ${i + 1}: encomienda para Luis Vargas Mendoza, Oruro → La Paz, 8 kg`)];
+    const said = spokenProposal({ title: 'Asignar 10 paquetes a un viaje', lines });
+    expect(said.length).toBeLessThan(500);
+    expect(said).toContain('Asignar 10 paquetes a un viaje');
+    expect(said).toMatch(/El resto del detalle está en pantalla\.$/);
+  });
+});
+
 describe('spokenProposal', () => {
   it('lee el título y el resumen del servidor en forma hablable', () => {
     const said = spokenProposal({ title: 'Registrar un paquete nuevo', lines: ['Ruta: La Paz → Oruro', 'Peso: 5 kg'] });

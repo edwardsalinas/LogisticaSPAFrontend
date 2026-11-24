@@ -7,16 +7,14 @@ import { prefersReducedMotion, stripForSpeech } from '../voice';
 import { getSpeakPref } from '../speakPref';
 import { emitGuided, getGuidedForm, GUIDED_EVENTS, StopError } from './guidedForms';
 import createPackage from './choreographies/createPackage';
-import assignPackages, { MAX_GUIDED_ITEMS } from './choreographies/assignPackages';
-import registerEvent, { MAX_GUIDED_EVENT_ITEMS } from './choreographies/registerEvent';
-import deliverPackages, { MAX_GUIDED_DELIVER_ITEMS } from './choreographies/deliverPackages';
+import assignPackages from './choreographies/assignPackages';
+import registerEvent from './choreographies/registerEvent';
+import deliverPackages from './choreographies/deliverPackages';
 import LogiGuide from './LogiGuide';
 
 /** Una coreografía por tipo de acción. Cada una se prueba y se mantiene por separado. */
 const CHOREOGRAPHIES = { create_package: createPackage, assign_package: assignPackages, register_tracking_event: registerEvent, deliver_package: deliverPackages };
 
-/** Tope de paquetes que se muestran uno a uno por tipo de acción (sin tope = una sola unidad). */
-const ITEM_CAP = { assign_package: MAX_GUIDED_ITEMS, register_tracking_event: MAX_GUIDED_EVENT_ITEMS, deliver_package: MAX_GUIDED_DELIVER_ITEMS };
 
 const GuidedRunContext = createContext(null);
 /** null fuera del layout (pantallas sueltas, pruebas): quien lo use debe tolerarlo. */
@@ -31,8 +29,10 @@ const visible = (el) => !!el && el.getClientRects().length > 0 && getComputedSty
 /** ¿Hay una coreografía para esta acción y trae los datos para llenarla? */
 export const canGuide = (action) => {
   if (!action || !CHOREOGRAPHIES[action.type] || !action.ui?.fill?.values) return false;
-  const items = action.ui.fill.values.items;
-  return !ITEM_CAP[action.type] || (Array.isArray(items) && items.length >= 1 && items.length <= ITEM_CAP[action.type]);
+  // las acciones por paquetes (asignar, evento, entregar) necesitan al menos uno; si son muchos, Logi muestra los primeros
+  // y hace lo mismo con el resto de una vez (ver cada coreografía)
+  if (action.type !== 'create_package') return Array.isArray(action.ui.fill.values.items) && action.ui.fill.values.items.length >= 1;
+  return true;
 };
 
 /**

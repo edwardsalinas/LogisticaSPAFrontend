@@ -80,6 +80,14 @@ describe('Logi, el compañero', () => {
     expect(robot(container)).toHaveClass('logi--walking');
   });
 
+  it('en el borde derecho, aunque el azar lo mande hacia afuera, camina hacia donde hay sitio (antes no se movía)', () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.99); // destino pegado al borde + dirección hacia afuera
+    const { container } = setup();
+    act(() => { vi.advanceTimersByTime(2100); });
+    expect(robot(container)).toHaveClass('logi--walking');
+    random.mockRestore();
+  });
+
   it('se queda quieto si pasas el cursor, si el chat tiene algo que decir, si se desactiva o si se pide menos movimiento', () => {
     const hover = setup();
     act(() => { vi.advanceTimersByTime(2100); });

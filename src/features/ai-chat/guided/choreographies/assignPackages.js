@@ -2,7 +2,10 @@ import { emitGuided, GUIDED_EVENTS, StopError } from '../guidedForms';
 
 const LIST_PATH = '/logistics/packages';
 
-/** Hasta cuántos paquetes se muestran uno a uno (más se confirman con el botón de siempre: serían minutos de animación). */
+/**
+ * Cuántos paquetes se muestran uno a uno. Si la acción trae más, los primeros se animan y Logi avisa que hace lo mismo con el
+ * resto de una vez (serían minutos de animación); la confirmación en el servidor es una sola para todos.
+ */
 export const MAX_GUIDED_ITEMS = 3;
 
 /**
@@ -12,16 +15,18 @@ export const MAX_GUIDED_ITEMS = 3;
  */
 export default async function assignPackages(ctx, action) {
   const { route_id: routeId, route_text: routeText, items } = action.ui.fill.values;
+  const shown = items.slice(0, MAX_GUIDED_ITEMS);
+  const rest = items.length - shown.length;
   try {
     const que = items.length === 1 ? `el paquete ${items[0].tracking_code}` : `${items.length} paquetes`;
-    await ctx.say(`Voy a asignar ${que} al viaje ${routeText}. Mira cómo lo hago.`, { wait: true });
+    await ctx.say(`Voy a asignar ${que} al viaje ${routeText}. ${rest > 0 ? `Te muestro ${shown.length === 1 ? 'el primero' : `los primeros ${shown.length}`}.` : 'Mira cómo lo hago.'}`, { wait: true });
 
     if (window.location.pathname !== LIST_PATH) {
       await ctx.say('Primero voy a Paquetes.');
       ctx.navigate(LIST_PATH);
     }
 
-    for (const [i, item] of items.entries()) {
+    for (const [i, item] of shown.entries()) {
       const link = await ctx.waitFor(() => ctx.findVisible(`[data-logi-vincular="${item.tracking_code}"]`), 10000);
       await ctx.pointAt(link);
       await ctx.say(`Vinculo ${item.tracking_code}`);
@@ -45,11 +50,12 @@ export default async function assignPackages(ctx, action) {
         await ctx.say('Confirmo la asignación.');
         await ctx.press(submit, { click: false }); // solo se ve la pulsación; la asignación real es la confirmación del servidor
       }
-      if (i < items.length - 1) {
+      if (i < shown.length - 1) {
         emitGuided(GUIDED_EVENTS.cancelForm); // cierra este formulario para seguir con el siguiente paquete
         await ctx.waitFor(() => !ctx.getForm('assignment'), 4000);
       }
     }
+    if (rest > 0) await ctx.say(`Los otros ${rest} paquetes los asigno igual, de una vez.`, { wait: true });
   } catch (e) {
     if (e instanceof StopError) throw e;
     await ctx.say('No pude seguir en pantalla; lo asigno directamente.', { wait: true });

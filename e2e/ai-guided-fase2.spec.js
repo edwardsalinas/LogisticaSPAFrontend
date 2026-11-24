@@ -71,7 +71,7 @@ test('1. Logi asigna el paquete al viaje a la vista de todos', async ({ browser 
   await page.goto('/dashboard');
   await page.getByRole('button', { name: /abrir asistente/i }).click();
 
-  const { body, action } = await askForProposal(page, `Asigna el paquete ${state.code} al viaje de La Paz a Municipio Caracollo`);
+  const { body, action } = await askForProposal(page, `Prepara la asignación del paquete ${state.code} al viaje de La Paz a Municipio Caracollo para que yo la confirme`);
   expect(action, `el asistente debía proponer asignar. Respuesta: ${body?.response}`).toBeTruthy();
   expect(action.type).toBe('assign_package');
   expect(action.ui.fill.form).toBe('assignment');
@@ -115,5 +115,43 @@ test('2. Logi registra un evento a la vista de todos', async ({ browser }) => {
   await expect(page).toHaveURL(/\/tracking$/);
 
   expect((await packageNow(ctx)).status).toBe('en_agencia');
+  await ctx.close();
+});
+
+test('3. con más de 3 paquetes Logi muestra los primeros y asigna todos con una sola confirmación', async ({ browser }) => {
+  test.skip(!state.route, 'depende del paso 0');
+  test.setTimeout(300_000);
+  const ctx = await browser.newContext({ locale: 'es-BO', viewport: { width: 1366, height: 900 } });
+  const page = await ctx.newPage();
+  await login(page, 'admin');
+  const codes = [];
+  for (let i = 1; i <= 5; i += 1) {
+    const res = await ctx.request.post(`${API}/logistics/packages`, {
+      headers: H,
+      data: { origen: 'La Paz', destino: 'Municipio Caracollo', peso: 1, description: TAG, recipient_name: `${TAG} Destinatario ${i}`, sender_name: `${TAG} Remitente` },
+    });
+    expect(res.status(), await res.text()).toBe(201);
+    const pkg = (await res.json()).data;
+    created.packageIds.push(pkg.id);
+    codes.push({ id: pkg.id, code: pkg.tracking_code });
+  }
+  save();
+
+  await page.goto('/dashboard');
+  await page.getByRole('button', { name: /abrir asistente/i }).click();
+  const { body, action } = await askForProposal(page, `Prepara la asignación de los paquetes ${codes.map((c) => c.code).join(', ')} al viaje de La Paz a Municipio Caracollo para que yo la confirme`);
+  expect(action, `el asistente debía proponer asignar. Respuesta: ${body?.response}`).toBeTruthy();
+  expect(action.type).toBe('assign_package');
+  expect(action.ui.fill.values.items).toHaveLength(5); // más de 3: se ofrece igual y Logi hace el resto de una vez
+  const routeId = action.ui.fill.values.route_id;
+
+  await page.getByRole('button', { name: /que logi lo haga/i }).click();
+  await expect(page.locator('[data-logi-run]')).toHaveCount(1, { timeout: 15_000 });
+  await expect(page.locator('[data-logi-active]').first()).toBeVisible({ timeout: 60_000 });
+  await expect(page.locator('[data-logi-run]')).toHaveCount(0, { timeout: 180_000 });
+
+  const list = await (await ctx.request.get(`${API}/logistics/packages`, { headers: H })).json();
+  const all = Array.isArray(list) ? list : list.data;
+  for (const c of codes) expect(all.find((p) => p.id === c.id).route_id, `${c.code} debe quedar en el viaje`).toBe(routeId);
   await ctx.close();
 });
