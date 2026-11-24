@@ -1,5 +1,5 @@
 ﻿import { useEffect, useRef, useState } from 'react';
-import { History, X } from 'lucide-react';
+import { Activity, BellRing, GraduationCap, History, X } from 'lucide-react';
 import Skeleton from '../../../components/atoms/Skeleton';
 import AiSuggestionButtons from './AiSuggestionButtons';
 import Announcer from './Announcer';
@@ -7,9 +7,21 @@ import AssistantAvatar from './AssistantAvatar';
 import AssistantComposer, { useAssistantComposer } from './AssistantComposer';
 import ChatBubble from './ChatBubble';
 import ConversationHistory, { refreshConversationList } from './ConversationHistory';
+import LogiActivity from './LogiActivity';
+import { useGuidedRun } from '../guided/GuidedRunProvider';
+import { applyGuidedOutcome } from '../guided/outcome';
+import { savePrefs, useAlertPrefs } from '../alerts/alertPrefs';
+import { setEnabled } from '../alerts/alertPolicy';
 import useAssistantChat from '../useAssistantChat';
 import { introForRole, suggestionsForRole } from '../suggestions';
 import { prefersReducedMotion } from '../voice';
+
+// Para «Enséñame»: un paquete de ejemplo con datos inventados; la demostración NUNCA guarda nada
+const DEMO_PACKAGE = {
+  id: 'demo-paquete', type: 'create_package', title: 'Demostración: registrar un paquete', lines: [],
+  ui: { fill: { form: 'package', values: { origen: 'La Paz', destino: 'Oruro', peso: 5, recipient_name: 'María Ejemplo', recipient_phone: '70000000', description: 'Documentos de ejemplo' } } },
+};
+const OPS = ['admin', 'logistics_operator'];
 
 const WELCOME_MESSAGE = {
   role: 'assistant',
@@ -27,6 +39,10 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = nu
   const composer = useAssistantComposer({ chat, role });
   const { setInput, ask, submit } = composer;
   const [showHistory, setShowHistory] = useState(false);
+  const [showActivity, setShowActivity] = useState(false);
+  const guided = useGuidedRun(); // «Enséñame» (null fuera del layout)
+  const alertPrefs = useAlertPrefs();
+  const isStaff = OPS.includes(role);
   // el saludo no es parte de la conversación compartida: se muestra solo mientras está vacía
   const messages = chat.messages.length ? chat.messages : [WELCOME_MESSAGE];
   const messagesEndRef = useRef(null);
@@ -90,26 +106,58 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = nu
           )}
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button onClick={handleNewConversation} className="rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 transition-colors hover:bg-primary-100">
+        <div className="no-scrollbar -mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1">
+          <button onClick={handleNewConversation} className="shrink-0 whitespace-nowrap rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 transition-colors hover:bg-primary-100">
             Nueva conversación
           </button>
           <button
             type="button"
-            onClick={() => setShowHistory((v) => !v)}
+            onClick={() => { setShowHistory((v) => !v); setShowActivity(false); }}
             aria-expanded={showHistory}
-            className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 bg-white px-3 py-1.5 text-xs font-semibold text-surface-700 transition-colors hover:bg-surface-50"
+            className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-surface-200 bg-white px-3 py-1.5 text-xs font-semibold text-surface-700 transition-colors hover:bg-surface-50"
           >
             <History size={13} aria-hidden="true" /> Historial
           </button>
+          <button
+            type="button"
+            onClick={() => { setShowActivity((v) => !v); setShowHistory(false); }}
+            aria-expanded={showActivity}
+            className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-surface-200 bg-white px-3 py-1.5 text-xs font-semibold text-surface-700 transition-colors hover:bg-surface-50"
+          >
+            <Activity size={13} aria-hidden="true" /> Actividad
+          </button>
+          {guided && isStaff && (
+            <button
+              type="button"
+              onClick={async () => {
+                const out = await guided.start(DEMO_PACKAGE, { demo: true });
+                applyGuidedOutcome({ out, action: DEMO_PACKAGE, chat });
+              }}
+              title="Logi te muestra cómo se registra un paquete, paso a paso, sin guardar nada"
+              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-surface-200 bg-white px-3 py-1.5 text-xs font-semibold text-surface-700 transition-colors hover:bg-surface-50"
+            >
+              <GraduationCap size={13} aria-hidden="true" /> Enséñame a registrar un paquete
+            </button>
+          )}
           {onToggleLogiWalk && (
             <button
               type="button"
               onClick={onToggleLogiWalk}
               aria-pressed={!logiWalks}
-              className="rounded-full border border-surface-200 bg-white px-3 py-1.5 text-xs font-semibold text-surface-700 transition-colors hover:bg-surface-50"
+              className="shrink-0 whitespace-nowrap rounded-full border border-surface-200 bg-white px-3 py-1.5 text-xs font-semibold text-surface-700 transition-colors hover:bg-surface-50"
             >
               {logiWalks ? 'Dejar quieto a Logi' : 'Que Logi pasee'}
+            </button>
+          )}
+          {isStaff && (
+            <button
+              type="button"
+              onClick={() => savePrefs(setEnabled(alertPrefs, !alertPrefs.enabled))}
+              aria-pressed={alertPrefs.enabled}
+              title="Logi te avisa de excepciones reales (retrasos, paquetes sueltos con viaje, viajes sin conductor), como mucho una vez por hora"
+              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-surface-200 bg-white px-3 py-1.5 text-xs font-semibold text-surface-700 transition-colors hover:bg-surface-50"
+            >
+              <BellRing size={13} aria-hidden="true" /> {alertPrefs.enabled ? 'Avisos de Logi: sí' : 'Avisos de Logi: no'}
             </button>
           )}
         </div>
@@ -117,6 +165,11 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = nu
 
       <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-5">
         <Announcer messages={chat.messages} loading={loading} />
+        {showActivity && (
+          <div className="mb-4">
+            <LogiActivity chat={chat} />
+          </div>
+        )}
         {showHistory && (
           <div className="mb-4">
             <ConversationHistory activeId={conversationId} onOpen={openFromHistory} onDeleted={() => { reset([]); setShowHistory(false); }} />

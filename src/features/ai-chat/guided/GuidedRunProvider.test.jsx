@@ -6,7 +6,7 @@ import { GuidedRunProvider, canGuide, useGuidedRun } from './GuidedRunProvider';
 import { GUIDED_EVENTS, registerGuidedForm } from './guidedForms';
 import apiService from '../../../services/apiService';
 
-vi.mock('../../../services/apiService', () => ({ default: { post: vi.fn() } }));
+vi.mock('../../../services/apiService', () => ({ default: { post: vi.fn(), trackLogiEvent: vi.fn() } }));
 // «reducir movimiento»: todo ocurre al instante (sin esperas) y no hace falta layout real
 vi.mock('../voice', async (original) => ({ ...(await original()), prefersReducedMotion: () => true }));
 vi.mock('../useVoice', () => ({ useSpeechSynthesis: () => ({ supported: false, speaking: false, speak: vi.fn(), cancel: vi.fn() }) }));
@@ -17,9 +17,10 @@ const ACTION = {
 };
 
 let out;
+let startOptions;
 function Starter({ action = ACTION }) {
   const guided = useGuidedRun();
-  return <button onClick={async () => { out = await guided.start(action); }}>empezar</button>;
+  return <button onClick={async () => { out = await guided.start(action, startOptions); }}>empezar</button>;
 }
 const renderApp = (onBegin = vi.fn(), action) => render(
   <MemoryRouter><GuidedRunProvider onBegin={onBegin}><Starter action={action} /></GuidedRunProvider></MemoryRouter>,
@@ -39,7 +40,7 @@ describe('Logi guiado: motor de ejecución', () => {
   const events = [];
   const onEvent = (e) => events.push(e.type);
   beforeEach(() => {
-    apiService.post.mockReset(); out = undefined; events.length = 0;
+    apiService.post.mockReset(); apiService.trackLogiEvent.mockReset(); out = undefined; startOptions = undefined; events.length = 0;
     form = fakeForm();
     Object.values(GUIDED_EVENTS).forEach((n) => window.addEventListener(n, onEvent));
   });
@@ -67,6 +68,45 @@ describe('Logi guiado: motor de ejecución', () => {
     expect(out.result.result.message).toMatch(/TRK-9/);
     expect(events).toContain(GUIDED_EVENTS.changed); // la página refresca su lista
     expect(screen.queryByText(/trabajando por ti/i)).not.toBeInTheDocument(); // todo vuelve a la normalidad
+  });
+
+  it('«Enséñame» (demo): hace todo lo visible pero NO confirma ni guarda nada, y la acción sigue pendiente', async () => {
+    startOptions = { demo: true };
+    renderApp();
+    await userEvent.click(screen.getByText('empezar'));
+    await waitFor(() => expect(out).toBeDefined(), { timeout: 5000 });
+
+    expect(out.result).toEqual({ demo: true });
+    expect(form.setValue).toHaveBeenCalledWith('origen', 'La Paz'); // sí llenó el formulario
+    expect(apiService.post).not.toHaveBeenCalled(); // pero no confirmó nada
+    expect(events).toContain(GUIDED_EVENTS.cancelForm); // y cerró el formulario
+    expect(events).not.toContain(GUIDED_EVENTS.changed); // sin recargar datos: no cambió nada
+  });
+
+  it('métricas: anota que empezó y que terminó (solo el evento y el tipo)', async () => {
+    apiService.post.mockResolvedValue({ success: true, result: { message: 'Paquete creado con el código TRK-9.' } });
+    renderApp();
+    await userEvent.click(screen.getByText('empezar'));
+    await waitFor(() => expect(out).toBeDefined(), { timeout: 5000 });
+    expect(apiService.trackLogiEvent.mock.calls.map((c) => c[0])).toEqual([
+      { event: 'guided_started', type: 'create_package' },
+      { event: 'guided_done', type: 'create_package' },
+    ]);
+  });
+
+  it('métricas: una demostración cuenta como demo_done (no como acción hecha) y detener cuenta como detenida', async () => {
+    startOptions = { demo: true };
+    renderApp();
+    await userEvent.click(screen.getByText('empezar'));
+    await waitFor(() => expect(out).toBeDefined(), { timeout: 5000 });
+    expect(apiService.trackLogiEvent.mock.calls.map((c) => c[0])).toEqual([{ event: 'demo_done', type: 'create_package' }]);
+
+    out = undefined; startOptions = undefined; apiService.trackLogiEvent.mockReset(); form.off();
+    renderApp();
+    await userEvent.click(screen.getAllByText('empezar').at(-1));
+    await userEvent.click(await screen.findByRole('button', { name: /^detener$/i }));
+    await waitFor(() => expect(out).toBeDefined());
+    expect(apiService.trackLogiEvent.mock.calls.map((c) => c[0].event)).toEqual(['guided_started', 'guided_stopped']);
   });
 
   it('si la acción real falla, devuelve el error y no la repite', async () => {

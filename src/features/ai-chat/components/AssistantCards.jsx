@@ -10,7 +10,7 @@ import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
 import AssistantAvatar from './AssistantAvatar';
 import { canGuide, useGuidedRun } from '../guided/GuidedRunProvider';
-import { applyGuidedOutcome } from '../guided/outcome';
+import { applyGuidedOutcome, makeOutcome } from '../guided/outcome';
 
 /** Tarjetas con los datos estructurados que devuelven las herramientas del asistente. */
 
@@ -274,7 +274,7 @@ export function ActionProposalCard({ data }) {
     setState({ status: 'working', verb });
     try {
       const res = await apiService.post(`/ai-agent/actions/${action.id}/${verb}`);
-      const outcome = { status: verb === 'confirm' ? 'done' : 'cancelled', message: res?.result?.message, results: res?.result?.data?.results, records: res?.result?.data?.records };
+      const outcome = verb === 'confirm' ? makeOutcome(action, res) : { status: 'cancelled', type: action.type, title: action.title, at: Date.now(), message: res?.result?.message };
       chat?.settleAction?.(action.id, outcome);
       setState(outcome);
       // el detalle ya se ve en la tarjeta: el aviso solo nombra la acción
@@ -291,6 +291,14 @@ export function ActionProposalCard({ data }) {
     setState({ status: 'working', verb: 'confirm' });
     const out = await guided.start(action);
     setState(applyGuidedOutcome({ out, action, chat }) ?? { status: 'pending' });
+  };
+
+  // «Enséñame»: Logi lo hace a la vista de todos pero SIN guardar nada; la acción sigue pendiente
+  const callDemo = async () => {
+    setState({ status: 'working', verb: 'demo' });
+    const out = await guided.start(action, { demo: true });
+    applyGuidedOutcome({ out, action, chat });
+    setState({ status: 'pending' });
   };
 
   const working = state.status === 'working';
@@ -352,7 +360,20 @@ export function ActionProposalCard({ data }) {
 
       {!finished && state.status !== 'error' && (
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-surface-100 px-4 py-3">
-          <p className="min-w-0 text-xs text-surface-500">Nada se ha hecho todavía. Revisa los datos antes de confirmar.</p>
+          <div className="min-w-0">
+            <p className="text-xs text-surface-500">Nada se ha hecho todavía. Revisa los datos antes de confirmar.</p>
+            {guided && canGuide(action) && (
+              <button
+                type="button"
+                onClick={callDemo}
+                disabled={working}
+                className="mt-1 inline-flex min-h-11 items-center text-xs font-semibold text-primary-700 underline hover:text-primary-800 disabled:opacity-50"
+                title="Logi te muestra cómo se hace, paso a paso, sin guardar nada"
+              >
+                Solo enséñame cómo, sin guardar
+              </button>
+            )}
+          </div>
           <div className="flex min-w-0 flex-wrap gap-2">
             <Button variant="secondary" onClick={() => call('cancel')} disabled={working} className="min-h-11 flex-1 sm:flex-none">Cancelar</Button>
             {guided && canGuide(action) && (

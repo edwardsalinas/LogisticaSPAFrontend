@@ -68,12 +68,15 @@ export default async function registerEvent(ctx, action) {
     }
   } catch (e) {
     if (e instanceof StopError) throw e;
-    await ctx.say('No pude seguir en pantalla; lo registro directamente.', { wait: true });
+    await ctx.say('No pude seguir en pantalla; lo registro directamente.', { wait: true, mood: 'worried' });
+    ctx.fallback();
     emitGuided(GUIDED_EVENTS.cancelForm);
   }
 
+  if (ctx.demo) return ctx.finishDemo(); // «Enséñame»: no se confirma nada
+
   const res = await ctx.confirm(action);
   emitGuided(GUIDED_EVENTS.changed);
-  await ctx.say(`¡Listo! ${res?.result?.message ?? 'Evento registrado.'}`, { wait: true });
+  await ctx.say(`¡Listo! ${res?.result?.message ?? 'Evento registrado.'}`, { wait: true, mood: 'happy' });
   return res;
 }

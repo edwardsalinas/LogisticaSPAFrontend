@@ -9,10 +9,15 @@ const apiService = {
   getAiConversation: (id) => api.get(`/ai-agent/conversations/${id}`),
   deleteAiConversation: (id) => api.delete(`/ai-agent/conversations/${id}`),
   // Convierte un grupo de las sugerencias de asignación en una propuesta a confirmar (sin llamar al modelo)
+  // Deshace la asignación de un paquete a un viaje (solo mientras siga «asignado» y el viaje no haya salido)
+  unassignPackage: (id) => api.post(`/logistics/packages/${id}/unassign`),
   prepareAssignment: (body) => api.post('/ai-agent/suggestions/assign', body),
   // Leer la foto de una guía de remisión (devuelve los campos para revisarlos) y, ya revisados, preparar el registro
   extractDocument: (body) => api.post('/ai-agent/documents/extract', body, { timeout: 60000 }),
   proposeFromDocument: (body) => api.post('/ai-agent/documents/propose', body),
+  // Avisos proactivos de Logi (solo personal) y eventos de uso para las métricas (fire-and-forget, ver logiEvents.js)
+  getLogiAlerts: () => api.get('/ai-agent/alerts'),
+  trackLogiEvent: (body) => api.post('/ai-agent/logi-events', body),
   getAiUsage: (days = 7) => api.get('/ai-agent/usage', { params: { days } }),
   getRoutes: () => api.get('/logistics/routes'),
   getCheckpointsByRoute: (routeId) => api.get(`/logistics/routes/${routeId}/checkpoints`),

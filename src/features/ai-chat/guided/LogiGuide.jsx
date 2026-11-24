@@ -6,7 +6,7 @@ import AssistantAvatar from '../components/AssistantAvatar';
  * Es solo imagen (no recibe clics: la capa de interrupción está por debajo y el aviso con «Detener» por encima).
  */
 function LogiGuide({ ui }) {
-  const { x, y, dur, moving, say, mood } = ui;
+  const { x, y, dur, moving, say, mood, look } = ui;
   // El lado del globo se decide cuando Logi LLEGA (no según su destino mientras camina): así nunca se sale de la pantalla
   const [nearRight, setNearRight] = useState(() => x > window.innerWidth - 300);
   useEffect(() => { if (!moving) setNearRight(x > window.innerWidth - 300); }, [x, moving]);
@@ -21,7 +21,7 @@ function LogiGuide({ ui }) {
           {say}
         </div>
       )}
-      <AssistantAvatar body size={64} mood={mood} walking={moving} />
+      <AssistantAvatar body size={64} mood={mood} walking={moving} look={look} />
     </div>
   );
 }

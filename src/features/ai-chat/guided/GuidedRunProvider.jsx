@@ -11,6 +11,7 @@ import assignPackages from './choreographies/assignPackages';
 import registerEvent from './choreographies/registerEvent';
 import deliverPackages from './choreographies/deliverPackages';
 import LogiGuide from './LogiGuide';
+import { trackLogi } from '../logiEvents';
 
 /** Una coreografía por tipo de acción. Cada una se prueba y se mantiene por separado. */
 const CHOREOGRAPHIES = { create_package: createPackage, assign_package: assignPackages, register_tracking_event: registerEvent, deliver_package: deliverPackages };
@@ -20,7 +21,7 @@ const GuidedRunContext = createContext(null);
 /** null fuera del layout (pantallas sueltas, pruebas): quien lo use debe tolerarlo. */
 export const useGuidedRun = () => useContext(GuidedRunContext);
 
-const IDLE = { active: false, x: 0, y: 0, dur: 0, moving: false, say: '', mood: 'idle', committed: false, fast: false };
+const IDLE = { active: false, x: 0, y: 0, dur: 0, moving: false, say: '', mood: 'idle', committed: false, fast: false, look: null, demo: false };
 const LOGI_W = 64;
 const LOGI_H = 96;
 
@@ -74,13 +75,13 @@ export function GuidedRunProvider({ children, onBegin }) {
     };
 
     // Dice algo en el globo (y en voz alta si la lectura está activada). Con `wait` espera lo que tarda en leerse.
-    const say = async (text, { wait = false } = {}) => {
+    const say = async (text, { wait = false, mood } = {}) => {
       if (signal.aborted) throw new StopError();
-      patch({ say: text, mood: 'talking' });
+      patch({ say: text, mood: mood ?? 'talking' });
       const aloudNow = (runRef.current?.aloud || getSpeakPref()) && synthRef.current.supported && !fastRef.current;
       if (aloudNow) synthRef.current.speak(stripForSpeech(text));
       if (wait) await sleep(aloudNow ? Math.min(7000, 1200 + text.length * 65) : Math.min(2600, 700 + text.length * 28));
-      patch({ mood: 'idle' });
+      patch({ mood: mood ?? 'idle' });
     };
 
     const clearActive = () => document.querySelectorAll('[data-logi-active]').forEach((el) => el.removeAttribute('data-logi-active'));
@@ -98,7 +99,10 @@ export function GuidedRunProvider({ children, onBegin }) {
       const dist = Math.hypot(x - uiRef.current.x, y - uiRef.current.y);
       const dur = fastRef.current ? 0 : Math.round(Math.min(1100, Math.max(450, dist * 1.6)));
       el.setAttribute('data-logi-active', '');
-      patch({ x, y, dur, moving: dur > 0 });
+      // los ojos miran hacia el campo (la cara y la mirada son lo que más pesa en la confianza)
+      const clampLook = (v) => Math.max(-1, Math.min(1, v));
+      const look = { x: clampLook((r.left + r.width / 2 - (x + LOGI_W / 2)) / 220), y: clampLook((r.top + r.height / 2 - (y + LOGI_H * 0.3)) / 160) };
+      patch({ x, y, dur, moving: dur > 0, look });
       await sleep(dur);
       patch({ moving: false });
     };
@@ -127,27 +131,43 @@ export function GuidedRunProvider({ children, onBegin }) {
 
     const findVisible = (selector) => [...document.querySelectorAll(selector)].find(visible) ?? null;
 
-    return { sleep, waitFor, say, pointAt, press, typeInto, confirm, findVisible, navigate, getForm: getGuidedForm };
+    // Modo «Enséñame»: se hace TODO lo visible, pero sin el último paso (no se confirma nada ni se guarda nada)
+    const finishDemo = async () => {
+      emitGuided(GUIDED_EVENTS.cancelForm);
+      await say('Así se hace. Es solo una demostración: no se guardó nada.', { wait: true, mood: 'happy' });
+      return { demo: true };
+    };
+
+    return {
+      sleep, waitFor, say, pointAt, press, typeInto, confirm, findVisible, navigate, getForm: getGuidedForm,
+      demo: Boolean(runRef.current?.demo),
+      finishDemo,
+      fallback: () => trackLogi('guided_fallback', runRef.current?.type),
+    };
   }, [navigate, patch]);
 
   // aloud: la persona está hablando con Logi (chat de voz): todo lo que cuenta se dice en voz alta, esté o no activada la lectura
-  const start = useCallback((action, { aloud = false } = {}) => {
+  // demo: «Enséñame»: lo hace a la vista de todos pero SIN guardar nada (para capacitar y para demostraciones)
+  const start = useCallback((action, { aloud = false, demo = false } = {}) => {
     if (runRef.current) return Promise.resolve({ error: new Error('Logi ya está haciendo otra cosa.') });
     if (!canGuide(action)) return Promise.resolve({ error: new Error('Esta acción no se puede mostrar paso a paso.') });
 
     const controller = new AbortController();
-    runRef.current = { controller, committed: false, aloud };
+    runRef.current = { controller, committed: false, aloud, demo, type: action.type };
     fastRef.current = prefersReducedMotion(); // con «reducir movimiento» todo ocurre al instante
     onBegin?.();
-    patch({ ...IDLE, active: true, fast: fastRef.current, x: window.innerWidth - LOGI_W - 16, y: window.innerHeight - LOGI_H - 24 });
+    if (!demo) trackLogi('guided_started', action.type);
+    patch({ ...IDLE, active: true, demo, fast: fastRef.current, x: window.innerWidth - LOGI_W - 16, y: window.innerHeight - LOGI_H - 24 });
 
     return (async () => {
       try {
         const result = await CHOREOGRAPHIES[action.type](makeCtx(controller.signal), action);
+        trackLogi(result?.demo ? 'demo_done' : 'guided_done', action.type);
         return { result };
       } catch (e) {
         if (!runRef.current?.committed) emitGuided(GUIDED_EVENTS.cancelForm); // nada a medias: el formulario se cierra
-        return e instanceof StopError ? { stopped: true } : { error: e };
+        if (e instanceof StopError) { if (!demo) trackLogi('guided_stopped', action.type); return { stopped: true }; }
+        return { error: e };
       } finally {
         document.querySelectorAll('[data-logi-active]').forEach((el) => el.removeAttribute('data-logi-active'));
         document.querySelectorAll('.logi-press').forEach((el) => el.classList.remove('logi-press'));

@@ -826,3 +826,9 @@
   100% { box-shadow: 0 0 0 16px rgba(37, 99, 235, 0); transform: scale(1); }
 }
 @media (prefers-reduced-motion: reduce) { .logi-press { animation: none !important; } }
+
+/* Emociones de Logi: contento (celebra) y preocupado (la antena late en ámbar) */
+.logi--happy .logi__body { animation: logi-hop 0.7s ease-in-out 2; }
+.logi--happy .logi__bulb, .logi--worried .logi__bulb { animation: logi-bulb 1.1s ease-in-out infinite; }
+@keyframes logi-hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-5px); } }
+@media (prefers-reduced-motion: reduce) { .logi--happy .logi__body, .logi--happy .logi__bulb, .logi--worried .logi__bulb { animation: none !important; } }

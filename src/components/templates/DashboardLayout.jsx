@@ -1,7 +1,7 @@
 ﻿import { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import AiAssistantPanel from '../../features/ai-chat/components/AiAssistantPanel';
-import LogiCompanion from '../../features/ai-chat/components/LogiCompanion';
+import LogiHost from '../../features/ai-chat/components/LogiHost';
 import { GuidedRunProvider } from '../../features/ai-chat/guided/GuidedRunProvider';
 import CommandPalette from '../organisms/CommandPalette';
 import Navbar from '../organisms/Navbar';
@@ -127,21 +127,16 @@ function DashboardLayout() {
       {showFloatingAssistant && (
         <>
           {/* Logi pasea por la parte baja (sobre el menú inferior en celular) y dice lo que el asistente tenga pendiente */}
-          <LogiCompanion
-            open={isAiOpen}
-            status={assistant.status}
-            text={assistant.text}
-            reply={lastReply}
+          <LogiHost
+            role={role}
+            isAiOpen={isAiOpen}
+            assistant={assistant}
+            lastReply={lastReply}
             wander={logiWalks}
+            onTogglePause={() => setLogiWalks((v) => !v)}
             onToggle={() => setIsAiOpen((prev) => !prev)}
+            onOpenChat={() => setIsAiOpen(true)}
             panelId={aiPanelId}
-            badge={!isAiOpen && (assistant.status === 'confirm' || assistant.status === 'unread') ? (
-              <span
-                aria-hidden="true"
-                data-testid="assistant-badge"
-                className={`absolute right-0 top-3 h-3.5 w-3.5 rounded-full border-2 border-white ${assistant.status === 'confirm' ? 'bg-amber-500' : 'bg-sky-500'}`}
-              />
-            ) : null}
           />
           <p role="status" className="sr-only">{isAiOpen ? '' : assistant.text}</p>
 

@@ -10,6 +10,7 @@ import EmptyState from '../../../components/molecules/EmptyState';
 import ErrorState from '../../../components/molecules/ErrorState';
 
 const RANGES = [{ days: 7, label: '7 días' }, { days: 30, label: '30 días' }];
+const ALERT_TYPE_LABEL = { assign: 'Paquetes sueltos con viaje', delayed: 'Viaje que no salió', no_driver: 'Viaje sin conductor' };
 
 const seconds = (ms) => (ms ? `${(ms / 1000).toFixed(1)} s` : '—');
 const compact = (n) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)} M` : n >= 1000 ? `${(n / 1000).toFixed(n >= 10_000 ? 0 : 1)} mil` : String(n ?? 0));
@@ -102,6 +103,40 @@ export default function AiUsagePage() {
             <Kpi label="Respuesta en vivo" value={`${data.totals.streamed_pct}%`} />
             <Kpi label="Por voz" value={`${data.totals.voice_pct}%`} />
           </div>
+
+          {data.logi && (data.logi.alerts_shown + data.logi.guided_started + data.logi.demos) > 0 && (
+            <Section title="Logi" hint="Cuánto ayudan sus avisos y las acciones que hace a la vista de todos. Solo se cuentan eventos, nunca contenido.">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <Kpi label="Avisos mostrados" value={data.logi.alerts_shown} hint={`${data.logi.alerts_snoozed} pospuestos · ${data.logi.alerts_muted} silenciados`} />
+                <Kpi label="Avisos aceptados" value={`${data.logi.alerts_accepted_pct}%`} hint={`${data.logi.alerts_accepted} de ${data.logi.alerts_shown}`} />
+                <Kpi label="Acciones hechas por Logi" value={data.logi.guided_done} hint={`${data.logi.guided_done_pct}% de las ${data.logi.guided_started} empezadas`} />
+                <Kpi label="Detenidas / de respaldo" value={`${data.logi.guided_stopped} / ${data.logi.guided_fallback}`} hint={`${data.logi.demos} demostraciones («Enséñame»)`} />
+              </div>
+              {data.logi.by_alert_type.length > 0 && (
+                <div className="mt-4 overflow-x-auto">
+                  <table className="w-full min-w-[22rem] text-left text-sm">
+                    <caption className="sr-only">Avisos mostrados y aceptados por tipo</caption>
+                    <thead>
+                      <tr className="border-b border-surface-100 text-surface-600">
+                        <th scope="col" className="py-2 pr-4 font-medium">Tipo de aviso</th>
+                        <th scope="col" className="py-2 pr-4 font-medium">Mostrados</th>
+                        <th scope="col" className="py-2 font-medium">Aceptados</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.logi.by_alert_type.map((t) => (
+                        <tr key={t.type} className="border-b border-surface-50">
+                          <th scope="row" className="py-3 pr-4 font-medium text-surface-900">{ALERT_TYPE_LABEL[t.type] ?? t.type}</th>
+                          <td className="py-3 pr-4">{t.shown}</td>
+                          <td className="py-3">{t.accepted}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Section>
+          )}
 
           <Section title="Por modelo" hint="Qué modelo respondió, con qué éxito y qué tan rápido.">
             <div className="overflow-x-auto">

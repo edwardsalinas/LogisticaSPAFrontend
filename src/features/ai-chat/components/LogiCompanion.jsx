@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Pause, Play, Volume2, VolumeX } from 'lucide-react';
 import AssistantAvatar from './AssistantAvatar';
 import { prefersReducedMotion, stripForSpeech } from '../voice';
 import { useSpeechSynthesis } from '../useVoice';
@@ -43,8 +43,12 @@ const bubbleFor = (status, reply) => {
  * cuando el asistente tiene algo que decir (respuesta nueva, acción por confirmar, pensando), se detiene y lo dice en un globo.
  * Un clic lo abre o lo cierra el chat. Se queda quieto si pasas el cursor, lo enfocas, el sistema pide reducir el movimiento
  * o la persona lo desactiva (wander=false).
+ *
+ * Avisos proactivos (alert): una excepción real de la operación, en un globo con su acción. Logi se detiene, se preocupa si es
+ * un retraso y la persona decide: hacerlo, «Después» o silenciar ese tipo. Pausa visible (onTogglePause): un movimiento de
+ * más de 5 segundos junto al contenido necesita un control claro y fácil de encontrar (WCAG 2.2.2), no escondido en el chat.
  */
-function LogiCompanion({ open, status, text, reply, wander = true, onToggle, panelId, badge }) {
+function LogiCompanion({ open, status, text, reply, wander = true, onToggle, panelId, badge, alert = null, onAlertAccept, onAlertSnooze, onAlertMute, onTogglePause }) {
   const rootRef = useRef(null);
   const botRef = useRef(null);
   const xRef = useRef(null);
@@ -60,6 +64,7 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
   const speakingRef = useRef(false);
   speakingRef.current = synth.speaking;
   const spokenKey = useRef('');
+  const [look, setLook] = useState(null);
 
   // posición inicial: el rincón derecho, donde estaba el botón
   useLayoutEffect(() => {
@@ -81,7 +86,7 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
   }, []);
 
   // mientras habla se detiene: así el globo queda pegado a donde está de verdad (no a donde iba)
-  const roaming = wander && !calm && !open && !working && status === 'idle' && !hovered && !speech;
+  const roaming = wander && !calm && !open && !working && !alert && status === 'idle' && !hovered && !speech;
 
   // Paseo: camina a un punto al azar, descansa unos segundos (a veces saluda) y repite
   useEffect(() => {
@@ -160,13 +165,41 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
 
   useEffect(() => { if (open) synth.cancel(); }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // un aviso proactivo también se lee si la lectura en voz alta está activada (una sola vez por aviso)
+  useEffect(() => {
+    if (!alert || open || !speakOn || !synth.supported) return;
+    const key = `alert:${alert.id}`;
+    if (spokenKey.current === key || window.speechSynthesis?.speaking) return;
+    spokenKey.current = key;
+    synth.speak(stripForSpeech(`${alert.title}. ${alert.text}`));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo debe reaccionar a un aviso nuevo
+  }, [alert, open, speakOn]);
+
+  // los ojos siguen al cursor (la mirada pesa más en la confianza que los gestos); se apaga con «reducir movimiento»
+  useEffect(() => {
+    if (calm || open || working) { setLook(null); return undefined; }
+    let frame = null;
+    const onMove = (e) => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = null;
+        const r = botRef.current?.getBoundingClientRect();
+        if (!r || !r.width) return;
+        const clamp = (v) => Math.max(-1, Math.min(1, v));
+        setLook({ x: clamp((e.clientX - (r.left + r.width / 2)) / 320), y: clamp((e.clientY - (r.top + r.height * 0.3)) / 240) });
+      });
+    };
+    window.addEventListener('pointermove', onMove);
+    return () => { window.removeEventListener('pointermove', onMove); if (frame) cancelAnimationFrame(frame); };
+  }, [calm, open, working]);
+
   const toggle = useCallback(() => { setSpeech(''); synth.cancel(); onToggle(); }, [onToggle, synth]);
   if (open || working) return null; // abierto, Logi está en el encabezado del chat
 
-  const mood = synth.speaking ? 'talking' : ['confirm', 'thinking', 'unread'].includes(status) ? status : 'idle';
+  const mood = synth.speaking ? 'talking' : alert ? (alert.type === 'delayed' ? 'worried' : 'unread') : ['confirm', 'thinking', 'unread'].includes(status) ? status : 'idle';
   const nearRight = (pos.x ?? 0) > window.innerWidth / 2;
-  const talkingNow = Boolean(speech) && mood === 'idle';
-  const canSpeak = synth.supported && Boolean(speech) && status !== 'thinking';
+  const talkingNow = Boolean(speech) && !alert && mood === 'idle';
+  const canSpeak = synth.supported && Boolean(speech) && !alert && status !== 'thinking';
 
   return (
     <div ref={rootRef} className="pointer-events-none fixed inset-x-0 bottom-24 z-40 h-24 lg:bottom-2">
@@ -175,7 +208,40 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
         className="absolute bottom-0 left-0"
         style={{ transform: `translateX(${pos.x ?? 0}px)`, transition: pos.walking ? `transform ${pos.dur}s linear` : 'none', width: WIDTH }}
       >
-        {speech && (
+        {alert && (
+          <div
+            role="group"
+            aria-label="Aviso de Logi"
+            className={`logi-bubble pointer-events-none absolute bottom-full mb-1 w-[17rem] rounded-2xl border bg-white px-4 py-3 shadow-xl ${alert.severity === 'high' ? 'border-amber-300' : 'border-surface-200'} ${nearRight ? 'right-0 rounded-br-md' : 'left-0 rounded-bl-md'}`}
+          >
+            <p className="text-sm font-bold text-surface-900">{alert.title}</p>
+            <p className="mt-1 text-sm leading-snug text-surface-700">{alert.text}</p>
+            <div className="pointer-events-auto mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => onAlertAccept?.(alert)}
+                className="min-h-11 rounded-xl bg-brand-gradient px-3.5 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
+              >
+                {alert.action?.kind === 'prepare_assign' ? 'Que Logi lo haga' : (alert.action?.label ?? 'Ver')}
+              </button>
+              <button
+                type="button"
+                onClick={() => onAlertSnooze?.(alert)}
+                className="min-h-11 rounded-xl border border-surface-200 px-3 text-sm font-semibold text-surface-700 hover:bg-surface-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-500"
+              >
+                Después
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => onAlertMute?.(alert)}
+              className="pointer-events-auto mt-1 min-h-11 text-xs font-medium text-surface-600 underline hover:text-surface-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-500"
+            >
+              No mostrar este tipo de aviso
+            </button>
+          </div>
+        )}
+        {speech && !alert && (
           <div
             className={`logi-bubble pointer-events-none absolute bottom-full mb-1 w-max max-w-[15rem] rounded-2xl border border-surface-200 bg-white px-3.5 py-2.5 text-sm font-medium leading-snug text-surface-800 shadow-lg ${nearRight ? 'right-0 rounded-br-md' : 'left-0 rounded-bl-md'}`}
           >
@@ -211,10 +277,23 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
           title="Abrir el asistente"
         >
           <span className="block" style={{ transform: `scaleX(${pos.dir === 1 ? -1 : 1})` }}>
-            <AssistantAvatar body size={WIDTH} mood={mood} walking={pos.walking} waving={waving || talkingNow} />
+            <AssistantAvatar body size={WIDTH} mood={mood} walking={pos.walking} waving={waving || talkingNow} look={look} />
           </span>
           {badge}
         </button>
+        {onTogglePause && !calm && (
+          <button
+            type="button"
+            onClick={onTogglePause}
+            aria-pressed={!wander}
+            aria-label={wander ? 'Pausar el paseo de Logi' : 'Reanudar el paseo de Logi'}
+            title={wander ? 'Pausar el paseo de Logi' : 'Reanudar el paseo de Logi'}
+            className="pointer-events-auto absolute -right-3 top-6 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-surface-200 bg-white/95 text-surface-700 shadow-md before:absolute before:-inset-1.5 before:content-[''] hover:bg-surface-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-500"
+          >
+            {wander ? <Pause size={14} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
+          </button>
+        )}
+        {alert && <p role="status" className="sr-only">{`${alert.title}. ${alert.text}`}</p>}
       </div>
     </div>
   );

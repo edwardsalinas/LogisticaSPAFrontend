@@ -7,13 +7,21 @@
  *  talking  – mueve la boca mientras escribe la respuesta
  *  confirm  – antena ámbar y ojos atentos (espera tu confirmación)
  *  unread   – saluda moviendo la antena (hay una respuesta nueva)
+ *  happy    – contento: ojos en arco y sonrisa grande (terminó bien lo que hacía)
+ *  worried  – preocupado: cejas inclinadas y boca hacia abajo (error o algo que atender)
+ *
+ * look: { x, y } entre -1 y 1. Hacia dónde miran los ojos (el cursor, el campo que está llenando). En los estudios de agentes
+ * con cuerpo, la cara y la mirada son lo que más pesa en la confianza; los gestos del cuerpo casi no.
  *
  * body: dibuja también el cuerpo (torso, brazos y piernas). walking lo hace caminar; waving, saludar con la mano.
  * Las animaciones viven en index.css (.logi*) y se apagan con prefers-reduced-motion.
  */
-const ANTENNA = { idle: '#38bdf8', thinking: '#38bdf8', talking: '#38bdf8', confirm: '#f59e0b', unread: '#38bdf8' };
+const ANTENNA = { idle: '#38bdf8', thinking: '#38bdf8', talking: '#38bdf8', confirm: '#f59e0b', unread: '#38bdf8', happy: '#34d399', worried: '#f59e0b' };
 
-function AssistantAvatar({ mood = 'idle', size = 40, className = '', body = false, walking = false, waving = false }) {
+function AssistantAvatar({ mood = 'idle', size = 40, className = '', body = false, walking = false, waving = false, look = null }) {
+  const eyeShift = look && ['idle', 'unread', 'talking', 'worried'].includes(mood)
+    ? { transform: `translate(${(look.x * 2.4).toFixed(2)}px, ${(look.y * 1.6).toFixed(2)}px)`, transition: 'transform 120ms ease-out' }
+    : undefined;
   const classes = ['logi', `logi--${mood}`, body && 'logi--full', walking && 'logi--walking', waving && 'logi--waving', 'shrink-0', className].filter(Boolean).join(' ');
   return (
     <svg
@@ -59,14 +67,38 @@ function AssistantAvatar({ mood = 'idle', size = 40, className = '', body = fals
         <rect x="14" y="22" width="36" height="25" rx="11" fill="#0b1b3a" />
         {/* ojos */}
         <g className="logi__eyes">
-          <ellipse className="logi__eye" cx="24.5" cy="33" rx="3.6" ry="4.4" fill="#7dd3fc" />
-          <ellipse className="logi__eye" cx="39.5" cy="33" rx="3.6" ry="4.4" fill="#7dd3fc" />
+          <g style={eyeShift}>
+            {mood === 'happy' ? (
+              <>
+                <path d="M20.5 35 Q24.5 29 28.5 35" fill="none" stroke="#7dd3fc" strokeWidth="2.8" strokeLinecap="round" />
+                <path d="M35.5 35 Q39.5 29 43.5 35" fill="none" stroke="#7dd3fc" strokeWidth="2.8" strokeLinecap="round" />
+              </>
+            ) : (
+              <>
+                <ellipse className="logi__eye" cx="24.5" cy="33" rx="3.6" ry={mood === 'worried' ? 3.4 : 4.4} fill="#7dd3fc" />
+                <ellipse className="logi__eye" cx="39.5" cy="33" rx="3.6" ry={mood === 'worried' ? 3.4 : 4.4} fill="#7dd3fc" />
+              </>
+            )}
+          </g>
         </g>
+        {mood === 'worried' && (
+          <>
+            <path d="M19.5 25.5 L28 28" stroke="#7dd3fc" strokeWidth="2" strokeLinecap="round" />
+            <path d="M44.5 25.5 L36 28" stroke="#7dd3fc" strokeWidth="2" strokeLinecap="round" />
+          </>
+        )}
         {/* mejillas */}
-        <circle cx="19.5" cy="40.5" r="2.4" fill="#f472b6" opacity="0.45" />
-        <circle cx="44.5" cy="40.5" r="2.4" fill="#f472b6" opacity="0.45" />
+        <circle cx="19.5" cy="40.5" r="2.4" fill="#f472b6" opacity={mood === 'happy' ? 0.75 : 0.45} />
+        <circle cx="44.5" cy="40.5" r="2.4" fill="#f472b6" opacity={mood === 'happy' ? 0.75 : 0.45} />
         {/* boca */}
-        <path className="logi__mouth" d="M27 40.5 Q32 45 37 40.5" fill="none" stroke="#7dd3fc" strokeWidth="2.4" strokeLinecap="round" />
+        <path
+          className="logi__mouth"
+          d={mood === 'happy' ? 'M25 40 Q32 49 39 40' : mood === 'worried' ? 'M27 44.5 Q32 41 37 44.5' : 'M27 40.5 Q32 45 37 40.5'}
+          fill="none"
+          stroke="#7dd3fc"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+        />
       </g>
     </svg>
   );
