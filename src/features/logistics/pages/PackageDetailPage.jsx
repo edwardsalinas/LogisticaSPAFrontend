@@ -99,7 +99,7 @@ function PackageDetailPage() {
     <div className="space-y-6 sm:space-y-8">
       <PageHeader
         title={pkg.tracking_code}
-        titleClassName="break-all sm:break-normal"
+        titleClassName="break-words"
         titleAdornment={<Badge variant={status.variant} dot>{status.label}</Badge>}
         description="Ficha completa del paquete con progreso, actores, ubicación y cronograma de entrega."
         actions={(

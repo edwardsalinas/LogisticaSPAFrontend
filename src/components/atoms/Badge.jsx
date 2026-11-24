@@ -23,7 +23,7 @@ function Badge({ children, variant = 'neutral', size = 'md', dot = false, classN
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border font-semibold uppercase tracking-[0.12em] ${variants[variant] || variants.neutral} ${sizes[size] || sizes.md} ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border font-semibold ${variants[variant] || variants.neutral} ${sizes[size] || sizes.md} ${className}`}
     >
       {dot && <span className={`h-1.5 w-1.5 rounded-full ${dotVariants[variant] || dotVariants.neutral}`} />}
       {children}

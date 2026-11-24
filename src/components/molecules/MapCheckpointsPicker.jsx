@@ -182,7 +182,7 @@ export default function MapCheckpointsPicker({
           type="button"
           onClick={() => setActiveMode(activeMode === 'origin' ? null : 'origin')}
           className={clsx(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold transition-all",
+            "flex items-center justify-center gap-1.5 px-3 py-1.5 max-sm:min-h-11 max-sm:min-w-11 rounded-xl text-sm font-semibold transition-all",
             activeMode === 'origin' ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20" : "bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-50"
           )}
         >
@@ -192,7 +192,7 @@ export default function MapCheckpointsPicker({
           type="button"
           onClick={() => setActiveMode(activeMode === 'checkpoint' ? null : 'checkpoint')}
           className={clsx(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold transition-all",
+            "flex items-center justify-center gap-1.5 px-3 py-1.5 max-sm:min-h-11 max-sm:min-w-11 rounded-xl text-sm font-semibold transition-all",
             activeMode === 'checkpoint' ? "bg-amber-500 text-white shadow-md shadow-amber-500/20" : "bg-white text-amber-600 border border-amber-100 hover:bg-amber-50"
           )}
         >
@@ -202,7 +202,7 @@ export default function MapCheckpointsPicker({
           type="button"
           onClick={() => setActiveMode(activeMode === 'destination' ? null : 'destination')}
           className={clsx(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold transition-all",
+            "flex items-center justify-center gap-1.5 px-3 py-1.5 max-sm:min-h-11 max-sm:min-w-11 rounded-xl text-sm font-semibold transition-all",
             activeMode === 'destination' ? "bg-red-500 text-white shadow-md shadow-red-500/20" : "bg-white text-red-600 border border-red-100 hover:bg-red-50"
           )}
         >

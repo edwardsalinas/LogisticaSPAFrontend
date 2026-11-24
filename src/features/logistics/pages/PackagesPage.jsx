@@ -306,7 +306,7 @@ function PackagesPage() {
                   type="text" 
                   placeholder="Buscar viaje o ruta..." 
                   aria-label="Buscar viaje o ruta"
-                  className="pl-9 pr-4 py-2 bg-white border border-surface-200 rounded-xl text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all outline-none w-full sm:w-44 lg:w-48"
+                  className="pl-9 pr-4 py-2 max-sm:min-h-11 bg-white border border-surface-200 rounded-xl text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all outline-none w-full sm:w-44 lg:w-48"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />

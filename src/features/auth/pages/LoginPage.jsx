@@ -157,7 +157,7 @@ function LoginPage() {
               </div>
               <div>
                 <p className="text-xl font-bold tracking-tight text-[#022448]">LogisticaSPA</p>
-                <p className="text-xs uppercase tracking-[0.22em] text-surface-500">
+                <p className="text-xs font-medium text-surface-600">
                   Acceso corporativo
                 </p>
               </div>
@@ -177,7 +177,7 @@ function LoginPage() {
               <div className="space-y-2">
                 <label
                   htmlFor="email"
-                  className="block text-xs font-semibold uppercase tracking-[0.18em] text-surface-500"
+                  className="block text-sm font-semibold text-surface-700"
                 >
                   Correo electrónico
                 </label>
@@ -187,17 +187,18 @@ function LoginPage() {
                   autoComplete="username"
                   placeholder="nombre@logisticaspa.com"
                   aria-invalid={!!errors.email}
+                  aria-describedby={errors.email ? 'email-error' : undefined}
                   {...register('email')}
                   className="h-12 w-full rounded-xl border border-surface-200 bg-white px-4 text-sm text-surface-900 outline-none transition-all focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
                 />
-                {errors.email && <p role="alert" className="text-xs font-semibold text-red-600">{errors.email.message}</p>}
+                {errors.email && <p id="email-error" role="alert" className="text-xs font-semibold text-red-600">{errors.email.message}</p>}
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label
                     htmlFor="password"
-                    className="block text-xs font-semibold uppercase tracking-[0.18em] text-surface-500"
+                    className="block text-sm font-semibold text-surface-700"
                   >
                     Contraseña
                   </label>
@@ -210,27 +211,29 @@ function LoginPage() {
                     autoComplete="current-password"
                     placeholder="••••••••"
                     aria-invalid={!!errors.password}
+                    aria-describedby={errors.password ? 'password-error' : undefined}
                     {...register('password')}
                     className="h-12 w-full rounded-xl border border-surface-200 bg-white px-4 pr-12 text-sm text-surface-900 outline-none transition-all focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-surface-500 hover:text-surface-800"
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    className="absolute right-1 top-1/2 flex min-h-11 -translate-y-1/2 items-center rounded-lg px-3 text-sm font-semibold text-surface-600 hover:text-surface-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-500"
                   >
                     {showPassword ? 'Ocultar' : 'Mostrar'}
                   </button>
                 </div>
-                {errors.password && <p role="alert" className="text-xs font-semibold text-red-600">{errors.password.message}</p>}
+                {errors.password && <p id="password-error" role="alert" className="text-xs font-semibold text-red-600">{errors.password.message}</p>}
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex min-h-11 items-center gap-3">
                 <input
                   id="remember"
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded border-surface-300 text-primary-500 focus:ring-primary-500"
+                  className="h-5 w-5 rounded border-surface-300 text-primary-500 focus:ring-primary-500"
                 />
                 <label htmlFor="remember" className="text-sm font-medium text-surface-700">
                   Recordarme en este dispositivo
@@ -240,7 +243,7 @@ function LoginPage() {
               <Captcha ref={captchaRef} onToken={setCaptchaToken} />
 
               {error && (
-                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   {error}
                 </div>
               )}
@@ -255,13 +258,8 @@ function LoginPage() {
             </form>
 
             <div className="mt-8 border-t border-surface-100 pt-6 text-center">
-              <p className="mb-2 text-sm text-surface-600">¿No tienes acceso todavía?</p>
-              <button
-                type="button"
-                className="text-sm font-bold text-primary-600 transition-colors hover:text-primary-800"
-              >
-                Solicitar acceso
-              </button>
+              <p className="text-sm text-surface-600">¿No tienes acceso todavía?</p>
+              <p className="mt-1 text-sm font-semibold text-surface-800">Pídelo al administrador de tu organización.</p>
             </div>
           </div>
         </section>

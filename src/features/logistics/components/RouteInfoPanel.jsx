@@ -23,10 +23,10 @@ function RouteInfoPanel({ route, onClose, onEdit, onDelete, onAssign, realProgre
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.15),transparent_40%)]" />
         <div className="relative mb-4 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-blue-400/80 leading-none mb-2">Lectura de Ruta</p>
+            <p className="text-xs font-semibold text-blue-300 leading-none mb-2">Lectura de ruta</p>
             <h3 className="font-bold text-2xl tracking-tighter leading-none mb-1">{routeName(route)}</h3>
           </div>
-          <button onClick={onClose} className="rounded-2xl bg-white/10 p-2.5 text-white/70 transition-all hover:bg-white/20 hover:text-white active:scale-90 flex-shrink-0">
+          <button type="button" onClick={onClose} aria-label="Cerrar lectura de ruta" className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-white/70 transition-all hover:bg-white/20 hover:text-white active:scale-90 flex-shrink-0">
             <X size={20} strokeWidth={2.5} />
           </button>
         </div>

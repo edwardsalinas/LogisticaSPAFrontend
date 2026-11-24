@@ -632,6 +632,7 @@ function DriverDashboardPage() {
                 .custom-driver-calendar .fc-toolbar { margin-bottom: 1rem !important; }
                 .custom-driver-calendar .fc-toolbar-title { font-size: 0.9rem !important; font-weight: 800; }
                 .custom-driver-calendar .fc-button { padding: 4px 8px !important; font-size: 0.75rem !important; border-radius: 8px !important; }
+                @media (max-width: 639px) { .custom-driver-calendar .fc-button { min-height: 44px; min-width: 44px; } }
                 .custom-driver-calendar .fc-theme-standard td, .custom-driver-calendar .fc-theme-standard th { border-color: #f1f5f9; }
                 .custom-driver-calendar .fc-event { cursor: pointer; border: none; }
               `}</style>

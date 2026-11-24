@@ -71,11 +71,11 @@ function Modal({ isOpen, onClose, title, children, footer }) {
       >
         <div className="flex items-start justify-between gap-4 border-b border-surface-100 px-6 py-5 sm:px-7">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-surface-500">Panel contextual</p>
+            <p className="text-xs font-medium text-surface-600">Panel contextual</p>
             <h3 id={titleId} className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-surface-950">{title}</h3>
           </div>
           <button
-            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-surface-200 bg-white text-surface-500 transition-colors hover:bg-surface-50 hover:text-surface-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-surface-200 bg-white text-surface-500 transition-colors hover:bg-surface-50 hover:text-surface-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
             onClick={onClose}
             aria-label="Cerrar modal"
           >

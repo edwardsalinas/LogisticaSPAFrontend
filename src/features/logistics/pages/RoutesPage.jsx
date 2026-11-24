@@ -530,7 +530,7 @@ function RoutesPage() {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-10 w-10 group-focus-within:w-44 bg-white border border-surface-200 rounded-xl outline-none transition-all duration-300 focus:pl-10 focus:pr-4 cursor-pointer focus:cursor-text shadow-sm"
+                  className="h-10 w-10 max-sm:h-11 max-sm:w-11 group-focus-within:w-44 bg-white border border-surface-200 rounded-xl outline-none transition-all duration-300 focus:pl-10 focus:pr-4 cursor-pointer focus:cursor-text shadow-sm"
                   placeholder=""
                   aria-label="Buscar viaje o ruta"
                 />
@@ -586,6 +586,7 @@ function RoutesPage() {
                   .custom-calendar .fc-toolbar-title { font-size: 1.1rem !important; font-weight: 700; color: #0f172a; }
                   .custom-calendar .fc-button-primary { background-color: #0f172a !important; border-color: #0f172a !important; border-radius: 0.5rem; text-transform: capitalize; font-weight: 600; }
                   .custom-calendar .fc-button-active { background-color: #2563eb !important; border-color: #2563eb !important; }
+                  @media (max-width: 639px) { .custom-calendar .fc-button { min-height: 44px; min-width: 44px; } }
                   .custom-calendar .fc-event { cursor: pointer; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.2); }
                   .custom-calendar .fc-timegrid-slot { height: 2.5em; }
                   .custom-calendar .fc-v-event .fc-event-main { padding: 4px; }

@@ -1,5 +1,5 @@
 function Button({ children, variant = 'primary', size = 'md', type = 'button', onClick, disabled = false, className = '', ...rest }) {
-  const base = 'inline-flex items-center justify-center gap-2 rounded-xl font-semibold tracking-[0.01em] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none';
+  const base = 'inline-flex max-sm:min-h-11 items-center justify-center gap-2 rounded-xl font-semibold tracking-[0.01em] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none';
 
   const variants = {
     primary: 'bg-brand-gradient text-white shadow-[0_18px_40px_-24px_rgba(19,127,236,0.75)] hover:-translate-y-0.5 hover:shadow-[0_22px_48px_-24px_rgba(19,127,236,0.85)] focus:ring-primary-500',
