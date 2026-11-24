@@ -9,13 +9,14 @@ import { emitGuided, getGuidedForm, GUIDED_EVENTS, StopError } from './guidedFor
 import createPackage from './choreographies/createPackage';
 import assignPackages, { MAX_GUIDED_ITEMS } from './choreographies/assignPackages';
 import registerEvent, { MAX_GUIDED_EVENT_ITEMS } from './choreographies/registerEvent';
+import deliverPackages, { MAX_GUIDED_DELIVER_ITEMS } from './choreographies/deliverPackages';
 import LogiGuide from './LogiGuide';
 
 /** Una coreografía por tipo de acción. Cada una se prueba y se mantiene por separado. */
-const CHOREOGRAPHIES = { create_package: createPackage, assign_package: assignPackages, register_tracking_event: registerEvent };
+const CHOREOGRAPHIES = { create_package: createPackage, assign_package: assignPackages, register_tracking_event: registerEvent, deliver_package: deliverPackages };
 
 /** Tope de paquetes que se muestran uno a uno por tipo de acción (sin tope = una sola unidad). */
-const ITEM_CAP = { assign_package: MAX_GUIDED_ITEMS, register_tracking_event: MAX_GUIDED_EVENT_ITEMS };
+const ITEM_CAP = { assign_package: MAX_GUIDED_ITEMS, register_tracking_event: MAX_GUIDED_EVENT_ITEMS, deliver_package: MAX_GUIDED_DELIVER_ITEMS };
 
 const GuidedRunContext = createContext(null);
 /** null fuera del layout (pantallas sueltas, pruebas): quien lo use debe tolerarlo. */
@@ -179,9 +180,10 @@ export function GuidedRunProvider({ children, onBegin }) {
       {ui.active && createPortal(
         <>
           {/* capa transparente: tocar la pantalla mientras Logi trabaja lo detiene (nadie pelea con él por el formulario) */}
-          <div data-logi-run className="fixed inset-0 z-[1250]" onPointerDown={stop} aria-hidden="true" />
+          {/* por encima de modales (1200) y cajones (1300); pointer-events:auto porque un cajón de Radix deja inertes los clics fuera de él */}
+          <div data-logi-run className="fixed inset-0 z-[1350]" style={{ pointerEvents: 'auto' }} onPointerDown={stop} aria-hidden="true" />
           <LogiGuide ui={ui} />
-          <div className="fixed left-1/2 top-3 z-[1310] flex max-w-[calc(100vw-1.5rem)] -translate-x-1/2 items-center gap-2 rounded-2xl border border-primary-200 bg-white px-3 py-2 shadow-xl">
+          <div style={{ pointerEvents: 'auto' }} className="fixed left-1/2 top-3 z-[1410] flex max-w-[calc(100vw-1.5rem)] -translate-x-1/2 items-center gap-2 rounded-2xl border border-primary-200 bg-white px-3 py-2 shadow-xl">
             <span className="px-1 text-sm font-semibold text-surface-800"><span className="max-sm:hidden">Logi está trabajando por ti</span><span className="sm:hidden">Logi trabaja</span></span>
             {!ui.fast && (
               <button type="button" onClick={speedUp} className="min-h-11 rounded-xl border border-surface-200 px-3 text-sm font-semibold text-surface-700 hover:bg-surface-50">

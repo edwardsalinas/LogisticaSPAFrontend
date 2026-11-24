@@ -13,7 +13,7 @@ function LogiGuide({ ui }) {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed left-0 top-0 z-[1300]"
+      className="pointer-events-none fixed left-0 top-0 z-[1400]"
       style={{ transform: `translate(${Math.round(x)}px, ${Math.round(y)}px)`, transition: dur ? `transform ${dur}ms ease-in-out` : 'none' }}
     >
       {say && (

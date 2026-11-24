@@ -34,5 +34,12 @@ export const spokenProposal = (action) => stripForSpeech(
   `${action.title}. ${(action.lines ?? []).join('. ')}.`,
 );
 
+/**
+ * Qué acciones se pueden confirmar por voz. La entrega NO: es la más difícil de deshacer, así que, aunque Logi sepa
+ * mostrarla («Que Logi lo haga»), se confirma siempre con un clic.
+ */
+export const VOICE_CONFIRMABLE = new Set(['create_package', 'assign_package', 'register_tracking_event']);
+export const isVoiceConfirmable = (action) => VOICE_CONFIRMABLE.has(action?.type);
+
 export const CONFIRM_PROMPT = '¿Lo hago? Di «sí, hazlo» o «cancela».';
 export const REPEAT_PROMPT = 'No te entendí. Di «sí, hazlo» para que lo haga, o «cancela».';

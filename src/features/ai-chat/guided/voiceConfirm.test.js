@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseVoiceConfirmation, spokenProposal } from './voiceConfirm';
+import { isVoiceConfirmable, parseVoiceConfirmation, spokenProposal } from './voiceConfirm';
 
 describe('parseVoiceConfirmation: «sí, hazlo» / «cancela», con prudencia', () => {
   it.each(['sí', 'Sí, hazlo', 'si hazlo', 'confirmo', 'dale', 'adelante', 'de acuerdo', 'claro que sí', 'ok'])('«%s» confirma', (t) => {
@@ -22,6 +22,16 @@ describe('parseVoiceConfirmation: «sí, hazlo» / «cancela», con prudencia', 
   it('ignora tildes, mayúsculas y puntuación', () => {
     expect(parseVoiceConfirmation('¡SÍ, HAZLO!')).toBe('yes');
     expect(parseVoiceConfirmation('¡Cancélalo!')).toBe('no');
+  });
+});
+
+describe('isVoiceConfirmable: qué acciones se confirman por voz', () => {
+  it('crear, asignar y registrar evento sí; la entrega NO (siempre con clic)', () => {
+    expect(isVoiceConfirmable({ type: 'create_package' })).toBe(true);
+    expect(isVoiceConfirmable({ type: 'assign_package' })).toBe(true);
+    expect(isVoiceConfirmable({ type: 'register_tracking_event' })).toBe(true);
+    expect(isVoiceConfirmable({ type: 'deliver_package' })).toBe(false);
+    expect(isVoiceConfirmable(null)).toBe(false);
   });
 });
 

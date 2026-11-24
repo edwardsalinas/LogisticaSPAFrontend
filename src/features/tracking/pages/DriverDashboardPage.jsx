@@ -24,6 +24,7 @@ import useMediaQuery from '@/hooks/useMediaQuery';
 import apiService from '../../../services/apiService';
 import { PACKAGE_STATUS, isPackageDelivered, isRouteFinished } from '../../../constants/status';
 import { enqueuePoint, countQueued, flushQueue, requestBackgroundSync } from '../../../services/offlineQueue';
+import { registerGuidedForm, GUIDED_EVENTS } from '../../ai-chat/guided/guidedForms';
 import { haversineDistance, calculateTripProgress } from '../../../utils/geoUtils';
 
 const GPS_INTERVAL_MS = 30000;
@@ -100,6 +101,7 @@ function DeliveryNoteForm({ pkgId, note, onNote, delivering, onCancel, onConfirm
       </label>
       <textarea
         id={`note-${pkgId}`}
+        name="note"
         value={note}
         onChange={(e) => onNote(e.target.value)}
         maxLength={500}
@@ -118,6 +120,7 @@ function DeliveryNoteForm({ pkgId, note, onNote, delivering, onCancel, onConfirm
         </button>
         <button
           type="button"
+          data-logi="confirmar-entrega"
           onClick={onConfirm}
           disabled={delivering}
           className="min-h-11 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white active:scale-95 disabled:opacity-60 md:min-h-0 md:px-3.5"
@@ -139,8 +142,34 @@ function DriverDashboardPage() {
   const [completedCheckpointIds, setCompletedCheckpointIds] = useState([]);
   const [deliveringPkgId, setDeliveringPkgId] = useState(null);
   const [confirmingPkgId, setConfirmingPkgId] = useState(null);
+  const confirmingRef = useRef(null);
+  confirmingRef.current = confirmingPkgId;
+  const selectedRouteRef = useRef('');
+  selectedRouteRef.current = selectedRouteId;
   const [deliveryNote, setDeliveryNote] = useState('');
   const [deliverError, setDeliverError] = useState(null);
+
+  // Logi (asistente) puede mostrar la entrega a la vista de todos: pulsa «Entregar», escribe la nota y «pulsa» Confirmar entrega
+  // (solo se ve; la entrega real es la confirmación del servidor). Al terminar se recargan los datos; si lo detienen, solo se cierra.
+  useEffect(() => registerGuidedForm('delivery', {
+    isReady: () => confirmingRef.current != null,
+    setValue: (name, value) => { if (name === 'note') setDeliveryNote(value); },
+    getElement: (name) => document.querySelector(name === 'submit' ? '[data-logi="confirmar-entrega"]' : 'textarea[name="note"]'),
+  }), []);
+  useEffect(() => {
+    const closeForm = () => { setConfirmingPkgId(null); setDeliveryNote(''); };
+    const onChanged = () => {
+      closeForm();
+      queryClient.invalidateQueries({ queryKey: ['routeDetails', selectedRouteRef.current] });
+      queryClient.invalidateQueries({ queryKey: ['driverRoutes'] });
+    };
+    window.addEventListener(GUIDED_EVENTS.changed, onChanged);
+    window.addEventListener(GUIDED_EVENTS.cancelForm, closeForm);
+    return () => {
+      window.removeEventListener(GUIDED_EVENTS.changed, onChanged);
+      window.removeEventListener(GUIDED_EVENTS.cancelForm, closeForm);
+    };
+  }, [queryClient]);
 
   // --- COLA OFFLINE (puntos GPS sin conexión) ---
   const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
@@ -768,6 +797,7 @@ function DriverDashboardPage() {
                               <div className="shrink-0 pl-2">
                                 {!isDelivered ? (
                                   <button
+                                    data-logi-entregar={pkg.tracking_code}
                                     onClick={() => { setConfirmingPkgId(pkg.id); setDeliveryNote(''); setDeliverError(null); }}
                                     disabled={isDelivering}
                                     className="text-xs font-bold text-emerald-700 hover:text-white hover:bg-emerald-600 uppercase tracking-widest px-4 py-2 min-h-11 md:min-h-0 md:px-3.5 rounded-xl bg-emerald-50 active:scale-95 transition-all border border-emerald-100/50"

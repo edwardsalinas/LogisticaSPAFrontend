@@ -14,6 +14,8 @@ const ACTION = {
   expires_at: new Date(Date.now() + 10 * 60_000).toISOString(), ui: { fill: { form: 'package', values: { origen: 'La Paz' } } },
 };
 const DELIVER = { id: 'act-2', type: 'deliver_package', title: 'Confirmar entrega', lines: ['Paquete: TRK-1'], expires_at: ACTION.expires_at };
+// el conductor sí tiene datos para que Logi muestre la entrega («Que Logi lo haga»), pero por voz no se confirma
+const DELIVER_GUIDABLE = { ...DELIVER, ui: { fill: { form: 'delivery', values: { items: [{ package_id: 'p1', tracking_code: 'TRK-1' }] } } } };
 
 const makeChat = (action = ACTION, { shown = false } = {}) => ({
   send: vi.fn(async () => ({ ok: true, text: 'Preparé el registro del paquete.', attachments: [{ kind: 'action_proposal', action }] })),
@@ -125,6 +127,15 @@ describe('Chat de voz: confirmar una acción diciendo «sí, hazlo»', () => {
     await screen.findByText(/hay una acción esperando tu confirmación/i);
     expect(screen.queryByRole('button', { name: /sí, hazlo/i })).not.toBeInTheDocument();
     expect(spoken(speech)).not.toMatch(/¿Lo hago\?/);
+  });
+
+  it('una entrega, aunque Logi sepa mostrarla, NO se confirma por voz: queda el clic en la tarjeta', async () => {
+    render(<VoiceMode chat={makeChat(DELIVER_GUIDABLE, { shown: true })} onClose={() => {}} />);
+    say('entrega el paquete TRK-1');
+    await screen.findByText(/hay una acción esperando tu confirmación/i);
+    expect(screen.queryByRole('button', { name: /sí, hazlo/i })).not.toBeInTheDocument();
+    expect(spoken(speech)).not.toMatch(/¿Lo hago\?/);
+    expect(mockGuided.start).not.toHaveBeenCalled();
   });
 
   it('fuera del layout (sin Logi) todo sigue como antes', async () => {

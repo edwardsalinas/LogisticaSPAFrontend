@@ -6,7 +6,7 @@ import { plainText, stripForSpeech } from '../voice';
 import apiService from '../../../services/apiService';
 import { canGuide, useGuidedRun } from '../guided/GuidedRunProvider';
 import { applyGuidedOutcome } from '../guided/outcome';
-import { CONFIRM_PROMPT, parseVoiceConfirmation, REPEAT_PROMPT, spokenProposal } from '../guided/voiceConfirm';
+import { CONFIRM_PROMPT, isVoiceConfirmable, parseVoiceConfirmation, REPEAT_PROMPT, spokenProposal } from '../guided/voiceConfirm';
 
 const MAX_SILENCES = 2; // tras dos silencios seguidos el modo manos libres se detiene
 
@@ -109,7 +109,7 @@ export default function VoiceMode({ chat, onClose }) {
     const proposal = latest.current.guided && handsFreeRef.current
       ? result.attachments?.find((a) => a.kind === 'action_proposal')?.action
       : null;
-    if (proposal && canGuide(proposal)) {
+    if (proposal && canGuide(proposal) && isVoiceConfirmable(proposal)) {
       setPendingAction(proposal);
       confirmTries.current = 0;
       // solo el resumen del servidor: el texto del modelo suele decir «pulsa Confirmar», que aquí se contradiría con «¿lo hago?»

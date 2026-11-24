@@ -20,6 +20,11 @@ const EVENT = (items = [{ package_id: 'id-1', tracking_code: 'TRK-1', lat: -16.5
   ui: { fill: { form: 'event', values: { status: 'en_agencia', observations: 'Lote 7', items } } },
 });
 
+const DELIVER = (codes, note = 'Recibió Ana') => ({
+  id: 'del-1', type: 'deliver_package', title: 'Confirmar entrega', lines: [],
+  ui: { fill: { form: 'delivery', values: { note, items: codes.map((c) => ({ package_id: `id-${c}`, tracking_code: c })) } } },
+});
+
 let out;
 function Starter({ action }) {
   const guided = useGuidedRun();
@@ -40,6 +45,14 @@ describe('Logi guiado, fase 2: topes de paquetes', () => {
     expect(canGuide(EVENT())).toBe(true);
     expect(canGuide(EVENT([{ package_id: 'a', tracking_code: 'A' }, { package_id: 'b', tracking_code: 'B' }]))).toBe(false);
     expect(canGuide({ ...EVENT(), ui: { fill: { form: 'event', values: { status: 'x' } } } })).toBe(false); // sin lista de paquetes
+  });
+});
+
+describe('Logi guiado: entregar', () => {
+  it('se muestra con 1 a 3 paquetes; con más, solo el botón de siempre', () => {
+    expect(canGuide(DELIVER(['A']))).toBe(true);
+    expect(canGuide(DELIVER(['A', 'B', 'C']))).toBe(true);
+    expect(canGuide(DELIVER(['A', 'B', 'C', 'D']))).toBe(false);
   });
 });
 
@@ -109,6 +122,42 @@ describe('Logi guiado, fase 2: coreografías', () => {
     expect(events).toContain(GUIDED_EVENTS.changed);
     off();
   }, 15000);
+
+  it('entregar: pulsa «Entregar», escribe la nota y «pulsa» Confirmar entrega; confirma UNA vez', async () => {
+    apiService.post.mockResolvedValue({ success: true, result: { message: 'Paquete TRK-1 marcado como entregado.' } });
+    const typed = [];
+    let off = null;
+    const b = Object.assign(document.createElement('button'), { textContent: 'Entregar' });
+    b.setAttribute('data-logi-entregar', 'TRK-1');
+    b.addEventListener('click', () => {
+      const note = Object.assign(document.createElement('textarea'), { name: 'note' });
+      const submit = Object.assign(document.createElement('button'), { textContent: 'Confirmar entrega' });
+      document.body.append(note, submit);
+      off = registerGuidedForm('delivery', { isReady: () => true, setValue: (n, v) => typed.push([n, v]), getElement: (n) => (n === 'submit' ? submit : note) });
+    });
+    document.body.appendChild(b);
+
+    renderApp(DELIVER(['TRK-1']));
+    await userEvent.click(screen.getByText('empezar'));
+    await waitFor(() => expect(out).toBeDefined(), { timeout: 8000 });
+
+    expect(typed.at(-1)).toEqual(['note', 'Recibió Ana']); // la nota queda escrita
+    expect(apiService.post).toHaveBeenCalledTimes(1);
+    expect(apiService.post).toHaveBeenCalledWith('/ai-agent/actions/del-1/confirm');
+    expect(events).toContain(GUIDED_EVENTS.changed);
+    off?.();
+    document.body.querySelectorAll('textarea').forEach((e) => e.remove());
+  }, 15000);
+
+  it('entregar sin botón «Entregar» en pantalla (viaje sin iniciar): entrega directamente con aviso', async () => {
+    apiService.post.mockResolvedValue({ success: true, result: { message: 'Paquete TRK-9 marcado como entregado.' } });
+    renderApp(DELIVER(['TRK-9']));
+    await userEvent.click(screen.getByText('empezar'));
+    await waitFor(() => expect(out).toBeDefined(), { timeout: 20000 });
+    expect(out.result.result.message).toMatch(/TRK-9/);
+    expect(apiService.post).toHaveBeenCalledTimes(1);
+    expect(events).toContain(GUIDED_EVENTS.cancelForm);
+  }, 25000);
 
   it('si el viaje no está en la lista del formulario, igual sigue y confirma (la propuesta ya avisó)', async () => {
     apiService.post.mockResolvedValue({ success: true, result: { message: 'Asignado.' } });
