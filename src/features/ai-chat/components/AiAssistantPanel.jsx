@@ -1,12 +1,13 @@
-﻿import { useCallback, useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
-import Button from '../../../components/atoms/Button';
+﻿import { useEffect, useRef, useState } from 'react';
+import { History, X } from 'lucide-react';
 import Skeleton from '../../../components/atoms/Skeleton';
 import AiSuggestionButtons from './AiSuggestionButtons';
 import Announcer from './Announcer';
 import AssistantAvatar from './AssistantAvatar';
+import AssistantComposer, { useAssistantComposer } from './AssistantComposer';
 import ChatBubble from './ChatBubble';
-import useAssistantChat, { MAX_MESSAGE_LENGTH } from '../useAssistantChat';
+import ConversationHistory, { refreshConversationList } from './ConversationHistory';
+import useAssistantChat from '../useAssistantChat';
 import { introForRole, suggestionsForRole } from '../suggestions';
 import { prefersReducedMotion } from '../voice';
 
@@ -21,10 +22,13 @@ const WELCOME_MESSAGE = {
  */
 function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = null, onToggleLogiWalk = null }) {
   const chat = useAssistantChat();
-  const { loading, send, reset } = chat;
+  const { loading, reset, conversationId, openConversation } = chat;
+  // mismas herramientas que la pantalla del Modo IA: dictado, foto de guía, chat de voz y lectura en voz alta
+  const composer = useAssistantComposer({ chat, role });
+  const { setInput, ask, submit } = composer;
+  const [showHistory, setShowHistory] = useState(false);
   // el saludo no es parte de la conversación compartida: se muestra solo mientras está vacía
   const messages = chat.messages.length ? chat.messages : [WELCOME_MESSAGE];
-  const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
 
   const isPanel = mode === 'panel';
@@ -35,26 +39,32 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = nu
   const suggestions = suggestionsForRole(role).filter((s) => !s.prefill).slice(0, 3);
 
   useEffect(() => {
+    // con el chat vacío se ve el saludo desde arriba; el desplazamiento automático es solo para conversaciones reales
+    if (onlyWelcome && !loading) return;
     messagesEndRef.current?.scrollIntoView?.({ behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
-  }, [messages, loading]);
+  }, [messages, loading, onlyWelcome]);
 
-  const handleSend = async (text = input) => {
-    if (!String(text).trim() || loading) return;
-    setInput('');
-    await send(text);
+  // Tras cada respuesta el servidor guarda la conversación; se refresca la lista un instante después
+  const wasLoading = useRef(false);
+  useEffect(() => {
+    if (wasLoading.current && !loading) {
+      const t = setTimeout(refreshConversationList, 1500);
+      wasLoading.current = loading;
+      return () => clearTimeout(t);
+    }
+    wasLoading.current = loading;
+    return undefined;
+  }, [loading]);
+
+  const openFromHistory = async (id) => {
+    const ok = await openConversation(id);
+    if (ok) { setShowHistory(false); setInput(''); }
   };
-
-  const ask = useCallback((text) => send(text), [send]); // estable, para las burbujas memoizadas
 
   const handleNewConversation = () => {
     reset([]);
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+    setShowHistory(false);
+    setInput('');
   };
 
   return (
@@ -69,7 +79,7 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = nu
             <AssistantAvatar mood={mood} size={52} />
             <div className="min-w-0">
               <h2 className="text-lg font-bold tracking-tight text-primary-700">Logi, tu copiloto</h2>
-              <p className="mt-1 text-xs text-surface-600 max-sm:line-clamp-2">{introForRole(role)}</p>
+              <p className="mt-1 text-xs text-surface-600 line-clamp-2">{introForRole(role)}</p>
             </div>
           </div>
 
@@ -83,6 +93,14 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = nu
         <div className="mt-4 flex flex-wrap gap-2">
           <button onClick={handleNewConversation} className="rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 transition-colors hover:bg-primary-100">
             Nueva conversación
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowHistory((v) => !v)}
+            aria-expanded={showHistory}
+            className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 bg-white px-3 py-1.5 text-xs font-semibold text-surface-700 transition-colors hover:bg-surface-50"
+          >
+            <History size={13} aria-hidden="true" /> Historial
           </button>
           {onToggleLogiWalk && (
             <button
@@ -99,6 +117,11 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = nu
 
       <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-5">
         <Announcer messages={chat.messages} loading={loading} />
+        {showHistory && (
+          <div className="mb-4">
+            <ConversationHistory activeId={conversationId} onOpen={openFromHistory} onDeleted={() => { reset([]); setShowHistory(false); }} />
+          </div>
+        )}
         <div className="space-y-4">
           {messages.map((msg, idx) => (
             <ChatBubble key={msg.id ?? idx} message={msg} role={role} onAsk={ask} showFollowUps={idx === messages.length - 1 && !loading} />
@@ -118,33 +141,19 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = nu
             </div>
           )}
 
+          {onlyWelcome && (
+            <div className="pl-11">
+              <p className="mb-2 text-sm font-medium text-surface-700">Sugerencias rápidas</p>
+              <AiSuggestionButtons suggestions={suggestions.map((s) => ({ icon: s.icon, label: s.label, value: s.value }))} onSelect={submit} />
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {onlyWelcome && (
-        <div className="border-t border-surface-100 px-4 pb-4 pt-4 sm:px-5">
-          <p className="mb-2 text-sm font-medium text-surface-700">Sugerencias rápidas</p>
-          <AiSuggestionButtons suggestions={suggestions.map((s) => ({ icon: s.icon, label: s.label, value: s.value }))} onSelect={handleSend} />
-        </div>
-      )}
-
       <div className="border-t border-surface-100 bg-white/85 px-4 py-4 sm:px-5">
-        <div className="flex gap-2">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            maxLength={MAX_MESSAGE_LENGTH}
-            aria-label="Mensaje para el asistente"
-            placeholder="Escribe el código de rastreo (TRK-...) o tu consulta..."
-            className="min-h-[3.2rem] flex-1 resize-none rounded-2xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm outline-none transition-all focus:border-primary-400 focus:bg-white"
-            disabled={loading}
-            rows={1}
-          />
-
-          <Button onClick={() => handleSend()} disabled={loading || !input.trim()} className="min-w-[6.5rem] self-end">Enviar</Button>
-        </div>
+        <AssistantComposer composer={composer} compact placeholder="Escribe el código de rastreo (TRK-...) o tu consulta..." />
 
         <p className="mt-2 text-center text-xs text-surface-600">Verifica información crítica antes de tomar decisiones operativas.</p>
       </div>

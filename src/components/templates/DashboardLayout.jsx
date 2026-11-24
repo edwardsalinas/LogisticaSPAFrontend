@@ -63,7 +63,8 @@ function DashboardLayout() {
 
   useEffect(() => {
     if (!isAiOpen) return undefined;
-    const onEsc = (e) => { if (e.key === 'Escape') setIsAiOpen(false); };
+    // Escape cierra primero lo que esté encima (chat de voz, diálogos); el panel se cierra con la siguiente pulsación
+    const onEsc = (e) => { if (e.key === 'Escape' && !document.querySelector('[role="dialog"]')) setIsAiOpen(false); };
     window.addEventListener('keydown', onEsc);
     return () => window.removeEventListener('keydown', onEsc);
   }, [isAiOpen, setIsAiOpen]);

@@ -66,6 +66,19 @@ describe('Panel flotante del asistente al navegar', () => {
     expect(screen.queryByText('Panel del asistente')).not.toBeInTheDocument();
   });
 
+  it('Escape cierra primero la ventana de encima (p. ej. el chat de voz) y no todo el panel', async () => {
+    renderApp();
+    await userEvent.click(screen.getByRole('button', { name: /abrir asistente ia/i }));
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    document.body.appendChild(dialog);
+    await userEvent.keyboard('{Escape}');
+    expect(screen.getByText('Panel del asistente')).toBeInTheDocument();
+    dialog.remove();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByText('Panel del asistente')).not.toBeInTheDocument();
+  });
+
   it('en pantalla ancha el panel flota encima: no reserva espacio y el botón sigue para cerrarlo', async () => {
     docking = true;
     const { container } = renderApp();

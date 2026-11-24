@@ -5,7 +5,7 @@ import AiAssistantPanel from './AiAssistantPanel';
 import apiService from '../../../services/apiService';
 
 vi.mock('../../../services/apiService', () => ({
-  default: { post: vi.fn() },
+  default: { post: vi.fn(), getAiConversations: vi.fn() },
 }));
 
 const send = async (text) => {
@@ -65,5 +65,34 @@ describe('AiAssistantPanel (conectado al backend)', () => {
     render(<AiAssistantPanel />);
     expect(screen.getByRole('button', { name: /enviar/i })).toBeDisabled();
     expect(apiService.post).not.toHaveBeenCalled();
+  });
+  it('ofrece las mismas herramientas que el Modo IA: chat de voz y, para el personal, la foto de una guía', () => {
+    const { unmount } = render(<AiAssistantPanel role="admin" />);
+    expect(screen.getByRole('button', { name: /abrir el chat de voz/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /adjuntar la foto de una guía de remisión/i })).toBeInTheDocument();
+    unmount();
+
+    render(<AiAssistantPanel role="client" />);
+    expect(screen.getByRole('button', { name: /abrir el chat de voz/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /adjuntar la foto/i })).not.toBeInTheDocument(); // registrar paquetes es del personal
+  });
+
+  it('el historial se abre y se cierra desde el panel', async () => {
+    apiService.getAiConversations.mockResolvedValue({ data: [{ id: 'c1', title: 'Paquetes de ayer', updated_at: new Date().toISOString() }] });
+    render(<AiAssistantPanel role="admin" />);
+    const toggle = screen.getByRole('button', { name: /historial/i });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(await screen.findByText('Paquetes de ayer')).toBeInTheDocument();
+    await userEvent.click(toggle);
+    expect(screen.queryByText('Paquetes de ayer')).not.toBeInTheDocument();
+  });
+
+  it('con una sugerencia rápida envía la consulta', async () => {
+    apiService.post.mockResolvedValue({ success: true, response: 'Resumen listo.' });
+    render(<AiAssistantPanel role="admin" />);
+    await userEvent.click(screen.getByRole('button', { name: /resumen del día/i }));
+    expect(await screen.findByText('Resumen listo.')).toBeInTheDocument();
   });
 });
