@@ -78,7 +78,7 @@ function PublicTrackingPage() {
             </div>
             <button 
               onClick={() => navigate('/login')}
-              className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-white transition-colors group"
+              className="flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-bold text-slate-400 hover:text-white transition-colors group"
             >
               <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
               Volver al Login
@@ -99,20 +99,23 @@ function PublicTrackingPage() {
            <form onSubmit={handleSearch} className="relative group">
               <div className="absolute inset-0 bg-primary-500/20 blur-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
               <div className="relative flex items-center bg-white/5 border border-white/10 p-2 rounded-[2rem] shadow-2xl backdrop-blur-md focus-within:border-primary-500/50 transition-all">
-                 <div className="pl-6 text-slate-500 group-focus-within:text-primary-400 transition-colors">
+                 <div className="pl-4 sm:pl-6 text-slate-500 group-focus-within:text-primary-400 transition-colors">
                     <Navigation size={24} strokeWidth={2.5} />
                  </div>
                  <input 
                    type="text" 
+                   aria-label="Código de seguimiento"
+                   autoComplete="off"
                    placeholder="Ej: TRK-171112233..." 
-                   className="flex-1 bg-transparent border-none outline-none px-4 py-4 text-xl font-bold text-white placeholder:text-slate-600 tracking-wider"
+                   className="min-w-0 flex-1 bg-transparent border-none outline-none px-3 py-4 text-base sm:px-4 sm:text-xl font-bold text-white placeholder:text-slate-500 tracking-wide"
                    value={code}
                    onChange={(e) => setCode(e.target.value)}
                  />
                  <button 
                    type="submit" 
                    disabled={loading}
-                   className="bg-primary-600 hover:bg-primary-500 disabled:opacity-50 text-white rounded-[1.6rem] px-8 py-4 font-bold text-sm shadow-xl shadow-primary-500/20 transition-all active:scale-95 flex items-center gap-2"
+                   aria-label="Rastrear"
+                   className="shrink-0 bg-primary-600 hover:bg-primary-500 disabled:opacity-50 text-white rounded-[1.6rem] px-5 sm:px-8 py-4 font-bold text-sm shadow-xl shadow-primary-500/20 transition-all active:scale-95 flex items-center gap-2"
                  >
                     {loading ? <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Search size={18} strokeWidth={3} />}
                     <span className="hidden sm:inline">Rastrear</span>
@@ -123,7 +126,7 @@ function PublicTrackingPage() {
              <Captcha ref={captchaRef} onToken={setCaptchaToken} theme="dark" />
            </div>
            {error && (
-             <p className="mt-4 text-center text-rose-400 font-bold animate-in zoom-in duration-300">{error}</p>
+             <p role="alert" className="mt-4 text-center text-rose-400 font-bold animate-in zoom-in duration-300">{error}</p>
            )}
         </div>
 
