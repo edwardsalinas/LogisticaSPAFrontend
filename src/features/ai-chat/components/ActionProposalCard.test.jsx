@@ -157,6 +157,14 @@ describe('Acciones del asistente: «Que Logi lo haga»', () => {
     expect(screen.getByRole('button', { name: /^confirmar$/i })).toBeInTheDocument();
   });
 
+  it('los tres botones pueden pasar a otra línea: en el panel flotante (angosto) no deben desbordar la tarjeta', () => {
+    mockGuided = { start: vi.fn() };
+    renderGuidable({});
+    const row = screen.getByRole('button', { name: /^confirmar$/i }).parentElement;
+    expect(row.className).toContain('flex-wrap');
+    expect(row.parentElement.className).toContain('flex-wrap');
+  });
+
   it('al terminar Logi, la tarjeta queda igual que si se hubiera confirmado (y se recuerda)', async () => {
     mockGuided = { start: vi.fn().mockResolvedValue({ result: { result: { message: 'Paquete creado con el código TRK-5.' } } }) };
     const settleAction = vi.fn();

@@ -351,9 +351,9 @@ export function ActionProposalCard({ data }) {
       {state.status === 'error' && <p role="alert" className="border-t border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{state.message}</p>}
 
       {!finished && state.status !== 'error' && (
-        <div className="flex flex-col gap-3 border-t border-surface-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-surface-500">Nada se ha hecho todavía. Revisa los datos antes de confirmar.</p>
-          <div className="flex shrink-0 gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-surface-100 px-4 py-3">
+          <p className="min-w-0 text-xs text-surface-500">Nada se ha hecho todavía. Revisa los datos antes de confirmar.</p>
+          <div className="flex min-w-0 flex-wrap gap-2">
             <Button variant="secondary" onClick={() => call('cancel')} disabled={working} className="min-h-11 flex-1 sm:flex-none">Cancelar</Button>
             {guided && canGuide(action) && (
               <Button variant="secondary" onClick={callGuided} disabled={working} className="min-h-11 flex-1 gap-2 sm:flex-none" title="Logi va a la pantalla y lo hace paso a paso">
