@@ -76,9 +76,9 @@ export function GuidedRunProvider({ children, onBegin }) {
     const say = async (text, { wait = false } = {}) => {
       if (signal.aborted) throw new StopError();
       patch({ say: text, mood: 'talking' });
-      const aloud = getSpeakPref() && synthRef.current.supported && !fastRef.current;
-      if (aloud) synthRef.current.speak(stripForSpeech(text));
-      if (wait) await sleep(aloud ? Math.min(7000, 1200 + text.length * 65) : Math.min(2600, 700 + text.length * 28));
+      const aloudNow = (runRef.current?.aloud || getSpeakPref()) && synthRef.current.supported && !fastRef.current;
+      if (aloudNow) synthRef.current.speak(stripForSpeech(text));
+      if (wait) await sleep(aloudNow ? Math.min(7000, 1200 + text.length * 65) : Math.min(2600, 700 + text.length * 28));
       patch({ mood: 'idle' });
     };
 
@@ -129,12 +129,13 @@ export function GuidedRunProvider({ children, onBegin }) {
     return { sleep, waitFor, say, pointAt, press, typeInto, confirm, findVisible, navigate, getForm: getGuidedForm };
   }, [navigate, patch]);
 
-  const start = useCallback((action) => {
+  // aloud: la persona está hablando con Logi (chat de voz): todo lo que cuenta se dice en voz alta, esté o no activada la lectura
+  const start = useCallback((action, { aloud = false } = {}) => {
     if (runRef.current) return Promise.resolve({ error: new Error('Logi ya está haciendo otra cosa.') });
     if (!canGuide(action)) return Promise.resolve({ error: new Error('Esta acción no se puede mostrar paso a paso.') });
 
     const controller = new AbortController();
-    runRef.current = { controller, committed: false };
+    runRef.current = { controller, committed: false, aloud };
     fastRef.current = prefersReducedMotion(); // con «reducir movimiento» todo ocurre al instante
     onBegin?.();
     patch({ ...IDLE, active: true, fast: fastRef.current, x: window.innerWidth - LOGI_W - 16, y: window.innerHeight - LOGI_H - 24 });

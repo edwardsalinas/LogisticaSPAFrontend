@@ -3,6 +3,10 @@ import { createPortal } from 'react-dom';
 import { Mic, Square, Volume2, X } from 'lucide-react';
 import { useSpeechRecognition, useSpeechSynthesis } from '../useVoice';
 import { plainText, stripForSpeech } from '../voice';
+import apiService from '../../../services/apiService';
+import { canGuide, useGuidedRun } from '../guided/GuidedRunProvider';
+import { applyGuidedOutcome } from '../guided/outcome';
+import { CONFIRM_PROMPT, parseVoiceConfirmation, REPEAT_PROMPT, spokenProposal } from '../guided/voiceConfirm';
 
 const MAX_SILENCES = 2; // tras dos silencios seguidos el modo manos libres se detiene
 
@@ -16,11 +20,20 @@ const PHASE_TEXT = {
 /**
  * Chat de voz: hablas, el asistente responde en voz alta y vuelve a escucharte (manos libres).
  * Comparte la conversación con el chat de texto: lo dicho queda escrito y las tarjetas aparecen al cerrar.
- * Las acciones (crear, entregar, registrar) siguen exigiendo el clic en "Confirmar" en la pantalla.
+ * Las acciones que Logi sabe hacer a la vista de todos (crear paquete, asignar, registrar evento) se confirman DICIENDO
+ * «sí, hazlo» (con manos libres): Logi lee el resumen, pregunta, y al oír el «sí» cierra el chat de voz y lo hace en pantalla.
+ * Entregar y las acciones masivas siguen exigiendo el clic en "Confirmar". La frase de confirmación es prudente: ver voiceConfirm.js.
  */
 export default function VoiceMode({ chat, onClose }) {
   const { send, loading, messages } = chat;
   const synth = useSpeechSynthesis();
+  const guided = useGuidedRun(); // null fuera del layout: sin Logi no hay confirmación por voz
+  const [pending, setPending] = useState(null); // acción propuesta que espera el «sí, hazlo»
+  const pendingRef = useRef(null);
+  const confirmTries = useRef(0);
+  const latest = useRef({});
+  latest.current = { chat, guided, onClose };
+  const setPendingAction = (action) => { pendingRef.current = action; setPending(action); };
   const [handsFree, setHandsFree] = useState(true);
   const [notice, setNotice] = useState(null);
   const silences = useRef(0);
@@ -41,15 +54,74 @@ export default function VoiceMode({ chat, onClose }) {
     if (handsFreeRef.current && silences.current < MAX_SILENCES) startRef.current();
   }, []);
 
+  // La respuesta a «¿lo hago?». Es PRUDENTE: solo una frase corta y afirmativa ejecuta; la duda se vuelve a preguntar.
+  const answerConfirmation = async (text) => {
+    const { chat: c, guided: g, onClose: close } = latest.current;
+    const action = pendingRef.current;
+    if (!action) return;
+    const answer = parseVoiceConfirmation(text);
+
+    if (answer === 'yes') {
+      if (action.expires_at && Date.parse(action.expires_at) <= Date.now()) {
+        setPendingAction(null);
+        setNotice('Esa propuesta venció. Pídemela otra vez.');
+        synth.speak('Esa propuesta ya venció. Pídemela otra vez.', { onEnd: listenAgain });
+        return;
+      }
+      setPendingAction(null);
+      recognitionRef.current?.abort();
+      synth.cancel();
+      close(); // se cierra el chat de voz: la pantalla queda libre para que Logi trabaje (y hable en voz alta)
+      const out = await g.start(action, { aloud: true });
+      applyGuidedOutcome({ out, action, chat: c });
+      return;
+    }
+
+    if (answer === 'no') {
+      setPendingAction(null);
+      try {
+        const res = await apiService.post(`/ai-agent/actions/${action.id}/cancel`);
+        c.settleAction?.(action.id, { status: 'cancelled', message: res?.result?.message });
+      } catch { /* si no se pudo cancelar, la propuesta vence sola a los 10 minutos */ }
+      synth.speak('Listo, no hice ningún cambio.', { onEnd: listenAgain });
+      return;
+    }
+
+    confirmTries.current += 1;
+    if (confirmTries.current >= 2) {
+      setPendingAction(null);
+      setNotice('Dejé la acción pendiente: confírmala con el botón de la tarjeta, o pídeme otra cosa.');
+      synth.speak('No te entendí. Dejo la acción pendiente: puedes confirmarla con el botón, o pedirme otra cosa.');
+      return;
+    }
+    synth.speak(REPEAT_PROMPT, { onEnd: listenAgain });
+  };
+
   const handleUtterance = useCallback(async (text) => {
     silences.current = 0;
     setNotice(null);
     synth.cancel();
+    if (pendingRef.current) { await answerConfirmationRef.current(text); return; }
     const result = await send(text, { voice: true });
     if (!result) return;
+
+    // ¿Preparó una acción que Logi sabe hacer? (solo con manos libres: sin él no se vuelve a escuchar el «sí»)
+    const proposal = latest.current.guided && handsFreeRef.current
+      ? result.attachments?.find((a) => a.kind === 'action_proposal')?.action
+      : null;
+    if (proposal && canGuide(proposal)) {
+      setPendingAction(proposal);
+      confirmTries.current = 0;
+      // solo el resumen del servidor: el texto del modelo suele decir «pulsa Confirmar», que aquí se contradiría con «¿lo hago?»
+      synth.speak(`Preparé esto. ${spokenProposal(proposal)} ${CONFIRM_PROMPT}`, { onEnd: listenAgain });
+      return;
+    }
     synth.speak(stripForSpeech(result.text), { onEnd: listenAgain });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- synth.* son estables
   }, [send, listenAgain]);
+  const answerConfirmationRef = useRef(answerConfirmation);
+  answerConfirmationRef.current = answerConfirmation;
+  const recognitionRef = useRef(null);
 
   const recognition = useSpeechRecognition({
     onFinal: handleUtterance,
@@ -62,6 +134,7 @@ export default function VoiceMode({ chat, onClose }) {
     },
   });
   startRef.current = recognition.start;
+  recognitionRef.current = recognition;
 
   // Al abrir, empieza a escuchar; al cerrar, corta el micrófono y la voz
   useEffect(() => {
@@ -148,12 +221,23 @@ export default function VoiceMode({ chat, onClose }) {
 
         <div className="min-h-[7rem] w-full space-y-3" aria-live="polite">
           {caption && <p aria-hidden="true" className="text-xl font-medium text-white">“{caption}”</p>}
-          {!caption && lastAssistant && !lastAssistant.isError && (
+          {!caption && !pending && lastAssistant && !lastAssistant.isError && (
             <p className="mx-auto max-w-xl text-base leading-relaxed text-sky-50/90">{plainText(lastAssistant.content)}</p>
           )}
           {error && <p role="alert" className="text-sm font-semibold text-amber-200">{error}</p>}
           {notice && <p className="text-sm text-sky-200/80">{notice}</p>}
-          {hasProposal && <p className="text-sm font-semibold text-amber-200">Hay una acción esperando tu confirmación. Cierra el chat de voz y pulsa Confirmar en la tarjeta.</p>}
+          {pending && (
+            <div className="mx-auto w-full max-w-xl rounded-2xl border border-amber-300/40 bg-amber-400/10 p-4 text-left">
+              <p className="text-sm font-semibold text-amber-100">{pending.title}</p>
+              <ul className="mt-2 space-y-1 text-sm text-amber-50/90">{(pending.lines ?? []).map((line) => <li key={line}>{line}</li>)}</ul>
+              <p className="mt-3 text-sm font-semibold text-amber-100">Di «sí, hazlo» o «cancela».</p>
+              <div className="mt-3 flex gap-2">
+                <button type="button" onClick={() => answerConfirmation('sí')} className="min-h-11 flex-1 rounded-xl bg-emerald-500 px-4 text-sm font-bold text-white hover:bg-emerald-600">Sí, hazlo</button>
+                <button type="button" onClick={() => answerConfirmation('cancela')} className="min-h-11 flex-1 rounded-xl border border-white/30 bg-white/10 px-4 text-sm font-bold text-white hover:bg-white/20">Cancelar</button>
+              </div>
+            </div>
+          )}
+          {hasProposal && !pending && <p className="text-sm font-semibold text-amber-200">Hay una acción esperando tu confirmación. Cierra el chat de voz y pulsa Confirmar en la tarjeta.</p>}
           {!hasProposal && lastAttachments.length > 0 && <p className="text-xs text-sky-200/80">Los detalles están en la conversación; ciérrame para verlos.</p>}
         </div>
       </div>
@@ -164,7 +248,7 @@ export default function VoiceMode({ chat, onClose }) {
           Manos libres: volver a escucharme al terminar de hablar
         </label>
         <p className="max-w-xl text-center text-xs leading-relaxed text-sky-200/80">
-          El reconocimiento de voz lo hace tu navegador (en Chrome, el audio se procesa en servidores de Google). El asistente solo recibe el texto. Para ejecutar acciones tendrás que pulsar Confirmar en pantalla.
+          El reconocimiento de voz lo hace tu navegador (en Chrome, el audio se procesa en servidores de Google). El asistente solo recibe el texto. Crear un paquete, asignarlo o registrar un evento se confirma diciendo «sí, hazlo» y Logi lo hace en pantalla; entregar y las acciones masivas se confirman con el botón.
         </p>
       </div>
     </div>,

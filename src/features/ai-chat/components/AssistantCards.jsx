@@ -10,6 +10,7 @@ import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
 import AssistantAvatar from './AssistantAvatar';
 import { canGuide, useGuidedRun } from '../guided/GuidedRunProvider';
+import { applyGuidedOutcome } from '../guided/outcome';
 
 /** Tarjetas con los datos estructurados que devuelven las herramientas del asistente. */
 
@@ -289,19 +290,7 @@ export function ActionProposalCard({ data }) {
   const callGuided = async () => {
     setState({ status: 'working', verb: 'confirm' });
     const out = await guided.start(action);
-    if (out.stopped) {
-      setState({ status: 'pending' });
-      toast('Logi se detuvo', { description: 'No se hizo ningún cambio. Puedes confirmar o pedirle que lo intente otra vez.' });
-    } else if (out.error) {
-      setState({ status: 'error', message: out.error.message || 'No se pudo completar la acción.' });
-      toast.error('No se pudo completar la acción', { description: out.error.message });
-    } else {
-      const res = out.result;
-      const outcome = { status: 'done', message: res?.result?.message, results: res?.result?.data?.results, records: res?.result?.data?.records };
-      chat?.settleAction?.(action.id, outcome);
-      setState(outcome);
-      toast.success('Acción ejecutada', { description: action.title });
-    }
+    setState(applyGuidedOutcome({ out, action, chat }) ?? { status: 'pending' });
   };
 
   const working = state.status === 'working';

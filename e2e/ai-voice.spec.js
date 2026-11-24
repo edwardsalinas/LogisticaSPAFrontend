@@ -113,7 +113,7 @@ test('3. la conversación recuerda el contexto y no se pierde al cambiar de pant
   await expect(page.getByText('¿Y ese mismo día hay algo a Oruro?')).toBeVisible();
 });
 
-test('4. por voz se puede PEDIR una acción, pero no confirmarla: sigue haciendo falta el clic', async ({ browser }) => {
+test('4. por voz se pide una acción y solo una confirmación CLARA la ejecuta; una frase con duda no hace nada', async ({ browser }) => {
   const ctx = await browser.newContext({ locale: 'es-BO' });
   const page = await ctx.newPage();
   await page.addInitScript(FAKE_SPEECH);
@@ -123,18 +123,22 @@ test('4. por voz se puede PEDIR una acción, pero no confirmarla: sigue haciendo
 
   const TAG = `E2E-${Date.now()}`;
   const spoken = await sayAndWait(page, `Crea un paquete de La Paz a Oruro de dos kilos para el destinatario ${TAG} Voz`);
-  expect(spoken).toMatch(/confirm|tarjeta|prepar/i);
-  await expect(page.locator('p:not(.sr-only)').filter({ hasText: /acción esperando tu confirmación/i })).toBeVisible();
-  // decir "confirmo" no ejecuta nada: la confirmación es el botón de la tarjeta
-  await sayAndWait(page, 'Sí, confírmalo').catch(() => {});
+  // Logi lee el resumen del servidor y pregunta; todavía no se hizo nada
+  expect(spoken).toMatch(/¿Lo hago\?/);
+  await expect(page.getByRole('dialog', { name: /chat de voz/i }).getByRole('button', { name: /sí, hazlo/i })).toBeVisible();
+
+  // «sí, pero…» NO es un sí: no ejecuta nada y se vuelve a preguntar (la regla prudente de voiceConfirm)
+  const again = await sayAndWait(page, 'Sí hazlo pero cambia el peso a cinco kilos');
+  expect(again).toMatch(/No te entendí/);
 
   const res = await ctx.request.get(`${API}/logistics/packages`, { headers: H });
   const body = await res.json();
   const list = Array.isArray(body) ? body : body.data;
-  expect(list.filter((p) => (p.recipient_name || '').startsWith(TAG)), 'por voz no se creó nada').toHaveLength(0);
+  expect(list.filter((p) => (p.recipient_name || '').startsWith(TAG)), 'una frase con duda no creó nada').toHaveLength(0);
 
+  // al salir del chat de voz, la tarjeta sigue esperando (se puede confirmar con el botón de siempre)
   await page.getByRole('button', { name: /salir del chat de voz/i }).click();
-  await expect(page.getByRole('button', { name: /^confirmar$/i }).first()).toBeVisible(); // la tarjeta espera el clic
+  await expect(page.getByRole('button', { name: /^confirmar$/i }).first()).toBeVisible();
   await ctx.close();
 });
 

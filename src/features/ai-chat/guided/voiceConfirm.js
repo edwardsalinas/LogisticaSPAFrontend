@@ -1,0 +1,38 @@
+import { stripForSpeech } from '../voice';
+
+/**
+ * Confirmación por voz de una acción propuesta («sí, hazlo» / «cancela»). El reconocimiento de voz se equivoca, y aquí un
+ * error cambia datos reales, así que la regla es PRUDENTE: solo cuenta como «sí» una frase corta y afirmativa, sin
+ * ninguna negación. Cualquier duda (frase larga, mezcla de sí y no, otra cosa) es «unclear» y se vuelve a preguntar.
+ */
+const MAX_WORDS = 6; // «sí, pero cambia el peso» NO debe ejecutar nada
+
+const YES = new Set(['si', 'claro', 'dale', 'hazlo', 'confirmo', 'confirma', 'confirmalo', 'confirmado', 'adelante', 'procede', 'ejecuta', 'ejecutalo', 'ok', 'okay', 'vale', 'correcto', 'afirmativo']);
+const NO = new Set(['no', 'cancela', 'cancelar', 'cancelalo', 'cancelado', 'detente', 'alto', 'olvidalo', 'dejalo', 'negativo', 'nada']);
+
+const normalize = (text) => String(text ?? '')
+  .toLowerCase()
+  .normalize('NFD').replace(/[̀-ͯ]/g, '') // sin tildes: «sí» = «si»
+  .replace(/[^a-z0-9\s]/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+/** @returns {'yes' | 'no' | 'unclear'} */
+export const parseVoiceConfirmation = (text) => {
+  const words = normalize(text).split(' ').filter(Boolean);
+  if (words.length === 0 || words.length > MAX_WORDS) return 'unclear';
+  const joined = ` ${words.join(' ')} `;
+  const yes = words.some((w) => YES.has(w)) || joined.includes(' de acuerdo ');
+  const no = words.some((w) => NO.has(w)) || joined.includes(' mejor no ');
+  if (yes && !no) return 'yes';
+  if (no && !yes) return 'no';
+  return 'unclear';
+};
+
+/** Lo que Logi dice en voz alta antes de pedir el «sí»: el resumen que redactó el servidor, no el modelo. */
+export const spokenProposal = (action) => stripForSpeech(
+  `${action.title}. ${(action.lines ?? []).join('. ')}.`,
+);
+
+export const CONFIRM_PROMPT = '¿Lo hago? Di «sí, hazlo» o «cancela».';
+export const REPEAT_PROMPT = 'No te entendí. Di «sí, hazlo» para que lo haga, o «cancela».';
