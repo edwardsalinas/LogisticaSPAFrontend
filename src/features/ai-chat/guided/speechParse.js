@@ -16,13 +16,19 @@ export const normalize = (text = '') => String(text)
 const CREATE_VERB = /\b(crear|crea|creame|registrar|registra|registrame|nuevo|nueva|agregar|agrega|anadir|hacer|haz|armar|armame|enviar|mandar|ingresar|cargar)\b/;
 const PACKAGE_NOUN = /\b(paquete|paquetes|envio|encomienda|encargo)\b/;
 
+const ASSIGN_VERB = /\b(asignar|asigna|asignarlo|asignarle|vincular|vincula|agendar|agenda|meter|mete|poner|pon|subir|sube|cargar|carga|ubicar)\b/;
+const TRIP_NOUN = /\b(viaje|viajes|despacho|ruta|camion|salida)\b/;
+
 /**
  * «Ayúdame a crear un paquete» (sin datos) → { form: 'package' }. Si la frase ya trae los datos (kilos, números, «de X a Y»),
  * NO es una petición de ayuda sino una orden completa: la atiende el asistente de siempre, que prepara la propuesta.
  */
 export const detectFormAssist = (text) => {
   const t = normalize(text);
-  if (!t || !CREATE_VERB.test(t) || !PACKAGE_NOUN.test(t)) return null;
+  if (!t) return null;
+  // «ayúdame a asignar un paquete a un viaje»: sin códigos ni «sueltos» (eso lo resuelve el asistente con sus sugerencias)
+  if (ASSIGN_VERB.test(t) && PACKAGE_NOUN.test(t) && !/\d|\btrk\b|\b(sueltos|sueltas|pendientes|todos|todas|sugerencias|sugiere|sugerir)\b/.test(t) && (TRIP_NOUN.test(t) || /\b(asignar|vincular)\b/.test(t))) return { form: 'assign' };
+  if (!CREATE_VERB.test(t) || !PACKAGE_NOUN.test(t)) return null;
   if (/\d|\b(kilo|kilos|kg|gramos|libras)\b/.test(t)) return null; // ya dio datos
   if (/\bde\s+[a-z ]+\s+(a|hacia|para)\s+[a-z]/.test(t)) return null; // «de La Paz a Oruro»
   if (/\b(cuantos|cuantas|donde|estado|rastrear|rastreo|seguimiento|ver|mostrar|listar|lista)\b/.test(t)) return null; // consulta, no alta

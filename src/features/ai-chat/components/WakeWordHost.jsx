@@ -29,7 +29,7 @@ export default function WakeWordHost() {
     <div
       role="status"
       data-testid="wake-indicator"
-      className="fixed bottom-24 left-3 z-40 flex items-center gap-2 rounded-full border border-surface-200 bg-white/95 py-1 pl-3 pr-1 text-xs font-medium text-surface-700 shadow-lg backdrop-blur lg:bottom-4 lg:left-[18.5rem]"
+      className="fixed left-3 top-[5.25rem] z-40 flex items-center gap-2 rounded-full border border-surface-200 bg-white/95 py-1 pl-3 pr-1 text-xs font-medium text-surface-700 shadow-lg backdrop-blur lg:left-[18.5rem]"
     >
       <span aria-hidden="true" className={`flex h-2.5 w-2.5 rounded-full ${listening ? 'bg-emerald-500' : 'bg-amber-400'}`} />
       <Mic size={14} aria-hidden="true" />

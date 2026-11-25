@@ -111,8 +111,15 @@ export default function VoiceMode({ chat, onClose, compact = false, onExpand, on
     const assist = latest.current.guided && handsFreeRef.current ? detectFormAssist(text) : null;
     if (assist) {
       setAssisting(true);
-      await latest.current.guided.assist(assist.form, { listen });
+      const out = await latest.current.guided.assist(assist.form, { listen, api: apiService });
       if (mountedRef.current) setAssisting(false);
+      const proposal = out?.result?.proposal; // p. ej. la asignación preparada: ahora Logi la hace a la vista de todos
+      if (proposal && canGuide(proposal)) {
+        const { chat: c, guided: g, onClose: close } = latest.current;
+        close(); // el chat de voz se cierra: la pantalla queda libre para que Logi trabaje
+        const run = await g.start(proposal, { aloud: true });
+        applyGuidedOutcome({ out: run, action: proposal, chat: c });
+      }
       return;
     }
     const result = await send(text, { voice: true });
@@ -255,7 +262,7 @@ export default function VoiceMode({ chat, onClose, compact = false, onExpand, on
             <div className="mt-1 text-sm leading-snug" aria-live="polite">
               {caption && <p aria-hidden="true" className="font-medium text-white">“{caption}”</p>}
               {!caption && !pending && !assisting && lastAssistant && !lastAssistant.isError && <p className="line-clamp-3 text-sky-50/90">{plainText(lastAssistant.content)}</p>}
-              {!caption && assisting && <p className="text-sky-50/80">Responde en voz alta; puedes corregir escribiendo en la pantalla.</p>}
+              {!caption && assisting && <p className="text-sky-50/80 max-sm:hidden">Responde en voz alta; puedes corregir escribiendo en la pantalla.</p>}
               {error && <p role="alert" className="font-semibold text-amber-200">{error}</p>}
               {notice && <p className="text-sky-200/80">{notice}</p>}
             </div>
@@ -276,7 +283,7 @@ export default function VoiceMode({ chat, onClose, compact = false, onExpand, on
           <input type="checkbox" checked={handsFree} onChange={(e) => setHandsFree(e.target.checked)} className="h-4 w-4 rounded" />
           Manos libres
         </label>
-        <p className="mt-1 text-[11px] leading-snug text-sky-200/70">Prueba: «ayúdame a crear un paquete». Chrome procesa el audio en servidores de Google; el asistente solo recibe el texto.</p>
+        <p className="mt-1 text-[11px] leading-snug text-sky-200/70 max-sm:hidden">Prueba: «ayúdame a crear un paquete». Chrome procesa el audio en servidores de Google; el asistente solo recibe el texto.</p>
       </section>,
       document.body
     );

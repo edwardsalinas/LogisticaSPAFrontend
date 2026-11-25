@@ -79,3 +79,23 @@ describe('órdenes de control y textos', () => {
     expect(normalize('¡Árbol, ÑANDÚ!')).toBe('arbol, nandu');
   });
 });
+
+describe('detectFormAssist: asignar un paquete a un viaje, sin datos', () => {
+  it.each([
+    'ayúdame a asignar un paquete a un viaje',
+    'quiero asignar un paquete',
+    'necesito vincular un paquete a un despacho',
+    'me ayudas a meter un paquete en un viaje',
+  ])('sí: «%s»', (t) => expect(detectFormAssist(t)).toEqual({ form: 'assign' }));
+
+  it.each([
+    'asigna los paquetes sueltos',
+    'asigna el paquete TRK-123 al viaje de mañana',
+    'asigna todos los pendientes',
+    'sugiere asignaciones',
+  ])('no (lo atiende el asistente con sus sugerencias o ya trae datos): «%s»', (t) => expect(detectFormAssist(t)).toBeNull());
+
+  it('crear sigue siendo crear', () => {
+    expect(detectFormAssist('ayúdame a crear un paquete')).toEqual({ form: 'package' });
+  });
+});
