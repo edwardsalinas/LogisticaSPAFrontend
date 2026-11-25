@@ -51,7 +51,9 @@ const installFakeVoice = () => {
 };
 
 // el resumen de la propuesta tal como se muestra DENTRO del chat de voz (la tarjeta del chat de texto también lo repite)
-const voiceProposal = (page) => page.getByRole('dialog', { name: /chat de voz/i }).getByText('Registrar un paquete nuevo', { exact: true });
+// el chat de voz del panel normal es la barra compacta (no un diálogo modal); en el Modo IA y en la pantalla del asistente sigue siendo completo
+const voiceBar = (page) => page.getByTestId('voice-compact');
+const voiceProposal = (page) => voiceBar(page).getByText('Registrar un paquete nuevo', { exact: true });
 
 /** El usuario dice una frase (espera a que haya una escucha en marcha). */
 const userSays = async (page, text) => {
@@ -68,7 +70,7 @@ test('confirmar por voz: «cancela» no hace nada y «sí, hazlo» lo hace Logi 
   await page.goto('/dashboard');
   await page.getByRole('button', { name: /abrir asistente/i }).click();
   await page.getByRole('button', { name: /abrir el chat de voz/i }).click();
-  await expect(page.getByRole('dialog', { name: /chat de voz/i })).toBeVisible();
+  await expect(voiceBar(page)).toBeVisible();
 
   const request = `Crea un paquete de La Paz a Oruro de 3 kilos para el destinatario "${TAG} Destinatario" con la descripción ${TAG}`;
 
@@ -90,7 +92,7 @@ test('confirmar por voz: «cancela» no hace nada y «sí, hazlo» lo hace Logi 
   await expect(voiceProposal(page)).toBeVisible({ timeout: 120_000 });
   await userSays(page, 'Sí, hazlo');
 
-  await expect(page.getByRole('dialog', { name: /chat de voz/i })).toHaveCount(0, { timeout: 15_000 }); // la pantalla queda libre
+  await expect(voiceBar(page)).toHaveCount(0, { timeout: 15_000 }); // la pantalla queda libre
   await expect(page.locator('[data-logi-run]')).toHaveCount(1, { timeout: 15_000 });
   await expect(page.locator('[data-logi-run]')).toHaveCount(0, { timeout: 120_000 });
   await expect(page).toHaveURL(/\/logistics\/packages$/);
