@@ -1,5 +1,5 @@
 ﻿import { useEffect, useRef, useState } from 'react';
-import { Activity, BellRing, GraduationCap, History, X } from 'lucide-react';
+import { Activity, BellRing, GraduationCap, History, Mic, X } from 'lucide-react';
 import Skeleton from '../../../components/atoms/Skeleton';
 import AiSuggestionButtons from './AiSuggestionButtons';
 import Announcer from './Announcer';
@@ -12,6 +12,8 @@ import { useGuidedRun } from '../guided/GuidedRunProvider';
 import { applyGuidedOutcome } from '../guided/outcome';
 import { savePrefs, useAlertPrefs } from '../alerts/alertPrefs';
 import { setEnabled } from '../alerts/alertPolicy';
+import { setWakeEnabled, useWakeEnabled } from '../wakePref';
+import { getRecognitionClass } from '../voice';
 import useAssistantChat from '../useAssistantChat';
 import { introForRole, suggestionsForRole } from '../suggestions';
 import { prefersReducedMotion } from '../voice';
@@ -43,6 +45,8 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = nu
   const guided = useGuidedRun(); // «Enséñame» (null fuera del layout)
   const alertPrefs = useAlertPrefs();
   const isStaff = OPS.includes(role);
+  const wakeOn = useWakeEnabled();
+  const canWake = Boolean(getRecognitionClass());
   // el saludo no es parte de la conversación compartida: se muestra solo mientras está vacía
   const messages = chat.messages.length ? chat.messages : [WELCOME_MESSAGE];
   const messagesEndRef = useRef(null);
@@ -147,6 +151,17 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = nu
               className="shrink-0 whitespace-nowrap rounded-full border border-surface-200 bg-white px-3 py-1.5 text-xs font-semibold text-surface-700 transition-colors hover:bg-surface-50"
             >
               {logiWalks ? 'Dejar quieto a Logi' : 'Que Logi pasee'}
+            </button>
+          )}
+          {canWake && (
+            <button
+              type="button"
+              onClick={() => setWakeEnabled(!wakeOn)}
+              aria-pressed={wakeOn}
+              title="Con «Hey Logi» activado, el micrófono queda abierto mientras la pestaña esté a la vista y Logi te escucha al decir «Hey Logi». Siempre verás el aviso de micrófono abierto. Se apaga al cerrar la pestaña."
+              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-surface-200 bg-white px-3 py-1.5 text-xs font-semibold text-surface-700 transition-colors hover:bg-surface-50"
+            >
+              <Mic size={13} aria-hidden="true" /> {wakeOn ? 'Hey Logi: sí' : 'Hey Logi: no'}
             </button>
           )}
           {isStaff && (

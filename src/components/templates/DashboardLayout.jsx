@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import AiAssistantPanel from '../../features/ai-chat/components/AiAssistantPanel';
 import LogiHost from '../../features/ai-chat/components/LogiHost';
 import VoiceHost from '../../features/ai-chat/components/VoiceHost';
+import WakeWordHost from '../../features/ai-chat/components/WakeWordHost';
 import { useVoiceDock } from '../../features/ai-chat/voiceDock';
 import { GuidedRunProvider } from '../../features/ai-chat/guided/GuidedRunProvider';
 import CommandPalette from '../organisms/CommandPalette';
@@ -95,6 +96,7 @@ function DashboardLayout() {
       <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
       <VoiceHost />
+      <WakeWordHost />
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col lg:pl-[17rem]">
         <Navbar title={title} onOpenSearch={() => setPaletteOpen(true)} />

@@ -25,7 +25,7 @@ const PHASE_TEXT = {
  * «sí, hazlo» (con manos libres): Logi lee el resumen, pregunta, y al oír el «sí» cierra el chat de voz y lo hace en pantalla.
  * Entregar y las acciones masivas siguen exigiendo el clic en "Confirmar". La frase de confirmación es prudente: ver voiceConfirm.js.
  */
-export default function VoiceMode({ chat, onClose, compact = false, onExpand, onCompact }) {
+export default function VoiceMode({ chat, onClose, compact = false, onExpand, onCompact, initialText = '', wake = false }) {
   const { send, loading, messages } = chat;
   const synth = useSpeechSynthesis();
   const guided = useGuidedRun(); // null fuera del layout: sin Logi no hay confirmación por voz
@@ -132,6 +132,8 @@ export default function VoiceMode({ chat, onClose, compact = false, onExpand, on
     synth.speak(stripForSpeech(result.text), { onEnd: listenAgain });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- synth.* son estables
   }, [send, listenAgain]);
+  const handleUtteranceRef = useRef(() => {});
+  handleUtteranceRef.current = handleUtterance;
   const answerConfirmationRef = useRef(answerConfirmation);
   const listenFnRef = useRef(null);
   const listen = useCallback((signal) => listenFnRef.current(signal), []);
@@ -165,7 +167,9 @@ export default function VoiceMode({ chat, onClose, compact = false, onExpand, on
   // Al abrir, empieza a escuchar; al cerrar, corta el micrófono y la voz
   useEffect(() => {
     mountedRef.current = true; // React en desarrollo monta, desmonta y vuelve a montar: debe volver a ser true
-    if (recognition.supported) recognition.start();
+    if (initialText.trim()) handleUtteranceRef.current(initialText.trim()); // «hey Logi, ayúdame…»: ya dijo la orden
+    else if (wake) synth.speak('Dime.', { onEnd: () => { if (mountedRef.current && recognition.supported) recognition.start(); } });
+    else if (recognition.supported) recognition.start();
     return () => { mountedRef.current = false; recognition.abort(); synth.cancel(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar/desmontar
   }, []);

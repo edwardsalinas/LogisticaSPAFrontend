@@ -5,7 +5,7 @@ import { useSyncExternalStore } from 'react';
  * mueve por la pantalla y el panel se cierra. Este almacén dice si está abierto y permite abrirlo desde cualquier botón
  * (el micrófono del chat). Si no hay anfitrión (pantallas sueltas, pruebas), el botón abre el chat de voz como siempre.
  */
-let state = { open: false };
+let state = { open: false, initial: '', wake: false };
 let hosts = 0;
 const listeners = new Set();
 const set = (next) => { state = next; listeners.forEach((l) => l()); };
@@ -13,8 +13,9 @@ const set = (next) => { state = next; listeners.forEach((l) => l()); };
 export const voiceDock = {
   hasHost: () => hosts > 0,
   registerHost: () => { hosts += 1; return () => { hosts -= 1; }; },
-  open: () => set({ open: true }),
-  close: () => set({ open: false }),
+  // initial: lo que ya se dijo tras «hey Logi» (se atiende al abrir); wake: se abrió por la frase de activación
+  open: ({ initial = '', wake = false } = {}) => set({ open: true, initial, wake }),
+  close: () => set({ open: false, initial: '', wake: false }),
 };
 
 const subscribe = (l) => { listeners.add(l); return () => listeners.delete(l); };

@@ -18,5 +18,5 @@ export default function VoiceHost() {
   useEffect(() => voiceDock.registerHost(), []);
   if (!dock.open) return null;
   const full = wantFull || pathname === '/assistant';
-  return <VoiceMode chat={chat} compact={!full} onClose={voiceDock.close} onExpand={() => setWantFull(true)} onCompact={() => setWantFull(false)} />;
+  return <VoiceMode chat={chat} initialText={dock.initial} wake={dock.wake} compact={!full} onClose={voiceDock.close} onExpand={() => setWantFull(true)} onCompact={() => setWantFull(false)} />;
 }
