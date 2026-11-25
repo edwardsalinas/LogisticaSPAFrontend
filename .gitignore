@@ -7,3 +7,7 @@ dist
 # Playwright
 e2e-results/
 playwright-report/
+
+# sesiones guardadas de las pruebas e2e y resumen del ejecutor por tandas
+.e2e-auth/
+e2e-tandas.log

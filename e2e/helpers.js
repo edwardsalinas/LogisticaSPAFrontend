@@ -6,7 +6,7 @@ import { USERS } from './users.js';
  * Así las pruebas no superan el límite de intentos de Supabase Auth.
  */
 export async function login(page, role) {
-  const state = JSON.parse(readFileSync(`e2e-results/auth/${role}.json`, 'utf8'));
+  const state = JSON.parse(readFileSync(`.e2e-auth/${role}.json`, 'utf8'));
   await page.context().addCookies(state.cookies);
   for (const origin of state.origins ?? []) {
     await page.addInitScript(({ url, items }) => {
@@ -55,4 +55,17 @@ export async function visit(page, path, shot) {
   await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
   if (shot) await page.screenshot({ path: `e2e-results/shots/${shot}.png`, fullPage: true });
   return page.locator('body').innerText();
+}
+
+/**
+ * Abre una pantalla y espera a que muestre algo concreto (`ready` recibe la página y devuelve el localizador esperado). Si la página
+ * queda en blanco o tarda (el servidor de desarrollo compila en frío; con el equipo corto de memoria pasa a veces), repite la
+ * navegación hasta 90 segundos en vez de fallar por una carga lenta. No espera el evento «load»: los mapas cargan teselas externas.
+ */
+export async function openScreen(page, path, ready, { timeout = 90_000 } = {}) {
+  const { expect } = await import('@playwright/test');
+  await expect(async () => {
+    await page.goto(path, { waitUntil: 'domcontentloaded' });
+    await expect(ready(page)).toBeVisible({ timeout: 15_000 });
+  }).toPass({ timeout });
 }

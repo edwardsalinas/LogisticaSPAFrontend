@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { login } from './helpers.js';
+import { login, openScreen } from './helpers.js';
 
 /**
  * Conciencia de pantalla con el backend, Supabase y el modelo REALES: estando en el detalle de un paquete, «este paquete» se
@@ -93,8 +93,7 @@ test('lista de paquetes: manda la pestaña abierta y, al abrir una ficha, ese pa
   const page = await ctx.newPage();
   await login(page, 'admin');
   const sent = watch(page);
-  await page.goto('/logistics/packages');
-  await expect(page.getByRole('heading', { name: /panel de despachos/i }).first()).toBeVisible({ timeout: 30000 });
+  await openScreen(page, '/logistics/packages', (pg) => pg.getByRole('heading', { name: /panel de despachos/i }).first());
   expect((await contextSent(page, sent))).toEqual({ path: '/logistics/packages', view: { tab: 'all' } });
 
   await page.keyboard.press('Escape'); // el panel del chat tapa los botones de la derecha
@@ -114,8 +113,7 @@ test('Tracking: manda el paquete cuyo seguimiento se muestra', async ({ browser 
   const page = await ctx.newPage();
   await login(page, 'admin');
   const sent = watch(page);
-  await page.goto('/tracking', { waitUntil: 'domcontentloaded' }); // los mapas cargan teselas externas: no se espera el evento load
-  await expect(page.getByText(/TRK-/).first()).toBeVisible({ timeout: 30000 }); // ya cargó y seleccionó el primer paquete
+  await openScreen(page, '/tracking', (pg) => pg.getByText(/TRK-/).first()); // ya cargó y seleccionó el primer paquete
   const context = await contextSent(page, sent);
   expect(context.path).toBe('/tracking');
   expect(context.entity).toMatchObject({ type: 'package' });
@@ -128,8 +126,7 @@ test('flota: manda la pestaña (vehículos o conductores)', async ({ browser }) 
   const page = await ctx.newPage();
   await login(page, 'admin');
   const sent = watch(page);
-  await page.goto('/fleet');
-  await expect(page.getByRole('button', { name: /conductores/i }).first()).toBeVisible({ timeout: 30000 });
+  await openScreen(page, '/fleet', (pg) => pg.getByRole('button', { name: /conductores/i }).first());
   expect((await contextSent(page, sent)).view).toEqual({ tab: 'vehicles' });
   await page.keyboard.press('Escape');
   await expect(page.locator('#ai-assistant-panel')).toHaveCount(0);
