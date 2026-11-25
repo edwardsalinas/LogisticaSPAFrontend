@@ -29,8 +29,11 @@ const askForProposal = async (page, question) => {
     })(),
   ]);
   const events = (await response.text()).split(/\r?\n/).filter((l) => l.startsWith('data: ')).map((l) => JSON.parse(l.slice(6)));
-  const body = events.find((e) => e.type === 'final');
-  return { body, action: body?.attachments?.find((a) => a.kind === 'action_proposal')?.action };
+  let body = events.find((e) => e.type === 'final');
+  // sin «final»: se dice qué llegó en su lugar (p. ej. un evento «error» del servidor por el límite del proveedor de IA)
+  if (!body) body = undefined;
+  const failure = events.find((e) => e.type === 'error');
+  return { body, failure, action: body?.attachments?.find((a) => a.kind === 'action_proposal')?.action };
 };
 
 const packageNow = async (ctx) => {
@@ -71,8 +74,8 @@ test('1. Logi asigna el paquete al viaje a la vista de todos', async ({ browser 
   await page.goto('/dashboard');
   await page.getByRole('button', { name: /abrir asistente/i }).click();
 
-  const { body, action } = await askForProposal(page, `Prepara la asignación del paquete ${state.code} al viaje de La Paz a Municipio Caracollo para que yo la confirme`);
-  expect(action, `el asistente debía proponer asignar. Respuesta: ${body?.response}`).toBeTruthy();
+  const { body, action, failure } = await askForProposal(page, `Prepara la asignación del paquete ${state.code} al viaje de La Paz a Municipio Caracollo para que yo la confirme`);
+  expect(action, `el asistente debía proponer asignar. Respuesta: ${body?.response ?? (failure ? 'error del servidor: ' + failure.message : 'sin respuesta')}`).toBeTruthy();
   expect(action.type).toBe('assign_package');
   expect(action.ui.fill.form).toBe('assignment');
   expect(action.ui.fill.values.items.map((i) => i.tracking_code)).toEqual([state.code]);
@@ -100,8 +103,8 @@ test('2. Logi registra un evento a la vista de todos', async ({ browser }) => {
   await page.goto('/dashboard');
   await page.getByRole('button', { name: /abrir asistente/i }).click();
 
-  const { body, action } = await askForProposal(page, `Registra que el paquete ${state.code} está en agencia`);
-  expect(action, `el asistente debía proponer el evento. Respuesta: ${body?.response}`).toBeTruthy();
+  const { body, action, failure } = await askForProposal(page, `Registra que el paquete ${state.code} está en agencia`);
+  expect(action, `el asistente debía proponer el evento. Respuesta: ${body?.response ?? (failure ? 'error del servidor: ' + failure.message : 'sin respuesta')}`).toBeTruthy();
   expect(action.type).toBe('register_tracking_event');
   expect(action.ui.fill.form).toBe('event');
   expect(action.ui.fill.values.status).toBe('en_agencia');
@@ -139,8 +142,8 @@ test('3. con más de 3 paquetes Logi muestra los primeros y asigna todos con una
 
   await page.goto('/dashboard');
   await page.getByRole('button', { name: /abrir asistente/i }).click();
-  const { body, action } = await askForProposal(page, `Prepara la asignación de los paquetes ${codes.map((c) => c.code).join(', ')} al viaje de La Paz a Municipio Caracollo para que yo la confirme`);
-  expect(action, `el asistente debía proponer asignar. Respuesta: ${body?.response}`).toBeTruthy();
+  const { body, action, failure } = await askForProposal(page, `Prepara la asignación de los paquetes ${codes.map((c) => c.code).join(', ')} al viaje de La Paz a Municipio Caracollo para que yo la confirme`);
+  expect(action, `el asistente debía proponer asignar. Respuesta: ${body?.response ?? (failure ? 'error del servidor: ' + failure.message : 'sin respuesta')}`).toBeTruthy();
   expect(action.type).toBe('assign_package');
   expect(action.ui.fill.values.items).toHaveLength(5); // más de 3: se ofrece igual y Logi hace el resto de una vez
   const routeId = action.ui.fill.values.route_id;
