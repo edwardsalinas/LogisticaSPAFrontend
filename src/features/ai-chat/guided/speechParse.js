@@ -18,6 +18,8 @@ const PACKAGE_NOUN = /\b(paquete|paquetes|envio|encomienda|encargo)\b/;
 
 const ASSIGN_VERB = /\b(asignar|asigna|asignarlo|asignarle|vincular|vincula|agendar|agenda|meter|mete|poner|pon|subir|sube|cargar|carga|ubicar)\b/;
 const TRIP_NOUN = /\b(viaje|viajes|despacho|ruta|camion|salida)\b/;
+const EVENT_VERB = /\b(registrar|registra|anotar|anota|marcar|marca|reportar|reporta|actualizar|actualiza|agregar|agrega)\b/;
+const EVENT_NOUN = /\b(evento|eventos|seguimiento|novedad|novedades|siniestro)\b/;
 
 /**
  * «Ayúdame a crear un paquete» (sin datos) → { form: 'package' }. Si la frase ya trae los datos (kilos, números, «de X a Y»),
@@ -28,6 +30,8 @@ export const detectFormAssist = (text) => {
   if (!t) return null;
   // «ayúdame a asignar un paquete a un viaje»: sin códigos ni «sueltos» (eso lo resuelve el asistente con sus sugerencias)
   if (ASSIGN_VERB.test(t) && PACKAGE_NOUN.test(t) && !/\d|\btrk\b|\b(sueltos|sueltas|pendientes|todos|todas|sugerencias|sugiere|sugerir)\b/.test(t) && (TRIP_NOUN.test(t) || /\b(asignar|vincular)\b/.test(t))) return { form: 'assign' };
+  // «ayúdame a registrar un evento de seguimiento»: sin códigos (con ellos lo resuelve el asistente directamente)
+  if (EVENT_VERB.test(t) && EVENT_NOUN.test(t) && !/\d|\btrk\b|\b(ver|mostrar|muestrame|cuantos|cuantas|lista|listar|historial|consultar)\b/.test(t)) return { form: 'event' };
   if (!CREATE_VERB.test(t) || !PACKAGE_NOUN.test(t)) return null;
   if (/\d|\b(kilo|kilos|kg|gramos|libras)\b/.test(t)) return null; // ya dio datos
   if (/\bde\s+[a-z ]+\s+(a|hacia|para)\s+[a-z]/.test(t)) return null; // «de La Paz a Oruro»

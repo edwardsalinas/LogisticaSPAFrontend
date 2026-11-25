@@ -12,6 +12,7 @@ import registerEvent from './choreographies/registerEvent';
 import deliverPackages from './choreographies/deliverPackages';
 import assistPackage from './choreographies/assistPackage';
 import assistAssign from './choreographies/assistAssign';
+import assistEvent from './choreographies/assistEvent';
 import LogiGuide from './LogiGuide';
 import { trackLogi } from '../logiEvents';
 
@@ -20,7 +21,7 @@ const CHOREOGRAPHIES = { create_package: createPackage, assign_package: assignPa
 
 
 /** Ayudas por voz: no traen los datos hechos, los preguntan. Se hacen con la pantalla libre (la persona puede corregir). */
-const ASSISTS = { package: assistPackage, assign: assistAssign };
+const ASSISTS = { package: assistPackage, assign: assistAssign, event: assistEvent };
 
 const GuidedRunContext = createContext(null);
 /** null fuera del layout (pantallas sueltas, pruebas): quien lo use debe tolerarlo. */

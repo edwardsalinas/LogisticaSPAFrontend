@@ -80,6 +80,22 @@ describe('órdenes de control y textos', () => {
   });
 });
 
+describe('detectFormAssist: registrar un evento de seguimiento, sin datos', () => {
+  it.each([
+    'ayúdame a registrar un evento',
+    'quiero registrar un evento de seguimiento',
+    'necesito reportar un siniestro',
+    'me ayudas a anotar una novedad',
+  ])('sí: «%s»', (t) => expect(detectFormAssist(t)).toEqual({ form: 'event' }));
+
+  it.each([
+    'registra un evento para TRK-123',
+    'muéstrame el historial de seguimiento',
+    'cuántos siniestros hubo',
+    'ver eventos de seguimiento',
+  ])('no: «%s»', (t) => expect(detectFormAssist(t)).toBeNull());
+});
+
 describe('detectFormAssist: asignar un paquete a un viaje, sin datos', () => {
   it.each([
     'ayúdame a asignar un paquete a un viaje',

@@ -13,6 +13,8 @@ const apiService = {
   unassignPackage: (id) => api.post(`/logistics/packages/${id}/unassign`),
   // Anula un paquete recién creado (queda «cancelado»; solo si sigue pendiente, sin viaje y creado hace menos de 2 horas)
   cancelPackage: (id) => api.post(`/logistics/packages/${id}/cancel`),
+  // Prepara la propuesta de un evento de seguimiento (sin el modelo); se confirma aparte
+  prepareEvent: (body) => api.post('/ai-agent/suggestions/event', body),
   prepareAssignment: (body) => api.post('/ai-agent/suggestions/assign', body),
   // Leer la foto de una guía de remisión (devuelve los campos para revisarlos) y, ya revisados, preparar el registro
   extractDocument: (body) => api.post('/ai-agent/documents/extract', body, { timeout: 60000 }),
