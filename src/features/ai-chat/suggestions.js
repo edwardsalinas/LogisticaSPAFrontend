@@ -58,6 +58,16 @@ export const suggestionsForEntity = (entity, role) => {
   return [];
 };
 
+/** Preguntas según la pestaña abierta (solo personal): «paquetes entregados», «conductores»… */
+export const suggestionsForView = (view, role) => {
+  if (role !== 'admin' && role !== 'logistics_operator') return [];
+  if (view?.tab === 'delivered') return [{ icon: CheckCircle2, label: '¿Cuántas entregas hubo?', value: '¿Cuántos paquetes se entregaron esta semana y quién entrega mejor?' }];
+  if (view?.tab === 'all') return [{ icon: ListChecks, label: '¿Qué hay sin asignar?', value: 'Sugiere cómo asignar los paquetes sueltos a los viajes' }];
+  if (view?.tab === 'drivers') return [{ icon: Truck, label: '¿Quién está libre?', value: '¿Qué conductores están libres mañana?' }];
+  if (view?.tab === 'vehicles') return [{ icon: Warehouse, label: '¿Qué vehículos hay libres?', value: '¿Qué vehículos tengo disponibles y cuántos conductores?' }];
+  return [];
+};
+
 export const suggestionsForRole = (role) => {
   if (role === 'driver') return DRIVER;
   if (role === 'admin') return [...OPERATIONS, ...ADMIN_EXTRA];

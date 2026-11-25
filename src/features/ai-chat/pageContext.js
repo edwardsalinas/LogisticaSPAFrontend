@@ -9,6 +9,7 @@ import { useEffect, useSyncExternalStore } from 'react';
  * al asistente como si la persona estuviera viendo ese paquete.
  */
 let entity = null;
+let view = null; // pestaña abierta: { tab } (el servidor solo acepta las de cada pantalla)
 const listeners = new Set();
 
 const same = (a, b) => (a === b) || (a && b && a.type === b.type && a.ref === b.ref);
@@ -20,8 +21,17 @@ export const setPageEntity = (next) => {
 };
 export const getPageEntity = () => entity;
 
+export const setPageView = (next) => {
+  const clean = next?.tab ? { tab: String(next.tab) } : null;
+  if ((view === null && clean === null) || (view && clean && view.tab === clean.tab)) return;
+  view = clean;
+  listeners.forEach((l) => l());
+};
+export const getPageView = () => view;
+
 const subscribe = (l) => { listeners.add(l); return () => listeners.delete(l); };
 export const usePageEntity = () => useSyncExternalStore(subscribe, getPageEntity, () => null);
+export const usePageView = () => useSyncExternalStore(subscribe, getPageView, () => null);
 
 /** Para las pantallas de un paquete o un viaje: `{ type: 'package' | 'route', ref }` o null mientras no hay uno real. */
 export function useRegisterPageEntity(next) {
@@ -34,8 +44,17 @@ export function useRegisterPageEntity(next) {
   }, [type, ref]);
 }
 
+/** Para las pantallas con pestañas (paquetes: «all» u «delivered»; flota: «vehicles» o «drivers»). */
+export function useRegisterPageView(tab) {
+  useEffect(() => {
+    if (!tab) { setPageView(null); return undefined; }
+    setPageView({ tab });
+    return () => setPageView(null);
+  }, [tab]);
+}
+
 /** El contexto que viaja con cada consulta al asistente. */
 export const buildChatContext = () => {
   const path = typeof window === 'undefined' ? '' : window.location.pathname;
-  return { path, ...(entity ? { entity } : {}) };
+  return { path, ...(entity ? { entity } : {}), ...(view ? { view } : {}) };
 };

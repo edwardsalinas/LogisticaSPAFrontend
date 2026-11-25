@@ -22,6 +22,7 @@ import Skeleton from '../../../components/atoms/Skeleton';
 
 import DataTable from '../../../components/organisms/DataTable';
 import usePersistentState from '@/hooks/usePersistentState';
+import { useRegisterPageView } from '../../ai-chat/pageContext';
 import apiService from '../../../services/apiService';
 import FleetHero from '../components/FleetHero';
 import VehicleForm from '../components/VehicleForm';
@@ -52,6 +53,7 @@ const vehicleTypeLabel = {
 function FleetPage() {
   const [activeTab, setActiveTab] = usePersistentState('flota:pestana', 'vehicles');
   const [searchTerm, setSearchTerm] = usePersistentState('flota:busqueda', '');
+  useRegisterPageView(activeTab); // el asistente sabe si ves vehículos o conductores
   const [showVehicleForm, setShowVehicleForm] = useState(false);
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);

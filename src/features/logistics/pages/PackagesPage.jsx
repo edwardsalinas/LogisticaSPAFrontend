@@ -7,6 +7,7 @@ import Button from '../../../components/atoms/Button';
 import Modal from '../../../components/molecules/Modal';
 import DataTable from '../../../components/organisms/DataTable';
 import usePersistentState from '@/hooks/usePersistentState';
+import { useRegisterPageEntity, useRegisterPageView } from '../../ai-chat/pageContext';
 import Skeleton from '../../../components/atoms/Skeleton';
 import PackageDetail from '../components/PackageDetail';
 import PackageForm from '../components/PackageForm';
@@ -36,6 +37,9 @@ function PackagesPage() {
   const [searchTerm, setSearchTerm] = usePersistentState('paquetes:busqueda', '');
   const [activeTab, setActiveTab] = usePersistentState('paquetes:pestana', 'all'); // 'all' o 'delivered' (histórico)
   const [contextualRoute, setContextualRoute] = useState(null);
+  // el asistente sabe qué pestaña ves y, si abriste la ficha de un paquete, cuál es («este paquete»)
+  useRegisterPageView(activeTab);
+  useRegisterPageEntity(selectedPackage?.tracking_code ? { type: 'package', ref: selectedPackage.tracking_code } : null);
   const [expandedShipments, setExpandedShipments] = useState(new Set());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);

@@ -8,6 +8,7 @@ import EmptyState from '../../../components/molecules/EmptyState';
 import Modal from '../../../components/molecules/Modal';
 import Skeleton from '../../../components/atoms/Skeleton';
 import apiService from '../../../services/apiService';
+import { useRegisterPageEntity } from '../../ai-chat/pageContext';
 import TrackingForm from '../components/TrackingForm';
 import { GUIDED_EVENTS } from '../../ai-chat/guided/guidedForms';
 import TrackingHistory from '../components/TrackingHistory';
@@ -121,6 +122,7 @@ function TrackingPage() {
   }, [packages, searchTerm]);
 
   const selectedPackage = packages.find((pkg) => pkg.id === selectedPackageId);
+  useRegisterPageEntity(selectedPackage?.tracking_code ? { type: 'package', ref: selectedPackage.tracking_code } : null);
   const activeCount = packages.filter((pkg) => pkg.status === 'en_transito' || pkg.status === 'asignado').length;
 
   return (

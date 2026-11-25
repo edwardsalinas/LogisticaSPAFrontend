@@ -67,7 +67,78 @@ test('fuera de un paquete no se envía ningún elemento en pantalla', async ({ b
   await box.fill('hola');
   await box.press('Enter');
   await expect.poll(() => sent.length, { timeout: 30000 }).toBeGreaterThan(0);
-  expect(sent[0].context).toEqual({ path: '/logistics/packages' });
+  expect(sent[0].context.entity).toBeUndefined(); // ningún paquete abierto: solo la ruta y la pestaña
+  expect(sent[0].context).toEqual({ path: '/logistics/packages', view: { tab: 'all' } });
+});
+
+/** Envía «hola» al asistente y devuelve el contexto que viajó con la consulta. */
+const contextSent = async (page, sent) => {
+  const before = sent.length;
+  await page.getByRole('button', { name: /abrir asistente/i }).click();
+  const box = page.getByRole('textbox', { name: /mensaje para el asistente/i });
+  await box.fill('hola');
+  await box.press('Enter');
+  await expect.poll(() => sent.length, { timeout: 30000 }).toBeGreaterThan(before);
+  return sent[before].context;
+};
+const watch = (page) => {
+  const sent = [];
+  page.on('request', (r) => { if (/ai-agent\/chat/.test(r.url()) && r.method() === 'POST') { try { sent.push(JSON.parse(r.postData())); } catch { /* sin cuerpo */ } } });
+  return sent;
+};
+
+test('lista de paquetes: manda la pestaña abierta y, al abrir una ficha, ese paquete', async ({ browser }) => {
+  test.setTimeout(240000);
+  const ctx = await browser.newContext({ locale: 'es-BO', viewport: { width: 1366, height: 800 } });
+  const page = await ctx.newPage();
+  await login(page, 'admin');
+  const sent = watch(page);
+  await page.goto('/logistics/packages');
+  await expect(page.getByRole('heading', { name: /panel de despachos/i }).first()).toBeVisible({ timeout: 30000 });
+  expect((await contextSent(page, sent))).toEqual({ path: '/logistics/packages', view: { tab: 'all' } });
+
+  await page.keyboard.press('Escape'); // el panel del chat tapa los botones de la derecha
+  await expect(page.locator('#ai-assistant-panel')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Histórico' }).click();
+  await expect(page.getByRole('heading', { name: /historial de despachos/i }).first()).toBeVisible();
+  await page.getByRole('button', { name: /abrir asistente/i }).click();
+  const box = page.getByRole('textbox', { name: /mensaje para el asistente/i });
+  await box.fill('hola otra vez'); await box.press('Enter');
+  await expect.poll(() => sent.length, { timeout: 30000 }).toBe(2);
+  expect(sent[1].context).toEqual({ path: '/logistics/packages', view: { tab: 'delivered' } });
+});
+
+test('Tracking: manda el paquete cuyo seguimiento se muestra', async ({ browser }) => {
+  test.setTimeout(240000);
+  const ctx = await browser.newContext({ locale: 'es-BO', viewport: { width: 1366, height: 800 } });
+  const page = await ctx.newPage();
+  await login(page, 'admin');
+  const sent = watch(page);
+  await page.goto('/tracking', { waitUntil: 'domcontentloaded' }); // los mapas cargan teselas externas: no se espera el evento load
+  await expect(page.getByText(/TRK-/).first()).toBeVisible({ timeout: 30000 }); // ya cargó y seleccionó el primer paquete
+  const context = await contextSent(page, sent);
+  expect(context.path).toBe('/tracking');
+  expect(context.entity).toMatchObject({ type: 'package' });
+  expect(context.entity.ref).toMatch(/^TRK-/);
+});
+
+test('flota: manda la pestaña (vehículos o conductores)', async ({ browser }) => {
+  test.setTimeout(240000);
+  const ctx = await browser.newContext({ locale: 'es-BO', viewport: { width: 1366, height: 800 } });
+  const page = await ctx.newPage();
+  await login(page, 'admin');
+  const sent = watch(page);
+  await page.goto('/fleet');
+  await expect(page.getByRole('button', { name: /conductores/i }).first()).toBeVisible({ timeout: 30000 });
+  expect((await contextSent(page, sent)).view).toEqual({ tab: 'vehicles' });
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#ai-assistant-panel')).toHaveCount(0);
+  await page.getByRole('button', { name: /^conductores/i }).first().click();
+  await page.getByRole('button', { name: /abrir asistente/i }).click();
+  const box = page.getByRole('textbox', { name: /mensaje para el asistente/i });
+  await box.fill('hola otra vez'); await box.press('Enter');
+  await expect.poll(() => sent.length, { timeout: 30000 }).toBe(2);
+  expect(sent[1].context).toEqual({ path: '/fleet', view: { tab: 'drivers' } });
 });
 
 test('SEGURIDAD: el contexto es una pista; un cliente con el código de un paquete AJENO en pantalla no obtiene sus datos', async ({ browser }) => {
