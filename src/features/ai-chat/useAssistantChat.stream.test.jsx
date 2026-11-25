@@ -83,7 +83,7 @@ describe('El chat muestra la respuesta a medida que se escribe', () => {
     apiService.post.mockResolvedValue({ response: 'por la vía normal', attachments: [] });
     const { result } = renderHook(() => useChatState());
     const out = await act(async () => result.current.send('hola'));
-    expect(apiService.post).toHaveBeenCalledWith('/ai-agent/chat', { message: 'hola', history: [] });
+    expect(apiService.post).toHaveBeenCalledWith('/ai-agent/chat', { message: 'hola', history: [], context: expect.any(Object) });
     expect(out.text).toBe('por la vía normal');
   });
 

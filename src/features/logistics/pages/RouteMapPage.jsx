@@ -8,6 +8,7 @@ import StatCard from '../../../components/molecules/StatCard';
 import MapCanvasFallback from '../../../components/molecules/MapCanvasFallback';
 import Modal from '../../../components/molecules/Modal';
 import apiService from '../../../services/apiService';
+import { useRegisterPageEntity } from '../../ai-chat/pageContext';
 import CheckpointForm from '../components/CheckpointForm';
 const RouteMap = lazy(() => import('../components/RouteMap'));
 
@@ -18,6 +19,7 @@ function RouteMapPage() {
   const [selectedCheckpoint, setSelectedCheckpoint] = useState(null);
   const [route, setRoute] = useState(null);
   const [loading, setLoading] = useState(true);
+  useRegisterPageEntity(route ? { type: 'route', ref: route.route_code || route.id || routeId } : null);
 
   const fetchRoute = async () => {
     try {

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useRef, useState } from 'react';
 import apiService from '../../services/apiService';
 import { fileToJpegBase64 } from '../../utils/imageForUpload';
+import { buildChatContext } from './pageContext';
 
 const HISTORY_LIMIT = 16; // el backend acepta como máximo 16 mensajes previos
 export const MAX_MESSAGE_LENGTH = 1000;
@@ -61,7 +62,7 @@ export function useChatState(initialMessages = []) {
       .filter((m) => !m.local && !m.isError && !m.streaming)
       .slice(-HISTORY_LIMIT)
       .map(({ role, content }) => ({ role, content }));
-    const body = { message: text, history, ...(voice ? { voice: true } : {}), ...(conversationRef.current ? { conversation_id: conversationRef.current } : {}) };
+    const body = { message: text, history, context: buildChatContext(), ...(voice ? { voice: true } : {}), ...(conversationRef.current ? { conversation_id: conversationRef.current } : {}) };
 
     loadingRef.current = true;
     setLoading(true);

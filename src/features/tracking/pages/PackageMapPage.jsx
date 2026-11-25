@@ -8,6 +8,7 @@ import StatCard from '../../../components/molecules/StatCard';
 import MapCanvasFallback from '../../../components/molecules/MapCanvasFallback';
 import PageSkeleton from '../../../components/organisms/PageSkeleton';
 import apiService from '../../../services/apiService';
+import { useRegisterPageEntity } from '../../ai-chat/pageContext';
 const PackageTrackingMap = lazy(() => import('../components/PackageTrackingMap'));
 
 function PackageMapPage() {
@@ -34,6 +35,7 @@ function PackageMapPage() {
 
   // Los hooks van antes de los return anticipados: si no, al terminar de cargar React ve más hooks que antes y la pantalla se rompe
   const mapRoute = mapData?.route;
+  useRegisterPageEntity(mapData?.package?.tracking_code ? { type: 'package', ref: mapData.package.tracking_code } : null);
   const routeStatus = useMemo(() => {
     if (!mapRoute) return { label: 'Sin ruta', variant: 'neutral' };
     return mapRoute.status === 'active' ? { label: 'En ruta', variant: 'success' } : { label: mapRoute.status, variant: 'info' };

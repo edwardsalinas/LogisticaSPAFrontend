@@ -20,6 +20,7 @@ import MapCanvasFallback from '../../../components/molecules/MapCanvasFallback';
 import StatusTimeline from '../../../components/molecules/StatusTimeline';
 import PageSkeleton from '../../../components/organisms/PageSkeleton';
 import apiService from '../../../services/apiService';
+import { useRegisterPageEntity } from '../../ai-chat/pageContext';
 const PackageLocationMap = lazy(() => import('../components/PackageLocationMap'));
 
 function PackageDetailPage() {
@@ -27,6 +28,7 @@ function PackageDetailPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [pkg, setPkg] = useState(null);
+  const [isExample, setIsExample] = useState(false); // los datos de ejemplo NO se le dicen al asistente como si fueran el paquete en pantalla
 
   const MOCK_PACKAGE = {
     id: packageId,
@@ -54,9 +56,11 @@ function PackageDetailPage() {
         const packages = pkgRes.data || [];
         const foundPkg = packages.find((p) => p.id === packageId);
         setPkg(foundPkg || MOCK_PACKAGE);
+        setIsExample(!foundPkg);
       } catch (err) {
         console.error('Error cargando paquete:', err);
         setPkg(MOCK_PACKAGE);
+        setIsExample(true);
       } finally {
         setLoading(false);
       }
@@ -64,6 +68,8 @@ function PackageDetailPage() {
 
     fetchPackageData();
   }, [packageId]);
+
+  useRegisterPageEntity(pkg && !isExample && pkg.tracking_code ? { type: 'package', ref: pkg.tracking_code } : null);
 
   const timeline = useMemo(() => ([
     { label: 'Recolectado', date: '19 Mar, 08:30', location: 'La Paz - Almacen central', completed: true, active: false },

@@ -39,7 +39,7 @@ describe('Micrófono y voz en la pantalla del asistente', () => {
     await userEvent.click(screen.getByRole('button', { name: /dictar con el micrófono/i }));
     act(() => { FakeRecognition.last.say('qué viajes hay el viernes'); FakeRecognition.last.finish(); });
 
-    await waitFor(() => expect(apiService.post).toHaveBeenCalledWith('/ai-agent/chat', { message: 'qué viajes hay el viernes', history: [] }));
+    await waitFor(() => expect(apiService.post).toHaveBeenCalledWith('/ai-agent/chat', { message: 'qué viajes hay el viernes', history: [], context: expect.any(Object) }));
     expect(await screen.findByText('Hay dos viajes.')).toBeInTheDocument();
   });
 
@@ -106,6 +106,7 @@ describe('Conversación compartida entre pantallas', () => {
     expect(apiService.post).toHaveBeenLastCalledWith('/ai-agent/chat', {
       message: '¿y tiene espacio?',
       history: [{ role: 'user', content: '¿qué viajes hay el viernes?' }, { role: 'assistant', content: 'Hay un viaje el viernes.' }],
+      context: expect.any(Object),
     });
   });
 

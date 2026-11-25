@@ -24,7 +24,7 @@ describe('AiAssistantPanel (conectado al backend)', () => {
     await send('Estado de TRK-123');
 
     expect(await screen.findByText('Tu paquete está en tránsito hacia Oruro.')).toBeInTheDocument();
-    expect(apiService.post).toHaveBeenCalledWith('/ai-agent/chat', { message: 'Estado de TRK-123', history: [] });
+    expect(apiService.post).toHaveBeenCalledWith('/ai-agent/chat', { message: 'Estado de TRK-123', history: [], context: expect.any(Object) });
   });
 
   it('envía la conversación previa como contexto (sin el saludo inicial)', async () => {
@@ -43,6 +43,7 @@ describe('AiAssistantPanel (conectado al backend)', () => {
         { role: 'user', content: 'Primera pregunta' },
         { role: 'assistant', content: 'Primera respuesta' },
       ],
+      context: expect.any(Object),
     });
   });
 

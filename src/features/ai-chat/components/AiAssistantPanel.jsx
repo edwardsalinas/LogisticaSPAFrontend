@@ -15,7 +15,8 @@ import { setEnabled } from '../alerts/alertPolicy';
 import { setWakeEnabled, useWakeEnabled } from '../wakePref';
 import { getRecognitionClass } from '../voice';
 import useAssistantChat from '../useAssistantChat';
-import { introForRole, suggestionsForRole } from '../suggestions';
+import { introForRole, suggestionsForEntity, suggestionsForRole } from '../suggestions';
+import { usePageEntity } from '../pageContext';
 import { prefersReducedMotion } from '../voice';
 
 // Para «Enséñame»: un paquete de ejemplo con datos inventados; la demostración NUNCA guarda nada
@@ -56,7 +57,9 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = nu
   // el robot refleja lo que hace: escribiendo la respuesta, pensando o en reposo
   const streaming = chat.messages.length > 0 && chat.messages[chat.messages.length - 1].streaming;
   const mood = streaming ? 'talking' : loading ? 'thinking' : 'idle';
-  const suggestions = suggestionsForRole(role).filter((s) => !s.prefill).slice(0, 3);
+  const pageEntity = usePageEntity();
+  // lo que se está viendo va primero («¿Dónde está este paquete?»), luego lo general del rol
+  const suggestions = [...suggestionsForEntity(pageEntity, role), ...suggestionsForRole(role).filter((s) => !s.prefill)].slice(0, 3);
 
   useEffect(() => {
     // con el chat vacío se ve el saludo desde arriba; el desplazamiento automático es solo para conversaciones reales

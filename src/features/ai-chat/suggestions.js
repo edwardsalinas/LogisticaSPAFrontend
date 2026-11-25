@@ -36,6 +36,28 @@ const OPERATIONS = [
 
 const ADMIN_EXTRA = [{ icon: Warehouse, label: '¿Qué vehículos hay disponibles?', value: '¿Qué vehículos tengo disponibles y cuántos conductores?' }];
 
+/**
+ * Lo que tiene sentido preguntar sobre lo que se está viendo («este paquete», «este viaje»): van primero. Usan «este»/«esto» a
+ * propósito: así se prueba también que el asistente entiende la pantalla.
+ */
+export const suggestionsForEntity = (entity, role) => {
+  const staff = role === 'admin' || role === 'logistics_operator';
+  if (entity?.type === 'package') {
+    return [
+      { icon: MapPin, label: '¿Dónde está este paquete?', value: '¿Dónde está este paquete?' },
+      { icon: CalendarDays, label: '¿Cuándo llega?', value: '¿En qué estado está este paquete y cuándo llega?' },
+      ...(staff ? [{ icon: ListChecks, label: 'Asignarlo a un viaje', value: 'Asigna este paquete a un viaje' }] : []),
+    ];
+  }
+  if (entity?.type === 'route' && staff) {
+    return [
+      { icon: Warehouse, label: '¿Cuánto espacio queda?', value: '¿Cuánto espacio queda en este viaje?' },
+      { icon: Package, label: '¿Qué paquetes lleva?', value: '¿Qué paquetes lleva este viaje?' },
+    ];
+  }
+  return [];
+};
+
 export const suggestionsForRole = (role) => {
   if (role === 'driver') return DRIVER;
   if (role === 'admin') return [...OPERATIONS, ...ADMIN_EXTRA];

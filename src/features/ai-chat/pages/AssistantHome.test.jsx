@@ -55,7 +55,7 @@ describe('Vista del asistente (Modo IA)', () => {
     renderHome();
     await userEvent.click(screen.getByRole('button', { name: /¿qué paquetes tengo\?/i }));
     expect(await screen.findByText('Tienes 2 paquetes.')).toBeInTheDocument();
-    expect(apiService.post).toHaveBeenCalledWith('/ai-agent/chat', { message: '¿Qué paquetes tengo?', history: [] });
+    expect(apiService.post).toHaveBeenCalledWith('/ai-agent/chat', { message: '¿Qué paquetes tengo?', history: [], context: expect.any(Object) });
   });
 
   it('las sugerencias de "completar" rellenan el campo en vez de enviar', async () => {
