@@ -19,24 +19,25 @@ const alertsFor = async (ctx) => {
   return (await r.json()).data ?? [];
 };
 
-test('cliente: Logi avisa que su paquete llegó y el botón lleva a su ficha', async ({ browser }) => {
+test('cliente: Logi le avisa de lo más urgente de SUS paquetes, en lenguaje de paquetes, y el botón lleva a donde dice', async ({ browser }) => {
   test.setTimeout(150_000);
   const ctx = await browser.newContext({ locale: 'es-BO', viewport: { width: 1366, height: 800 } });
   const page = await ctx.newPage();
   await login(page, 'client');
   const alerts = await alertsFor(ctx);
-  test.skip(!alerts.some((a) => a.type === 'client_delivered'), 'faltan los datos de demostración del cliente (scripts/seed-demo.mjs)');
+  test.skip(alerts.length === 0, 'faltan los datos de demostración del cliente (scripts/seed-demo.mjs)');
+  const first = alerts[0]; // el servidor los ordena por urgencia: un siniestro va antes que «llegó» o «en camino»
+  expect(first.type).toMatch(/^client_/);
 
   await page.goto('/logistics/packages', { waitUntil: 'domcontentloaded' });
   const bubble = page.getByRole('group', { name: 'Aviso de Logi' });
   await expect(bubble).toBeVisible({ timeout: 60_000 });
-  await expect(bubble).toContainText('¡Tu paquete llegó!');
-  await expect(bubble).toContainText(/ya fue entregado/);
+  await expect(bubble).toContainText(first.title);
   await expect(bubble).not.toContainText(/viaje|ruta|conductor/i); // al cliente se le habla de SU paquete, no de la operación
   await page.screenshot({ path: 'e2e-results/aviso-cliente.png' });
 
-  await bubble.getByRole('button', { name: 'Ver el paquete' }).click();
-  await expect(page).toHaveURL(/\/logistics\/packages\/[0-9a-f-]{36}$/, { timeout: 30_000 });
+  await bubble.getByRole('button', { name: first.action.label }).click();
+  await expect.poll(() => new URL(page.url()).pathname, { timeout: 30_000 }).toBe(first.action.to);
 });
 
 test('cliente: «Después» lo pospone y no vuelve enseguida; un paquete que va en camino lleva al mapa de seguimiento', async ({ browser }) => {
