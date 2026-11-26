@@ -11,3 +11,6 @@ playwright-report/
 # sesiones guardadas de las pruebas e2e y resumen del ejecutor por tandas
 .e2e-auth/
 e2e-tandas.log
+
+# contraseñas de los usuarios de prueba (las crea LogisticaSPABackend/scripts/rotar-claves-prueba.mjs)
+.env.e2e.local
