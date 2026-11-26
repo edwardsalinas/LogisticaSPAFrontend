@@ -12,6 +12,7 @@ import ErrorState from '../../../components/molecules/ErrorState';
 const RANGES = [{ days: 7, label: '7 días' }, { days: 30, label: '30 días' }];
 const ALERT_TYPE_LABEL = {
   assign: 'Paquetes sueltos con viaje', delayed: 'Viaje que no salió', no_driver: 'Viaje sin conductor',
+  incident: 'Siniestros y entregas fallidas', stuck_agency: 'Parado en agencia', trip_full: 'Viaje casi lleno',
   client_delivered: 'Cliente: paquete entregado', client_in_transit: 'Cliente: paquete en camino', client_in_agency: 'Cliente: paquete en agencia', client_incident: 'Cliente: siniestro',
   driver_depart: 'Conductor: viaje por salir', driver_pending: 'Conductor: entregas pendientes',
 };

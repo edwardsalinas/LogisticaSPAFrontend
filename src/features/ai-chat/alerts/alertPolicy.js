@@ -14,6 +14,10 @@ export const RELEVANT_PATHS = {
   assign: ['/', '/dashboard', '/logistics/packages', '/logistics/routes'],
   delayed: ['/', '/dashboard', '/logistics/routes', '/tracking'],
   no_driver: ['/', '/dashboard', '/logistics/routes'],
+  // personal: más excepciones (siniestros y entregas fallidas, paquetes parados en agencia, viajes casi llenos)
+  incident: ['/', '/dashboard', '/tracking', '/logistics/packages'],
+  stuck_agency: ['/', '/dashboard', '/tracking', '/logistics/packages'],
+  trip_full: ['/', '/dashboard', '/logistics/routes', '/logistics/packages'],
   // cliente: lo que le pasa a sus paquetes (en el inicio, su lista de paquetes o el seguimiento)
   client_delivered: ['/', '/logistics/packages', '/tracking'],
   client_in_transit: ['/', '/logistics/packages', '/tracking'],

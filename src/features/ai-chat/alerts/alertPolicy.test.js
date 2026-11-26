@@ -96,3 +96,14 @@ describe('avisos del cliente y del conductor: en qué pantallas salen', () => {
     expect(pickAlert({ alerts: [alert], prefs: muteType(prefs, 'client_in_transit'), now, pathname: '/tracking' })).toBeNull();
   });
 });
+
+describe('más avisos del personal: en qué pantallas salen', () => {
+  it('siniestros y paquetes parados, donde se ven paquetes; viajes llenos, donde se ven viajes', () => {
+    for (const type of ['incident', 'stuck_agency']) {
+      for (const path of ['/', '/dashboard', '/tracking', '/logistics/packages']) expect(isRelevantPath(type, path), `${type} ${path}`).toBe(true);
+      expect(isRelevantPath(type, '/fleet')).toBe(false);
+    }
+    for (const path of ['/', '/dashboard', '/logistics/routes', '/logistics/packages']) expect(isRelevantPath('trip_full', path)).toBe(true);
+    expect(isRelevantPath('trip_full', '/tracking')).toBe(false);
+  });
+});
