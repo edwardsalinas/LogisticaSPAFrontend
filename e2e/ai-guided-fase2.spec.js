@@ -20,7 +20,7 @@ const state = {};
 test.describe.configure({ mode: 'serial' });
 
 /** Pregunta en el panel del asistente y devuelve la propuesta (la respuesta llega en vivo: se lee el evento «final»). */
-const askForProposal = async (page, question) => {
+const askOnce = async (page, question) => {
   const [response] = await Promise.all([
     page.waitForResponse((r) => r.url().includes('/ai-agent/chat') && r.request().method() === 'POST', { timeout: 120_000 }),
     (async () => {
@@ -34,6 +34,17 @@ const askForProposal = async (page, question) => {
   if (!body) body = undefined;
   const failure = events.find((e) => e.type === 'error');
   return { body, failure, action: body?.attachments?.find((a) => a.kind === 'action_proposal')?.action };
+};
+
+/**
+ * Igual que askOnce, pero si el servidor dice que hay demasiadas consultas (el plan gratuito del proveedor de IA limita los tokens
+ * por minuto y una propuesta de varios paquetes es una consulta pesada), espera un minuto y repite UNA vez, como haría una persona.
+ */
+const askForProposal = async (page, question) => {
+  const first = await askOnce(page, question);
+  if (first.body || !/muchas consultas/i.test(first.failure?.message ?? '')) return first;
+  await page.waitForTimeout(65_000);
+  return askOnce(page, question);
 };
 
 const packageNow = async (ctx) => {
@@ -74,7 +85,7 @@ test('1. Logi asigna el paquete al viaje a la vista de todos', async ({ browser 
   await page.goto('/dashboard');
   await page.getByRole('button', { name: /abrir asistente/i }).click();
 
-  const { body, action, failure } = await askForProposal(page, `Prepara la asignación del paquete ${state.code} al viaje de La Paz a Municipio Caracollo para que yo la confirme`);
+  const { body, action, failure } = await askForProposal(page, `Prepara la asignación del paquete ${state.code} al viaje de La Paz a Municipio Caracollo de mañana para que yo la confirme`);
   expect(action, `el asistente debía proponer asignar. Respuesta: ${body?.response ?? (failure ? 'error del servidor: ' + failure.message : 'sin respuesta')}`).toBeTruthy();
   expect(action.type).toBe('assign_package');
   expect(action.ui.fill.form).toBe('assignment');
@@ -142,7 +153,7 @@ test('3. con más de 3 paquetes Logi muestra los primeros y asigna todos con una
 
   await page.goto('/dashboard');
   await page.getByRole('button', { name: /abrir asistente/i }).click();
-  const { body, action, failure } = await askForProposal(page, `Prepara la asignación de los paquetes ${codes.map((c) => c.code).join(', ')} al viaje de La Paz a Municipio Caracollo para que yo la confirme`);
+  const { body, action, failure } = await askForProposal(page, `Prepara la asignación de los paquetes ${codes.map((c) => c.code).join(', ')} al viaje de La Paz a Municipio Caracollo de mañana para que yo la confirme`);
   expect(action, `el asistente debía proponer asignar. Respuesta: ${body?.response ?? (failure ? 'error del servidor: ' + failure.message : 'sin respuesta')}`).toBeTruthy();
   expect(action.type).toBe('assign_package');
   expect(action.ui.fill.values.items).toHaveLength(5); // más de 3: se ofrece igual y Logi hace el resto de una vez
