@@ -92,7 +92,7 @@ describe('Acciones del asistente: tarjeta de confirmación', () => {
         <ChatBubble message={{ role: 'assistant', content: 'Preparé la entrega. **Confírmala** en la tarjeta.', attachments: [ACTION] }} role="admin" />
       </MemoryRouter>
     );
-    expect(await screen.findByText('Confírmala', { selector: 'strong' }, { timeout: 8000 })).toBeInTheDocument(); // el markdown se carga bajo demanda
+    expect(await screen.findByText('Confírmala', { selector: 'strong' }, { timeout: 20000 })).toBeInTheDocument(); // el markdown se carga bajo demanda
     expect(screen.getByRole('button', { name: /^confirmar$/i })).toBeInTheDocument();
   });
 

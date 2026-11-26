@@ -1,6 +1,9 @@
 import '@testing-library/jest-dom';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterEach } from 'vitest';
+
+// waitFor / findBy esperan 1 s por defecto: con la máquina cargada no alcanza para que React termine de dibujar tras una respuesta simulada
+configure({ asyncUtilTimeout: 5000 });
 
 afterEach(() => {
   cleanup();

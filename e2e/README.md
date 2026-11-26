@@ -27,6 +27,27 @@ Flujos reales en el navegador con el backend, la base de datos (Supabase) y el m
 
 Un archivo que pasa solo en el reintento se marca **inestable**, no roto: casi siempre es una carga lenta o el límite del proveedor.
 
+## Corrida automática (CI)
+
+Hay dos niveles, y la diferencia es deliberada:
+
+| Qué | Cuándo corre | Usa |
+|---|---|---|
+| **CI** (`.github/workflows/ci.yml`, en este repositorio y en el del backend) | Solo, en cada push y pull request a `main` o `develop` | Nada externo: pruebas unitarias con datos simulados, compilación, auditoría de dependencias (falla con vulnerabilidades altas o críticas) y comprobación de que todas las pruebas e2e se pueden cargar. Sin secretos. |
+| **E2E manual** (`.github/workflows/e2e.yml`) | Solo a mano: Actions → «E2E manual (sistema real)» → Run workflow, y hay que escribir `SI` | La base de datos real y el modelo de IA de los secretos del repositorio: crea y borra datos `E2E-<sello>` y gasta cuota de los proveedores de IA. |
+
+**Por qué las e2e no corren solas:** necesitan una base de datos (hoy solo existe la de producción), claves de proveedores de IA con límite de
+tokens por minuto, y cada archivo con IA puede fallar por ese límite y no por un error del código. Para lanzarlas solas en cada subida hace
+falta decidir antes **dónde** corren la base y el modelo (un proyecto de Supabase de pruebas y claves propias). El flujo manual ya está listo
+para eso: basta con apuntar los secretos a esa base.
+
+Secretos que pide `e2e.yml`: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`, las claves de IA (`GEMINI_API_KEY`,
+`GROQ_API_KEY`, `CEREBRAS_API_KEY`, `OPENROUTER_API_KEY`), opcionalmente `E2E_*_EMAIL` / `E2E_*_PASSWORD` de los cuatro usuarios de prueba, y
+`BACKEND_REPO_TOKEN` solo si el repositorio del backend es privado. El captcha queda desactivado a propósito (sin `TURNSTILE_SECRET_KEY`).
+
+Qué está probado y qué no: el CI se reprodujo en un clon limpio con Node 22 (la versión del flujo). El flujo manual de e2e **no se ha
+ejecutado en GitHub** (hace falta crear los secretos); sus pasos se comprobaron por separado y el YAML es válido.
+
 ## Datos
 
 - Las pruebas crean datos marcados `E2E-<sello>` y los borran con `scripts/e2e-cleanup.mjs` del backend (el ejecutor por tandas lo hace

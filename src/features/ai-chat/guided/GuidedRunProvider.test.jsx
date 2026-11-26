@@ -67,7 +67,9 @@ describe('Logi guiado: motor de ejecución', () => {
     expect(apiService.post).toHaveBeenCalledWith('/ai-agent/actions/act-1/confirm');
     expect(out.result.result.message).toMatch(/TRK-9/);
     expect(events).toContain(GUIDED_EVENTS.changed); // la página refresca su lista
-    expect(screen.queryByText(/trabajando por ti/i)).not.toBeInTheDocument(); // todo vuelve a la normalidad
+    // todo vuelve a la normalidad: el aviso se quita en un redibujado POSTERIOR a que termina la acción, así que se espera
+    // (comprobarlo al instante competía con React y fallaba con la máquina cargada)
+    await waitFor(() => expect(screen.queryByText(/trabajando por ti/i)).not.toBeInTheDocument());
   });
 
   it('«Enséñame» (demo): hace todo lo visible pero NO confirma ni guarda nada, y la acción sigue pendiente', async () => {
