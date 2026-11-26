@@ -21,6 +21,10 @@ const apiService = {
   proposeFromDocument: (body) => api.post('/ai-agent/documents/propose', body),
   // Avisos proactivos de Logi (solo personal) y eventos de uso para las métricas (fire-and-forget, ver logiEvents.js)
   getLogiAlerts: () => api.get('/ai-agent/alerts'),
+  // Avisos con la pestaña cerrada (Web Push): configuración del servidor, activar y desactivar en este navegador
+  getPushConfig: () => api.get('/notifications/config'),
+  subscribePush: (subscription) => api.post('/notifications/subscribe', subscription),
+  unsubscribePush: (body) => api.post('/notifications/unsubscribe', body),
   trackLogiEvent: (body) => api.post('/ai-agent/logi-events', body),
   getAiUsage: (days = 7) => api.get('/ai-agent/usage', { params: { days } }),
   getRoutes: () => api.get('/logistics/routes'),

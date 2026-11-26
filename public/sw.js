@@ -13,6 +13,10 @@ const META_STORE = 'meta';
 const SYNC_TAG = 'flush-gps-queue';
 const BATCH_SIZE = 200;
 
+// Avisos con la pestaña cerrada: la lógica pura vive en push-handlers.js (con pruebas). Si no se pudiera cargar, SOLO esa función se apaga:
+// la cola de puntos GPS de los conductores (lo importante de este service worker) sigue funcionando.
+try { importScripts('/push-handlers.js'); } catch (e) { /* sin avisos con la pestaña cerrada */ }
+
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 
@@ -108,4 +112,35 @@ async function flushQueue() {
 
 self.addEventListener('sync', (event) => {
   if (event.tag === SYNC_TAG) event.waitUntil(flushQueue());
+});
+
+// ---------------------------------------------------------------- avisos con la pestaña cerrada (Web Push)
+// El servidor envía el título de un aviso de Logi (ver LogisticaSPABackend/src/modules/notifications). Es voluntario: solo llega a quien
+// lo activó en su navegador. Si hay una pestaña a la vista no se muestra nada: la propia aplicación ya muestra el aviso.
+self.addEventListener('push', (event) => {
+  if (!self.LogiPush) return;
+  const data = self.LogiPush.parsePayload(event.data ? event.data.text() : '');
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+      if (!self.LogiPush.shouldShow(windows)) return undefined;
+      return self.registration.showNotification(data.title, { body: data.body, tag: data.tag, renotify: false, data: { url: data.url } });
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  if (!self.LogiPush) return;
+  const url = self.LogiPush.safeUrl(event.notification.data && event.notification.data.url);
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (windows) => {
+      const open = windows.find((w) => new URL(w.url).origin === self.location.origin);
+      if (open) {
+        await open.focus();
+        if ('navigate' in open) { try { await open.navigate(url); } catch (e) { /* la pestaña ya está abierta: basta con enfocarla */ } }
+        return undefined;
+      }
+      return self.clients.openWindow(url);
+    })
+  );
 });

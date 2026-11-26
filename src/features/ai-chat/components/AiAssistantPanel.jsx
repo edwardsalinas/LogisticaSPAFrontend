@@ -1,5 +1,5 @@
 ﻿import { useEffect, useRef, useState } from 'react';
-import { Activity, BellRing, GraduationCap, History, Mic, X } from 'lucide-react';
+import { Activity, BellRing, GraduationCap, History, Mic, Smartphone, X } from 'lucide-react';
 import Skeleton from '../../../components/atoms/Skeleton';
 import AiSuggestionButtons from './AiSuggestionButtons';
 import Announcer from './Announcer';
@@ -15,6 +15,7 @@ import { setEnabled } from '../alerts/alertPolicy';
 import { setWakeEnabled, useWakeEnabled } from '../wakePref';
 import { getRecognitionClass } from '../voice';
 import useAssistantChat from '../useAssistantChat';
+import usePushNotifications from '../usePushNotifications';
 import { introForRole, suggestionsForEntity, suggestionsForRole, suggestionsForView } from '../suggestions';
 import { usePageEntity, usePageView } from '../pageContext';
 import { prefersReducedMotion } from '../voice';
@@ -47,6 +48,7 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = nu
   const alertPrefs = useAlertPrefs();
   const isStaff = OPS.includes(role);
   const wakeOn = useWakeEnabled();
+  const push = usePushNotifications(Boolean(role));
   const canWake = Boolean(getRecognitionClass());
   // el saludo no es parte de la conversación compartida: se muestra solo mientras está vacía
   const messages = chat.messages.length ? chat.messages : [WELCOME_MESSAGE];
@@ -178,6 +180,23 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = nu
             >
               <BellRing size={13} aria-hidden="true" /> {alertPrefs.enabled ? 'Avisos de Logi: sí' : 'Avisos de Logi: no'}
             </button>
+          )}
+          {role && (push.status === 'on' || push.status === 'off') && (
+            <button
+              type="button"
+              onClick={push.toggle}
+              disabled={push.busy}
+              aria-pressed={push.status === 'on'}
+              title="Con esto activado, el navegador te muestra el aviso más importante de Logi aunque cierres esta pestaña: como mucho uno por hora y solo con el título (sin códigos ni nombres). El navegador te pedirá permiso. Puedes apagarlo cuando quieras."
+              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-surface-200 bg-white px-3 py-1.5 text-xs font-semibold text-surface-700 transition-colors hover:bg-surface-50 disabled:opacity-60"
+            >
+              <Smartphone size={13} aria-hidden="true" /> {push.status === 'on' ? 'Con la pestaña cerrada: sí' : 'Con la pestaña cerrada: no'}
+            </button>
+          )}
+          {role && push.status === 'denied' && (
+            <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-surface-200 bg-surface-50 px-3 py-1.5 text-xs font-semibold text-surface-500" title="Bloqueaste las notificaciones de este sitio. Para activarlas, cambia el permiso desde el candado de la barra de direcciones.">
+              <Smartphone size={13} aria-hidden="true" /> Notificaciones bloqueadas en el navegador
+            </span>
           )}
         </div>
       </div>
