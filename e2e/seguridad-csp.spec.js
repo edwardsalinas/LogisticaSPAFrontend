@@ -61,3 +61,22 @@ test('un script en línea inyectado en la página NO se ejecuta y el navegador l
   expect(v.some((x) => x.startsWith('script-src'))).toBe(true);
   expect(v.some((x) => x.startsWith('img-src') && x.includes('sitio-ajeno'))).toBe(true);
 });
+
+test('con la política activa el service worker se registra y carga su script de avisos (si se bloqueara, se caería también la cola de puntos GPS)', async ({ page, request, baseURL }) => {
+  test.setTimeout(120_000);
+  const head = await request.get(baseURL);
+  test.skip(!head.headers()['content-security-policy'], 'este servidor no envía política de contenido');
+  await page.addInitScript(WATCH);
+  await login(page, 'driver');
+  await openScreen(page, '/', (pg) => pg.locator('main, #root').first());
+  const info = await page.evaluate(async () => {
+    const reg = await navigator.serviceWorker.ready;
+    const res = await fetch('/push-handlers.js');
+    return { active: Boolean(reg.active), scope: reg.scope, handlers: res.ok, type: res.headers.get('content-type') };
+  });
+  expect(info.active).toBe(true);
+  expect(info.handlers).toBe(true);
+  expect(info.type).toMatch(/javascript/);
+  const violations = (await page.evaluate(() => window.__csp ?? [])).filter((v) => v !== 'script-src ← eval');
+  expect(violations, violations.join('\n')).toEqual([]);
+});

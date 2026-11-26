@@ -23,6 +23,10 @@ const apiService = {
   getLogiAlerts: () => api.get('/ai-agent/alerts'),
   // Remitentes y destinatarios frecuentes (memoria de uso) para que la voz reconozca nombres conocidos
   getLogiContacts: () => api.get('/ai-agent/contacts'),
+  // Avisos con la pestaña cerrada (Web Push): configuración del servidor, activar y desactivar en este navegador
+  getPushConfig: () => api.get('/notifications/config'),
+  subscribePush: (subscription) => api.post('/notifications/subscribe', subscription),
+  unsubscribePush: (body) => api.post('/notifications/unsubscribe', body),
   trackLogiEvent: (body) => api.post('/ai-agent/logi-events', body),
   getAiUsage: (days = 7) => api.get('/ai-agent/usage', { params: { days } }),
   getRoutes: () => api.get('/logistics/routes'),
