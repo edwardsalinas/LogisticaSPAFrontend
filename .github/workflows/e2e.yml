@@ -1,0 +1,128 @@
+name: E2E manual (sistema real)
+
+# Pruebas de extremo a extremo con el navegador, el backend, la BASE DE DATOS y el MODELO DE IA reales. Solo se lanzan A MANO
+# (Actions → «E2E manual (sistema real)» → Run workflow) y piden una confirmación escrita, porque:
+#   - usan la base de datos de los secretos: crean y borran datos marcados E2E-<sello> (nunca borran por patrón amplio);
+#   - gastan cuota del plan gratuito de los proveedores de IA (límite de tokens por minuto);
+#   - las pruebas con IA pueden fallar por ese límite y no por un error del código (el ejecutor reintenta y marca «inestable»).
+#
+# Antes de usarlo la primera vez, en Settings → Secrets and variables → Actions, crear los secretos de la lista «env» del paso del backend.
+# Se recomienda apuntarlos a una base de datos de PRUEBAS, no a la de producción. BACKEND_REPO_TOKEN solo hace falta si el repositorio
+# del backend es privado (un token con permiso de lectura de ese repositorio).
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmar:
+        description: 'Escribe SI para confirmar: usa la base de datos y el modelo de IA de los secretos y crea/borra datos de prueba E2E-<sello>'
+        required: true
+        default: 'NO'
+      archivos:
+        description: 'Archivos a correr, separados por espacio, sin la ruta ni «.spec.js» (vacío = todos). Ej: seguridad-api lifecycle'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+# Nunca dos corridas a la vez contra la misma base de datos
+concurrency:
+  group: e2e-sistema-real
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    name: Extremo a extremo
+    if: ${{ inputs.confirmar == 'SI' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Backend (código)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/LogisticaSPABackend
+          path: backend
+          token: ${{ secrets.BACKEND_REPO_TOKEN || github.token }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Backend (instalar y arrancar con límites de pruebas)
+        working-directory: backend
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          LLM_PROVIDER: ${{ secrets.LLM_PROVIDER || 'gemini' }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          LLM_POOL: ${{ secrets.LLM_POOL || 'gemini,groq,cerebras,openrouter' }}
+        run: |
+          set -eu
+          # El captcha (Turnstile) queda desactivado a propósito: sin TURNSTILE_SECRET_KEY el servidor no lo exige.
+          {
+            echo "PORT=3000"
+            echo "NODE_ENV=development"
+            echo "CORS_ORIGIN=http://localhost:5173"
+            echo "AUTH_ALLOW_USER_METADATA_ROLE=false"
+            for v in SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY SUPABASE_ANON_KEY LLM_PROVIDER GEMINI_API_KEY GROQ_API_KEY CEREBRAS_API_KEY OPENROUTER_API_KEY LLM_POOL; do
+              val="$(printenv "$v" || true)"
+              # una variable vacía (secreto sin definir) no se escribe: el servidor la trataría como una clave vacía
+              if [ -n "$val" ]; then printf '%s=%s\n' "$v" "$val"; fi
+            done
+          } > .env
+          npm ci --ignore-scripts
+          nohup npm run start:e2e > ../backend.log 2>&1 &
+          for i in $(seq 1 40); do curl -fsS http://localhost:3000/health && exit 0; sleep 3; done
+          echo "El backend no arrancó:"; tail -n 40 ../backend.log; exit 1
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - name: Frontend (servidor de desarrollo)
+        run: |
+          set -eu
+          nohup npm run dev > dev.log 2>&1 &
+          for i in $(seq 1 40); do curl -fsS http://localhost:5173 >/dev/null && exit 0; sleep 3; done
+          echo "El frontend no arrancó:"; tail -n 40 dev.log; exit 1
+
+      - name: Pruebas de extremo a extremo (por tandas)
+        env:
+          # los usuarios de prueba; si no se definen, se usan los de e2e/users.js
+          E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+          E2E_OPERATOR_EMAIL: ${{ secrets.E2E_OPERATOR_EMAIL }}
+          E2E_OPERATOR_PASSWORD: ${{ secrets.E2E_OPERATOR_PASSWORD }}
+          E2E_DRIVER_EMAIL: ${{ secrets.E2E_DRIVER_EMAIL }}
+          E2E_DRIVER_PASSWORD: ${{ secrets.E2E_DRIVER_PASSWORD }}
+          E2E_CLIENT_EMAIL: ${{ secrets.E2E_CLIENT_EMAIL }}
+          E2E_CLIENT_PASSWORD: ${{ secrets.E2E_CLIENT_PASSWORD }}
+          ARCHIVOS: ${{ inputs.archivos }}
+        # ARCHIVOS va por variable de entorno (no dentro del texto del comando): así lo escrito en el formulario no se ejecuta como código
+        run: npm run e2e:tandas -- $ARCHIVOS
+
+      # La limpieza de datos E2E-<sello> la hace el ejecutor tras cada archivo; esto la repite por si una corrida se cortó a medias
+      - name: Limpieza final de datos de prueba
+        if: always()
+        working-directory: backend
+        run: |
+          for f in ../e2e-results/created*.json; do
+            [ -f "$f" ] && node --env-file=.env scripts/e2e-cleanup.mjs "$f" || true
+          done
+
+      - name: Guardar resultados (resumen y capturas de lo que falló)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-resultados
+          path: |
+            e2e-tandas.log
+            e2e-results/**/*.png
+            e2e-results/**/*.md
+          if-no-files-found: ignore
+          retention-days: 14

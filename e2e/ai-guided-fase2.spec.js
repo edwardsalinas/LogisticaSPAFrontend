@@ -3,11 +3,17 @@ import { writeFileSync } from 'node:fs';
 import { login } from './helpers.js';
 
 /**
- * «Que Logi lo haga», fase 2 (asignar un paquete a un viaje y registrar un evento), con el backend, Supabase y Gemini reales.
+ * «Que Logi lo haga», fase 2 (asignar un paquete a un viaje y registrar un evento), con el backend y Supabase reales.
  * Logi lleva a cabo la acción a la vista de todos y se comprueba el resultado real en la API:
  *  - asignar: el paquete queda en el viaje pedido;
  *  - registrar evento: el paquete pasa al estado pedido.
  * El paquete de prueba lleva la marca E2E-<sello> (ids en e2e-results/created-guided2.json, ver e2e-cleanup).
+ *
+ * Qué se prueba aquí y qué NO: esta prueba verifica la COREOGRAFÍA (Logi llena el formulario a la vista, el usuario confirma y el servidor
+ * aplica el cambio). La propuesta la prepara el servidor REAL por los mismos endpoints de los botones «Preparar…» (sin modelo de lenguaje);
+ * solo se reemplaza la respuesta del chat para que la tarjeta aparezca. Antes la tarjeta dependía de que el modelo gratuito la pidiera, y
+ * fallaba por su límite de uso o porque a veces dice «la preparé» sin prepararla: eso NO es un defecto de la coreografía. Que el modelo
+ * convierta una frase en una propuesta se prueba aparte, con el modelo real (ai-actions, ai-acciones-flota y ai-voz-*).
  */
 const STAMP = Date.now();
 const TAG = `E2E-${STAMP}`;
@@ -19,32 +25,26 @@ const state = {};
 
 test.describe.configure({ mode: 'serial' });
 
-/** Pregunta en el panel del asistente y devuelve la propuesta (la respuesta llega en vivo: se lee el evento «final»). */
-const askOnce = async (page, question) => {
-  const [response] = await Promise.all([
-    page.waitForResponse((r) => r.url().includes('/ai-agent/chat') && r.request().method() === 'POST', { timeout: 120_000 }),
-    (async () => {
-      await page.getByLabel(/mensaje para el asistente/i).fill(question);
-      await page.getByRole('button', { name: /^enviar$/i }).click();
-    })(),
-  ]);
-  const events = (await response.text()).split(/\r?\n/).filter((l) => l.startsWith('data: ')).map((l) => JSON.parse(l.slice(6)));
-  let body = events.find((e) => e.type === 'final');
-  // sin «final»: se dice qué llegó en su lugar (p. ej. un evento «error» del servidor por el límite del proveedor de IA)
-  if (!body) body = undefined;
-  const failure = events.find((e) => e.type === 'error');
-  return { body, failure, action: body?.attachments?.find((a) => a.kind === 'action_proposal')?.action };
-};
-
 /**
- * Igual que askOnce, pero si el servidor dice que hay demasiadas consultas (el plan gratuito del proveedor de IA limita los tokens
- * por minuto y una propuesta de varios paquetes es una consulta pesada), espera un minuto y repite UNA vez, como haría una persona.
+ * Pide la propuesta al servidor real (sin modelo) y hace que el chat la muestre como si el asistente la hubiera preparado: la respuesta del
+ * chat en vivo se sustituye por un evento «final» con esa misma propuesta. Devuelve la acción para comprobarla.
  */
-const askForProposal = async (page, question) => {
-  const first = await askOnce(page, question);
-  if (first.body || !/muchas consultas/i.test(first.failure?.message ?? '')) return first;
-  await page.waitForTimeout(65_000);
-  return askOnce(page, question);
+const proposeViaServer = async (page, ctx, path, data, question) => {
+  const res = await ctx.request.post(`${API}${path}`, { headers: H, data });
+  expect(res.status(), `el servidor debía preparar la propuesta: ${await res.text()}`).toBe(200);
+  const proposal = (await res.json()).data;
+  expect(proposal.kind).toBe('action_proposal');
+  await page.route('**/ai-agent/chat/stream', (route) => route.fulfill({
+    status: 200,
+    headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
+    body: `data: ${JSON.stringify({ type: 'final', response: 'Preparé la propuesta. Revísala y confírmala.', attachments: [proposal], model: 'servidor', conversation_id: null })}
+
+`,
+  }));
+  await page.getByLabel(/mensaje para el asistente/i).fill(question);
+  await page.getByRole('button', { name: /^enviar$/i }).click();
+  await expect(page.getByRole('button', { name: /que logi lo haga/i })).toBeVisible({ timeout: 30_000 });
+  return proposal.action;
 };
 
 const packageNow = async (ctx) => {
@@ -85,13 +85,13 @@ test('1. Logi asigna el paquete al viaje a la vista de todos', async ({ browser 
   await page.goto('/dashboard');
   await page.getByRole('button', { name: /abrir asistente/i }).click();
 
-  const { body, action, failure } = await askForProposal(page, `Prepara la asignación del paquete ${state.code} al viaje de La Paz a Municipio Caracollo de mañana para que yo la confirme`);
-  expect(action, `el asistente debía proponer asignar. Respuesta: ${body?.response ?? (failure ? 'error del servidor: ' + failure.message : 'sin respuesta')}`).toBeTruthy();
+  const action = await proposeViaServer(page, ctx, '/ai-agent/suggestions/assign', { route_ref: state.route.id, codes: [state.code] }, `Prepara la asignación del paquete ${state.code}`);
   expect(action.type).toBe('assign_package');
   expect(action.ui.fill.form).toBe('assignment');
   expect(action.ui.fill.values.items.map((i) => i.tracking_code)).toEqual([state.code]);
   expect(action.ui.fill.values.route_text).toBe('La Paz → Municipio Caracollo');
-  const chosenRouteId = action.ui.fill.values.route_id; // el viaje que eligió el asistente entre los planeados
+  const chosenRouteId = action.ui.fill.values.route_id;
+  expect(chosenRouteId).toBe(state.route.id);
   expect((await packageNow(ctx)).route_id, 'la propuesta no asigna nada todavía').toBeFalsy();
 
   await page.getByRole('button', { name: /que logi lo haga/i }).click();
@@ -114,8 +114,7 @@ test('2. Logi registra un evento a la vista de todos', async ({ browser }) => {
   await page.goto('/dashboard');
   await page.getByRole('button', { name: /abrir asistente/i }).click();
 
-  const { body, action, failure } = await askForProposal(page, `Registra que el paquete ${state.code} está en agencia`);
-  expect(action, `el asistente debía proponer el evento. Respuesta: ${body?.response ?? (failure ? 'error del servidor: ' + failure.message : 'sin respuesta')}`).toBeTruthy();
+  const action = await proposeViaServer(page, ctx, '/ai-agent/suggestions/event', { codes: [state.code], status: 'en_agencia' }, `Registra que el paquete ${state.code} está en agencia`);
   expect(action.type).toBe('register_tracking_event');
   expect(action.ui.fill.form).toBe('event');
   expect(action.ui.fill.values.status).toBe('en_agencia');
@@ -153,8 +152,7 @@ test('3. con más de 3 paquetes Logi muestra los primeros y asigna todos con una
 
   await page.goto('/dashboard');
   await page.getByRole('button', { name: /abrir asistente/i }).click();
-  const { body, action, failure } = await askForProposal(page, `Prepara la asignación de los paquetes ${codes.map((c) => c.code).join(', ')} al viaje de La Paz a Municipio Caracollo de mañana para que yo la confirme`);
-  expect(action, `el asistente debía proponer asignar. Respuesta: ${body?.response ?? (failure ? 'error del servidor: ' + failure.message : 'sin respuesta')}`).toBeTruthy();
+  const action = await proposeViaServer(page, ctx, '/ai-agent/suggestions/assign', { route_ref: state.route.id, codes: codes.map((c) => c.code) }, `Prepara la asignación de los paquetes ${codes.map((c) => c.code).join(', ')}`);
   expect(action.type).toBe('assign_package');
   expect(action.ui.fill.values.items).toHaveLength(5); // más de 3: se ofrece igual y Logi hace el resto de una vez
   const routeId = action.ui.fill.values.route_id;

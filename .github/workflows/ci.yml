@@ -1,14 +1,28 @@
 name: Frontend CI
 
+# Corre en cada push y cada pull request a main o develop. NO usa secretos ni el backend: las pruebas unitarias usan datos simulados.
+# Las pruebas de extremo a extremo (navegador real + backend + base de datos + modelo de IA) corren aparte, a mano, en el flujo
+# «E2E manual (sistema real)» (e2e.yml): usan la base de datos real y por eso no se lanzan solas en cada subida.
+
 on:
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
 
+# Una subida nueva a la misma rama cancela la corrida anterior (no se acumulan)
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   test:
+    name: Pruebas y compilación
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js
@@ -21,3 +35,22 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+      # No ejecuta las pruebas de extremo a extremo (necesitan backend y base de datos), pero comprueba que TODAS se pueden cargar:
+      # un error de sintaxis o una importación rota en e2e/ se detecta aquí y no el día que se corran a mano.
+      - name: Las pruebas e2e se pueden cargar
+        run: npx playwright test --list
+
+  dependencias:
+    name: Vulnerabilidades en dependencias
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      # Solo lo que se publica (sin herramientas de desarrollo). Falla con vulnerabilidades ALTAS o CRÍTICAS.
+      - name: Auditoría de dependencias de producción
+        run: npm audit --omit=dev --audit-level=high
