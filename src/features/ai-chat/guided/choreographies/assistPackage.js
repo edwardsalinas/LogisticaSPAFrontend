@@ -101,18 +101,18 @@ export default async function assistPackage(ctx, io) {
 
     if (!ctx.getForm('package')) {
       if (window.location.pathname !== LIST_PATH) ctx.navigate(LIST_PATH);
-      const open = await ctx.waitFor(() => ctx.findVisible('[data-logi="nuevo-paquete"]'), 10000);
+      const open = await ctx.waitFor(() => ctx.findVisible('[data-logi="nuevo-paquete"]'), 25000); // la pantalla puede tardar en cargar (conexión lenta)
       await ctx.pointAt(open);
       await ctx.press(open);
     }
-    const form = await ctx.waitFor(() => ctx.getForm('package'), 8000);
+    const form = await ctx.waitFor(() => ctx.getForm('package'), 20000);
 
     const contacts = await loadContacts(io);
     const knownPhone = {}; // teléfono guardado del destinatario reconocido
     const values = {};
     for (const step of STEPS) {
       if (step.prepare) { step.prepare(form); await ctx.sleep(400); } // el formulario dibuja los campos nuevos
-      const el = await ctx.waitFor(() => form.getElement(step.field), 4000);
+      const el = await ctx.waitFor(() => form.getElement(step.field), 10000);
       // El destinatario ya era conocido y tenía teléfono: no se vuelve a preguntar; se escribe a la vista y queda en el resumen que se confirma
       if (step.field === 'recipient_phone' && knownPhone.value) {
         values.recipient_phone = knownPhone.value;
