@@ -25,7 +25,7 @@ const PHASE_TEXT = {
  * «sí, hazlo» (con manos libres): Logi lee el resumen, pregunta, y al oír el «sí» cierra el chat de voz y lo hace en pantalla.
  * Entregar y las acciones masivas siguen exigiendo el clic en "Confirmar". La frase de confirmación es prudente: ver voiceConfirm.js.
  */
-export default function VoiceMode({ chat, onClose, compact = false, onExpand, onCompact, initialText = '', wake = false }) {
+export default function VoiceMode({ chat, onClose, compact = false, onExpand, onCompact, onCommand, initialText = '', wake = false }) {
   const { send, loading, messages } = chat;
   const synth = useSpeechSynthesis();
   const guided = useGuidedRun(); // null fuera del layout: sin Logi no hay confirmación por voz
@@ -33,7 +33,7 @@ export default function VoiceMode({ chat, onClose, compact = false, onExpand, on
   const pendingRef = useRef(null);
   const confirmTries = useRef(0);
   const latest = useRef({});
-  latest.current = { chat, guided, onClose };
+  latest.current = { chat, guided, onClose, onCommand };
   const setPendingAction = (action) => { pendingRef.current = action; setPending(action); };
   const [handsFree, setHandsFree] = useState(true);
   const [notice, setNotice] = useState(null);
@@ -120,6 +120,13 @@ export default function VoiceMode({ chat, onClose, compact = false, onExpand, on
         const run = await g.start(proposal, { aloud: true });
         applyGuidedOutcome({ out: run, action: proposal, chat: c });
       }
+      return;
+    }
+    // ¿es una orden de la aplicación («llévame a Viajes», «cierra»)? Se atiende al instante y en voz alta, sin consulta al asistente
+    const handled = latest.current.onCommand?.(text);
+    if (handled) {
+      if (handled.close) synth.speak(handled.say, { onEnd: () => latest.current.onClose() });
+      else synth.speak(handled.say, { onEnd: listenAgain });
       return;
     }
     const result = await send(text, { voice: true });
@@ -283,7 +290,7 @@ export default function VoiceMode({ chat, onClose, compact = false, onExpand, on
           <input type="checkbox" checked={handsFree} onChange={(e) => setHandsFree(e.target.checked)} className="h-4 w-4 rounded" />
           Manos libres
         </label>
-        <p className="mt-1 text-[11px] leading-snug text-sky-200/70 max-sm:hidden">Prueba: «ayúdame a crear un paquete». Chrome procesa el audio en servidores de Google; el asistente solo recibe el texto.</p>
+        <p className="mt-1 text-[11px] leading-snug text-sky-200/70 max-sm:hidden">Prueba: «ayúdame a crear un paquete» o «llévame a Viajes». Chrome procesa el audio en servidores de Google; el asistente solo recibe el texto.</p>
       </section>,
       document.body
     );

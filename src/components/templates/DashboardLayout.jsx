@@ -95,7 +95,7 @@ function DashboardLayout() {
     <div className="app-shell flex min-h-screen bg-[radial-gradient(circle_at_top,rgba(19,127,236,0.08),transparent_34%),linear-gradient(180deg,#f5f8fc_0%,#eef3f9_100%)]">
       <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
-      <VoiceHost />
+      <VoiceHost onLogiWalk={setLogiWalks} />
       <WakeWordHost />
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col lg:pl-[17rem]">

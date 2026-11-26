@@ -1,20 +1,29 @@
 import { act, cleanup, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import VoiceHost from './VoiceHost';
 import { voiceDock } from '../voiceDock';
+import { getPageView, requestTab, setPageView } from '../pageContext';
+import { getPrefs, savePrefs, _resetPrefsCache } from '../alerts/alertPrefs';
 
 let aiMode = false;
+let role = 'admin';
+let lastProps = {};
 vi.mock('../../../app/AiModeContext', () => ({ useAiMode: () => ({ aiMode }) }));
+vi.mock('../../../app/useRole', () => ({ default: () => ({ role }), useRole: () => ({ role }) }));
 vi.mock('../useAssistantChat', () => ({ default: () => ({ messages: [], send: vi.fn(), loading: false }) }));
 vi.mock('./VoiceMode', () => ({
-  default: ({ compact, initialText, wake }) => <div data-testid="voice" data-compact={String(compact)} data-initial={initialText} data-wake={String(wake)} />,
+  default: (props) => {
+    lastProps = props;
+    return <div data-testid="voice" data-compact={String(props.compact)} data-initial={props.initialText} data-wake={String(props.wake)} />;
+  },
 }));
 
-const at = (path) => render(<MemoryRouter initialEntries={[path]}><VoiceHost /></MemoryRouter>);
+function Where() { const l = useLocation(); return <p data-testid="where">{l.pathname}</p>; }
+const at = (path, extra = {}) => render(<MemoryRouter initialEntries={[path]}><Where /><VoiceHost {...extra} /></MemoryRouter>);
 
 describe('VoiceHost: barra compacta o pantalla completa', () => {
-  beforeEach(() => { aiMode = false; window.sessionStorage.clear(); });
+  beforeEach(() => { aiMode = false; role = 'admin'; lastProps = {}; window.sessionStorage.clear(); });
   afterEach(() => { cleanup(); act(() => voiceDock.close()); });
 
   it('cerrado no pinta nada', () => {
@@ -61,5 +70,79 @@ describe('VoiceHost: barra compacta o pantalla completa', () => {
     expect(voiceDock.hasHost()).toBe(true);
     view.unmount();
     expect(voiceDock.hasHost()).toBe(false);
+  });
+});
+
+describe('VoiceHost: órdenes de voz', () => {
+  beforeEach(() => { aiMode = false; role = 'admin'; lastProps = {}; window.sessionStorage.clear(); _resetPrefsCache(); setPageView(null); });
+  afterEach(() => { cleanup(); act(() => voiceDock.close()); });
+
+  const run = (text) => { let out; act(() => { out = lastProps.onCommand(text); }); return out; };
+  const open = (path = '/dashboard', extra) => { const v = at(path, extra); act(() => voiceDock.open()); return v; };
+
+  it('«llévame a Viajes» navega y responde en voz alta', () => {
+    open();
+    expect(run('llévame a Viajes')).toEqual({ say: 'Voy a Viajes.' });
+    expect(screen.getByTestId('where').textContent).toBe('/logistics/routes');
+  });
+
+  it('una pregunta NO es una orden: devuelve null y no navega (la atiende el asistente)', () => {
+    open();
+    expect(run('muéstrame los paquetes pendientes de María')).toBeNull();
+    expect(run('¿qué viajes hay mañana?')).toBeNull();
+    expect(screen.getByTestId('where').textContent).toBe('/dashboard');
+  });
+
+  it('«muéstrame los paquetes entregados» navega y deja pedida la pestaña del histórico', () => {
+    open();
+    run('muéstrame los paquetes entregados');
+    expect(screen.getByTestId('where').textContent).toBe('/logistics/packages');
+    expect(JSON.parse(window.sessionStorage.getItem('logisticaspa:filtros:paquetes:pestana'))).toBe('delivered');
+  });
+
+  it('una pantalla que ya está abierta recibe el pedido de pestaña al momento', () => {
+    open('/fleet');
+    const seen = [];
+    const on = (e) => seen.push(e.detail);
+    window.addEventListener('logi:pestana', on);
+    run('muéstrame los conductores');
+    window.removeEventListener('logi:pestana', on);
+    expect(seen).toEqual([{ page: 'fleet', value: 'drivers' }]);
+  });
+
+  it('cada rol navega solo a lo suyo; lo demás se explica y no se navega', () => {
+    role = 'client';
+    open('/logistics/packages');
+    expect(run('abre la flota')).toEqual({ say: 'No tienes la Flota disponible con tu rol.' });
+    expect(screen.getByTestId('where').textContent).toBe('/logistics/packages');
+  });
+
+  it('«cierra» responde y pide cerrar el chat de voz después de decirlo', () => {
+    open();
+    expect(run('gracias, cierra')).toEqual({ say: 'Hasta luego.', close: true });
+  });
+
+  it('«quédate quieto» y «camina» llaman a pausar o reanudar el paseo de Logi', () => {
+    const onLogiWalk = vi.fn();
+    open('/dashboard', { onLogiWalk });
+    run('quédate quieto');
+    run('camina');
+    expect(onLogiWalk.mock.calls).toEqual([[false], [true]]);
+  });
+
+  it('«no me avises» y «avísame» apagan y encienden los avisos de Logi', () => {
+    open();
+    run('no me avises');
+    expect(getPrefs().enabled).toBe(false);
+    run('avísame');
+    expect(getPrefs().enabled).toBe(true);
+  });
+
+  it('en pantalla completa, una orden de navegación pasa a la barra compacta para poder ver la pantalla', () => {
+    window.sessionStorage.setItem('logisticaspa:filtros:asistente:voz-completa', 'true');
+    open('/dashboard');
+    expect(screen.getByTestId('voice').dataset.compact).toBe('false');
+    run('abre los viajes');
+    expect(screen.getByTestId('voice').dataset.compact).toBe('true');
   });
 });

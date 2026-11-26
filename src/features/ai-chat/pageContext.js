@@ -53,6 +53,27 @@ export function useRegisterPageView(tab) {
   }, [tab]);
 }
 
+// ---- órdenes de voz: «muéstrame los paquetes entregados» pide a la pantalla que cambie de pestaña
+const TAB_EVENT = 'logi:pestana';
+// dónde recuerda cada pantalla su pestaña (usePersistentState, por pestaña del navegador): así, si la pantalla aún no está abierta,
+// al abrirse ya empieza en la pedida
+const TAB_STORAGE = { packages: 'logisticaspa:filtros:paquetes:pestana', fleet: 'logisticaspa:filtros:flota:pestana' };
+
+export const requestTab = (page, value) => {
+  try { if (TAB_STORAGE[page]) window.sessionStorage.setItem(TAB_STORAGE[page], JSON.stringify(value)); } catch { /* sin almacenamiento */ }
+  window.dispatchEvent(new CustomEvent(TAB_EVENT, { detail: { page, value } })); // si ya está abierta, cambia al momento
+};
+
+/** Para las pantallas con pestañas: atiende los pedidos de cambio de pestaña (de las órdenes de voz). */
+export function useTabRequests(page, setTab, allowed) {
+  useEffect(() => {
+    const onRequest = (e) => { if (e.detail?.page === page && allowed.includes(e.detail.value)) setTab(e.detail.value); };
+    window.addEventListener(TAB_EVENT, onRequest);
+    return () => window.removeEventListener(TAB_EVENT, onRequest);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setTab y allowed son estables
+  }, [page]);
+}
+
 /** El contexto que viaja con cada consulta al asistente. */
 export const buildChatContext = () => {
   const path = typeof window === 'undefined' ? '' : window.location.pathname;
