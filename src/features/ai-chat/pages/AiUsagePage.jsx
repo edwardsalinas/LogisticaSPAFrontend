@@ -26,7 +26,7 @@ const TOOL_NAMES = {
   get_operations_summary: 'Resumen de la operación', list_packages_needing_attention: 'Qué atender', get_daily_briefing: 'Resumen del día',
   get_fleet_status: 'Estado de la flota', check_fleet_availability: 'Disponibilidad de flota', find_available_trips: 'Viajes con espacio',
   list_routes: 'Listar rutas', get_route_info: 'Datos de una ruta', get_my_deliveries: 'Agenda del conductor', get_analytics_summary: 'Analítica',
-  propose_register_event: 'Proponer evento', propose_deliver_package: 'Proponer entrega', propose_create_package: 'Proponer paquete', propose_assign_package: 'Proponer asignación',
+  propose_register_event: 'Proponer evento', propose_deliver_package: 'Proponer entrega', propose_create_package: 'Proponer paquete', propose_assign_package: 'Proponer asignación', propose_cancel_package: 'Proponer anular paquete', propose_assign_driver: 'Proponer conductor', propose_create_trip: 'Proponer viaje',
 };
 const ROLE_NAMES = { admin: 'Administrador', logistics_operator: 'Operador', driver: 'Conductor', client: 'Cliente' };
 
