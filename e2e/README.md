@@ -34,6 +34,8 @@ Flujos reales en el navegador con el backend, la base de datos (Supabase) y el m
 | `npm run e2e` | Todo de una vez (necesita mucha memoria y no limpia entre archivos). |
 | `npx playwright test e2e/lifecycle.spec.js` | Un archivo. |
 
+**Datos de demostración y conductor libre:** `lifecycle` necesita que el conductor no tenga el viaje de demostración «en tránsito» (si lo tiene, no aparece el botón «Iniciar»), mientras que `ai-pantalla`, `ai-voz-asignar` y `ai-voz-evento` SÍ necesitan la demostración. El ejecutor lo resuelve solo: corre `lifecycle` al final, quita la demostración antes y la vuelve a sembrar al terminar (también si lo interrumpes). Si corres `lifecycle` a mano, quita antes la demostración con `npm run demo:quitar` en el backend y vuelve a sembrarla con `npm run demo:sembrar`.
+
 Un archivo que pasa solo en el reintento se marca **inestable**, no roto: casi siempre es una carga lenta o el límite del proveedor.
 
 ## Corrida automática (CI)

@@ -11,6 +11,7 @@
  *  - Fallos: un archivo que falla se repite UNA vez tras esperar; si pasa en el reintento se marca «inestable» (no «roto»).
  *
  * Requisitos: backend con límites de pruebas (cd ../LogisticaSPABackend && npm run start:e2e) y el frontend (npm run dev).
+ * lifecycle necesita al conductor libre: corre al final y el ejecutor quita y vuelve a sembrar los datos de demostración.
  * El resumen queda en e2e-tandas.log. Variables: E2E_PAUSE_S (pausa tras un archivo con IA, por defecto 60).
  */
 import { spawnSync } from 'node:child_process';
@@ -81,9 +82,33 @@ const run = (file, reuse) => {
   return res;
 };
 
+// Archivos que necesitan al conductor LIBRE: el viaje de demostración que va «en tránsito» lo ocupa y su botón «Iniciar» no aparece
+// (lo vimos el 26/11/2026: lifecycle fallaba con la demostración sembrada). Corren AL FINAL, con la demostración quitada, y el ejecutor la vuelve a
+// sembrar al terminar (también si lo interrumpes) si estaba. Las demás pruebas (ai-pantalla, ai-voz-asignar…) SÍ necesitan la demostración.
+const NEEDS_FREE_DRIVER = new Set(['lifecycle']);
+files.sort((a, b) => (Number(NEEDS_FREE_DRIVER.has(a)) - Number(NEEDS_FREE_DRIVER.has(b))) || a.localeCompare(b));
+
+const seed = (args) => spawnSync(process.execPath, ['--env-file=.env', 'scripts/seed-demo.mjs', ...args], { cwd: BACKEND, encoding: 'utf8' });
+let demoRemoved = false;
+const restoreDemo = () => {
+  if (!demoRemoved) return;
+  demoRemoved = false;
+  const r = seed([]);
+  console.log(r.status === 0 ? '  datos de demostración sembrados de nuevo' : '  ⚠ NO se pudieron sembrar de nuevo los datos de demostración: node --env-file=.env scripts/seed-demo.mjs');
+};
+process.on('exit', restoreDemo);
+process.on('SIGINT', () => process.exit(130));
+
 const rows = [];
 let first = true;
 for (const file of files) {
+  if (NEEDS_FREE_DRIVER.has(file) && !demoRemoved && existsSync(BACKEND)) {
+    const estado = seed(['--estado']).stdout ?? '';
+    if (/presentes/.test(estado)) {
+      demoRemoved = seed(['--remove']).status === 0;
+      console.log(demoRemoved ? '  (se quitaron los datos de demostración: este archivo necesita al conductor libre)' : '  ⚠ no se pudieron quitar los datos de demostración; el archivo puede fallar');
+    }
+  }
   process.stdout.write(`▶ ${file} … `);
   let res = run(file, !first);
   first = false;
@@ -100,6 +125,8 @@ for (const file of files) {
   console.log(`${verdict} — ${res.passed} ok, ${res.failed} fallan, ${res.notRun} sin correr, ${res.skipped} omitidas${res.error ? ` · ${res.error}` : ''}`);
   if (!NO_LLM.has(file) && file !== files[files.length - 1]) sleep(PAUSE_S);
 }
+
+restoreDemo();
 
 const bad = rows.filter((r) => r.verdict === 'FALLA');
 const flaky = rows.filter((r) => r.verdict.startsWith('inestable'));
