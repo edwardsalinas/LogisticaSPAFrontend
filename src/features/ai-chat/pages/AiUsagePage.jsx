@@ -10,7 +10,11 @@ import EmptyState from '../../../components/molecules/EmptyState';
 import ErrorState from '../../../components/molecules/ErrorState';
 
 const RANGES = [{ days: 7, label: '7 días' }, { days: 30, label: '30 días' }];
-const ALERT_TYPE_LABEL = { assign: 'Paquetes sueltos con viaje', delayed: 'Viaje que no salió', no_driver: 'Viaje sin conductor' };
+const ALERT_TYPE_LABEL = {
+  assign: 'Paquetes sueltos con viaje', delayed: 'Viaje que no salió', no_driver: 'Viaje sin conductor',
+  client_delivered: 'Cliente: paquete entregado', client_in_transit: 'Cliente: paquete en camino', client_in_agency: 'Cliente: paquete en agencia', client_incident: 'Cliente: siniestro',
+  driver_depart: 'Conductor: viaje por salir', driver_pending: 'Conductor: entregas pendientes',
+};
 
 const seconds = (ms) => (ms ? `${(ms / 1000).toFixed(1)} s` : '—');
 const compact = (n) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)} M` : n >= 1000 ? `${(n / 1000).toFixed(n >= 10_000 ? 0 : 1)} mil` : String(n ?? 0));

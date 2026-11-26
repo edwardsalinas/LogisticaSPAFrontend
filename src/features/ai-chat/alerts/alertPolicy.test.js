@@ -65,3 +65,34 @@ describe('preferencias: no crecen sin límite', () => {
     expect(muteType(once, 'assign').mutedTypes).toEqual(['assign']);
   });
 });
+
+describe('avisos del cliente y del conductor: en qué pantallas salen', () => {
+  const mk = (type) => ({ id: `${type}:1`, type, severity: 'info' });
+  const prefs = DEFAULT_PREFS;
+
+  it('el cliente los ve en su inicio, su lista de paquetes y el seguimiento; no en pantallas del personal', () => {
+    for (const type of ['client_delivered', 'client_in_transit', 'client_in_agency', 'client_incident']) {
+      for (const path of ['/', '/logistics/packages', '/tracking']) expect(isRelevantPath(type, path)).toBe(true);
+      expect(isRelevantPath(type, '/fleet')).toBe(false);
+      expect(isRelevantPath(type, '/driver')).toBe(false);
+    }
+  });
+
+  it('el conductor los ve en su panel o el inicio, y no mientras mira otra cosa', () => {
+    for (const type of ['driver_depart', 'driver_pending']) {
+      expect(isRelevantPath(type, '/driver')).toBe(true);
+      expect(isRelevantPath(type, '/')).toBe(true);
+      expect(isRelevantPath(type, '/logistics/packages')).toBe(false);
+    }
+  });
+
+  it('las mismas reglas de siempre: uno por hora, sin repetir, y silenciables por tipo', () => {
+    const now = 1_000_000_000_000;
+    const alert = mk('client_in_transit');
+    expect(pickAlert({ alerts: [alert], prefs, now, pathname: '/tracking' })).toEqual(alert);
+    const shown = markShown(prefs, alert, now);
+    expect(pickAlert({ alerts: [alert], prefs: shown, now: now + 1000, pathname: '/tracking' })).toBeNull(); // ya salió
+    expect(pickAlert({ alerts: [mk('client_delivered')], prefs: shown, now: now + 1000, pathname: '/tracking' })).toBeNull(); // menos de 1 hora desde el último
+    expect(pickAlert({ alerts: [alert], prefs: muteType(prefs, 'client_in_transit'), now, pathname: '/tracking' })).toBeNull();
+  });
+});

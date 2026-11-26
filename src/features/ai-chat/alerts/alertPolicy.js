@@ -14,6 +14,14 @@ export const RELEVANT_PATHS = {
   assign: ['/', '/dashboard', '/logistics/packages', '/logistics/routes'],
   delayed: ['/', '/dashboard', '/logistics/routes', '/tracking'],
   no_driver: ['/', '/dashboard', '/logistics/routes'],
+  // cliente: lo que le pasa a sus paquetes (en el inicio, su lista de paquetes o el seguimiento)
+  client_delivered: ['/', '/logistics/packages', '/tracking'],
+  client_in_transit: ['/', '/logistics/packages', '/tracking'],
+  client_in_agency: ['/', '/logistics/packages', '/tracking'],
+  client_incident: ['/', '/logistics/packages', '/tracking'],
+  // conductor: su viaje y sus entregas (su panel o el inicio)
+  driver_depart: ['/', '/driver'],
+  driver_pending: ['/', '/driver'],
 };
 
 export const DEFAULT_PREFS = { enabled: true, mutedTypes: [], snoozed: {}, seen: {}, lastShownAt: 0 };

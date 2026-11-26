@@ -204,7 +204,7 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
   const toggle = useCallback(() => { setSpeech(''); synth.cancel(); onToggle(); }, [onToggle, synth]);
   if (open || working) return null; // abierto, Logi está en el encabezado del chat
 
-  const mood = synth.speaking ? 'talking' : alert ? (alert.type === 'delayed' ? 'worried' : 'unread') : ['confirm', 'thinking', 'unread'].includes(status) ? status : 'idle';
+  const mood = synth.speaking ? 'talking' : alert ? (alert.severity === 'high' ? 'worried' : 'unread') : ['confirm', 'thinking', 'unread'].includes(status) ? status : 'idle';
   const nearRight = (pos.x ?? 0) > window.innerWidth / 2;
   const talkingNow = Boolean(speech) && !alert && mood === 'idle';
   const canSpeak = synth.supported && Boolean(speech) && !alert && status !== 'thinking';

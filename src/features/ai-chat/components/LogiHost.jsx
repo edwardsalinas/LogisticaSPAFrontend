@@ -10,8 +10,6 @@ import { applyGuidedOutcome } from '../guided/outcome';
 import { trackLogi } from '../logiEvents';
 import { getSpeakPref } from '../speakPref';
 
-const OPS = ['admin', 'logistics_operator'];
-
 /**
  * Logi en la pantalla: el compañero que pasea y habla, más los avisos proactivos. Aquí se decide qué pasa al aceptar un aviso:
  *  - «Que Logi lo haga»: el servidor prepara la propuesta (la misma comprobación que el botón «Preparar asignación»), y Logi la
@@ -24,7 +22,7 @@ export default function LogiHost({ role, isAiOpen, assistant, lastReply, wander,
   const guided = useGuidedRun();
   const chat = useContext(ChatContext);
 
-  const alerts = useLogiAlerts({ allowed: OPS.includes(role), pathname: location.pathname, busy: isAiOpen || Boolean(guided?.active) });
+  const alerts = useLogiAlerts({ allowed: Boolean(role), pathname: location.pathname, busy: isAiOpen || Boolean(guided?.active) });
 
   const accept = useCallback(async (alert) => {
     trackLogi('alert_accepted', alert.type);

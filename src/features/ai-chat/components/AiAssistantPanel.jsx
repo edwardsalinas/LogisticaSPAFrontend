@@ -168,12 +168,12 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = nu
               <Mic size={13} aria-hidden="true" /> {wakeOn ? 'Hey Logi: sí' : 'Hey Logi: no'}
             </button>
           )}
-          {isStaff && (
+          {role && (
             <button
               type="button"
               onClick={() => savePrefs(setEnabled(alertPrefs, !alertPrefs.enabled))}
               aria-pressed={alertPrefs.enabled}
-              title="Logi te avisa de excepciones reales (retrasos, paquetes sueltos con viaje, viajes sin conductor), como mucho una vez por hora"
+              title={isStaff ? 'Logi te avisa de excepciones reales (retrasos, paquetes sueltos con viaje, viajes sin conductor), como mucho una vez por hora' : role === 'driver' ? 'Logi te avisa cuando tu viaje está por salir o te quedan entregas, como mucho una vez por hora' : 'Logi te avisa cuando tu paquete sale, llega o tiene un problema, como mucho una vez por hora'}
               className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-surface-200 bg-white px-3 py-1.5 text-xs font-semibold text-surface-700 transition-colors hover:bg-surface-50"
             >
               <BellRing size={13} aria-hidden="true" /> {alertPrefs.enabled ? 'Avisos de Logi: sí' : 'Avisos de Logi: no'}
