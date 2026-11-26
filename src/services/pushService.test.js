@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const api = vi.hoisted(() => ({ getPushConfig: vi.fn(), subscribePush: vi.fn(), unsubscribePush: vi.fn() }));
+const api = vi.hoisted(() => ({ getPushConfig: vi.fn(), subscribePush: vi.fn(), unsubscribePush: vi.fn(), testPush: vi.fn() }));
 vi.mock('./apiService', () => ({ default: api }));
 
-import { _resetResync, disablePush, enablePush, pushStatus, pushSupported, urlBase64ToUint8Array } from './pushService';
+import { _resetResync, disablePush, enablePush, pushStatus, pushSupported, sendTestPush, urlBase64ToUint8Array } from './pushService';
 
 const KEY = 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM';
 const SUB_JSON = { endpoint: 'https://fcm.googleapis.com/fcm/send/abc', keys: { p256dh: 'p'.repeat(20), auth: 'a'.repeat(16) } };
@@ -171,5 +171,20 @@ describe('disablePush', () => {
     expect(api.unsubscribePush).not.toHaveBeenCalled();
     removeBrowser();
     expect(await disablePush()).toBe('unsupported');
+  });
+});
+
+describe('sendTestPush', () => {
+  it('pide la prueba al servidor y devuelve ok', async () => {
+    api.testPush.mockResolvedValue({ success: true, data: { sent: 1 } });
+    expect(await sendTestPush()).toEqual({ ok: true });
+    expect(api.testPush).toHaveBeenCalledTimes(1);
+  });
+
+  it('si falla (sin suscripción, límite, servidor), devuelve el mensaje y NO lanza', async () => {
+    api.testPush.mockRejectedValue(Object.assign(new Error('Primero activa los avisos con la pestaña cerrada en este navegador.'), { status: 404 }));
+    expect(await sendTestPush()).toEqual({ ok: false, message: 'Primero activa los avisos con la pestaña cerrada en este navegador.' });
+    api.testPush.mockRejectedValue(new Error(''));
+    expect(await sendTestPush()).toEqual({ ok: false, message: 'No se pudo enviar la prueba.' });
   });
 });

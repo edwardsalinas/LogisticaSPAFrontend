@@ -1,5 +1,6 @@
 ﻿import { useEffect, useRef, useState } from 'react';
-import { Activity, BellRing, GraduationCap, History, Mic, Smartphone, X } from 'lucide-react';
+import { Activity, BellRing, GraduationCap, History, Mic, Send, Smartphone, X } from 'lucide-react';
+import { toast } from 'sonner';
 import Skeleton from '../../../components/atoms/Skeleton';
 import AiSuggestionButtons from './AiSuggestionButtons';
 import Announcer from './Announcer';
@@ -191,6 +192,21 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = nu
               className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-surface-200 bg-white px-3 py-1.5 text-xs font-semibold text-surface-700 transition-colors hover:bg-surface-50 disabled:opacity-60"
             >
               <Smartphone size={13} aria-hidden="true" /> {push.status === 'on' ? 'Con la pestaña cerrada: sí' : 'Con la pestaña cerrada: no'}
+            </button>
+          )}
+          {role && push.status === 'on' && (
+            <button
+              type="button"
+              onClick={async () => {
+                const out = await push.sendTest();
+                if (out.ok) toast.success('Prueba enviada', { description: 'Cierra esta pestaña o cambia de aplicación: en unos segundos debe aparecer la notificación.' });
+                else toast.error('No se pudo enviar la prueba', { description: out.message });
+              }}
+              disabled={push.testing}
+              title="Envía ahora una notificación de prueba a este navegador, para comprobar que llegan aunque la pestaña esté cerrada."
+              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-surface-200 bg-white px-3 py-1.5 text-xs font-semibold text-surface-700 transition-colors hover:bg-surface-50 disabled:opacity-60"
+            >
+              <Send size={13} aria-hidden="true" /> Enviar prueba
             </button>
           )}
           {role && push.status === 'denied' && (

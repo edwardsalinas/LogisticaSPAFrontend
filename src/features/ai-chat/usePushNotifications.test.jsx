@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const svc = vi.hoisted(() => ({ pushStatus: vi.fn(), enablePush: vi.fn(), disablePush: vi.fn() }));
+const svc = vi.hoisted(() => ({ pushStatus: vi.fn(), enablePush: vi.fn(), disablePush: vi.fn(), sendTestPush: vi.fn() }));
 vi.mock('../../services/pushService', () => svc);
 
 import usePushNotifications from './usePushNotifications';
@@ -68,5 +68,31 @@ describe('usePushNotifications', () => {
     await new Promise((r) => setTimeout(r, 20));
     expect(err).not.toHaveBeenCalled();
     err.mockRestore();
+  });
+
+  it('«Enviar prueba»: marca testing mientras envía y devuelve el resultado para mostrarlo', async () => {
+    svc.pushStatus.mockResolvedValue('on');
+    let finish;
+    svc.sendTestPush.mockImplementation(() => new Promise((r) => { finish = r; }));
+    const { result } = renderHook(() => usePushNotifications());
+    await waitFor(() => expect(result.current.status).toBe('on'));
+    let p;
+    act(() => { p = result.current.sendTest(); });
+    await waitFor(() => expect(result.current.testing).toBe(true));
+    let out;
+    await act(async () => { finish({ ok: true }); out = await p; });
+    expect(out).toEqual({ ok: true });
+    expect(result.current.testing).toBe(false);
+  });
+
+  it('si la prueba falla, devuelve el mensaje y testing vuelve a false', async () => {
+    svc.pushStatus.mockResolvedValue('on');
+    svc.sendTestPush.mockResolvedValue({ ok: false, message: 'Demasiadas pruebas.' });
+    const { result } = renderHook(() => usePushNotifications());
+    await waitFor(() => expect(result.current.status).toBe('on'));
+    let out;
+    await act(async () => { out = await result.current.sendTest(); });
+    expect(out).toEqual({ ok: false, message: 'Demasiadas pruebas.' });
+    expect(result.current.testing).toBe(false);
   });
 });

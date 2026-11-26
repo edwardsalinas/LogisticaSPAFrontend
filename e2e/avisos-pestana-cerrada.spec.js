@@ -92,3 +92,30 @@ test('la pantalla solo ofrece «Con la pestaña cerrada» cuando el servidor pue
   if (!cfg.enabled) await expect(toggle).toHaveCount(0);
   await page.screenshot({ path: 'e2e-results/avisos-pestana-cerrada.png' });
 });
+
+test('«Enviar prueba»: sin sesión 401, sin suscripción 404 con su mensaje, y con una suscripción falsa el servidor intenta de verdad con Google y la limpia', async ({ browser }) => {
+  const anon = await pwRequest.newContext();
+  expect((await anon.post(`${API}/notifications/test`, { headers: H })).status()).toBe(401);
+  await anon.dispose();
+
+  const ctx = await sessionCtx(browser, 'client');
+  const cfg = (await (await ctx.request.get(`${API}/notifications/config`, { headers: H })).json()).data;
+  test.skip(!cfg.enabled, 'la función de avisos está apagada en este servidor');
+
+  const none = await ctx.request.post(`${API}/notifications/test`, { headers: H });
+  expect(none.status()).toBe(404);
+  expect((await none.json()).message).toMatch(/Primero activa los avisos/);
+
+  // una suscripción con claves bien formadas pero que Google no conoce: el servidor la intenta enviar de verdad
+  const crypto = await import('node:crypto');
+  const ecdh = crypto.createECDH('prime256v1'); ecdh.generateKeys();
+  const fake = { endpoint: 'https://fcm.googleapis.com/fcm/send/e2e-prueba-inexistente', keys: { p256dh: ecdh.getPublicKey().toString('base64url'), auth: crypto.randomBytes(16).toString('base64url') } };
+  expect((await ctx.request.post(`${API}/notifications/subscribe`, { headers: H, data: fake })).status()).toBe(201);
+  const res = await ctx.request.post(`${API}/notifications/test`, { headers: H });
+  expect(res.status(), await res.text()).toBe(502); // Google la rechaza: no hay a quién entregar
+  expect(await res.text()).not.toMatch(/fcm|endpoint|statusCode|stack/i);
+  // y nunca queda basura: si Google dijo 404/410 se borró sola; si no, se cancela aquí
+  await ctx.request.post(`${API}/notifications/unsubscribe`, { headers: H, data: { endpoint: fake.endpoint } });
+  const again = await ctx.request.post(`${API}/notifications/test`, { headers: H });
+  expect(again.status()).toBe(404);
+});

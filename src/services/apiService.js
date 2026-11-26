@@ -27,6 +27,7 @@ const apiService = {
   getPushConfig: () => api.get('/notifications/config'),
   subscribePush: (subscription) => api.post('/notifications/subscribe', subscription),
   unsubscribePush: (body) => api.post('/notifications/unsubscribe', body),
+  testPush: () => api.post('/notifications/test'),
   trackLogiEvent: (body) => api.post('/ai-agent/logi-events', body),
   getAiUsage: (days = 7) => api.get('/ai-agent/usage', { params: { days } }),
   getRoutes: () => api.get('/logistics/routes'),

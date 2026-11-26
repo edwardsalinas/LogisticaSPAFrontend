@@ -71,6 +71,16 @@ export const enablePush = async () => {
   }
 };
 
+/** «Enviar prueba»: una notificación de prueba a los navegadores de esta persona. Devuelve { ok, message? }; nunca lanza. */
+export const sendTestPush = async () => {
+  try {
+    await apiService.testPush();
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, message: e?.message || 'No se pudo enviar la prueba.' };
+  }
+};
+
 export const disablePush = async () => {
   if (!pushSupported()) return 'unsupported';
   try {

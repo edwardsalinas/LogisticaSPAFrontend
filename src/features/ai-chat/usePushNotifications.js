@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { disablePush, enablePush, pushStatus } from '../../services/pushService';
+import { disablePush, enablePush, pushStatus, sendTestPush } from '../../services/pushService';
 
 /** El estado de los avisos con la pestaña cerrada en este navegador y cómo cambiarlo. `status` es null mientras se consulta. */
 export default function usePushNotifications(enabled = true) {
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [testing, setTesting] = useState(false);
   const alive = useRef(true);
 
   useEffect(() => {
@@ -24,5 +25,15 @@ export default function usePushNotifications(enabled = true) {
     }
   }, [status]);
 
-  return { status, busy, toggle };
+  // «Enviar prueba»: devuelve { ok, message? } para que la pantalla lo muestre
+  const sendTest = useCallback(async () => {
+    setTesting(true);
+    try {
+      return await sendTestPush();
+    } finally {
+      if (alive.current) setTesting(false);
+    }
+  }, []);
+
+  return { status, busy, toggle, sendTest, testing };
 }
