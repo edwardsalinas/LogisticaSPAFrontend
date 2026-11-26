@@ -18,7 +18,7 @@ Flujos reales en el navegador con el backend, la base de datos (Supabase) y el m
    cd ../LogisticaSPABackend
    npm run start:e2e
    ```
-   El servidor normal limita a 600 solicitudes cada 15 minutos por IP. Una corrida completa hace miles: a mitad de camino las páginas
+   **El ejecutor por tandas se detiene si el backend tiene los límites normales** (en vez de seguir y dar fallos falsos con 429). Si te lo dice, casi siempre hay OTRA copia del backend ya ocupando el puerto 3000: detenla y arranca `npm run start:e2e`. Para seguir igual, `E2E_ALLOW_LOW_LIMITS=1`. El servidor normal limita a 600 solicitudes cada 15 minutos por IP. Una corrida completa hace miles: a mitad de camino las páginas
    reciben «429» y las pruebas fallan sin un error real. `start:e2e` usa `.env.e2e` (límites altos, sin secretos). El límite del chat
    (15 por minuto) y el del proveedor de IA siguen igual: por eso las pruebas con IA se espacian.
 2. **Frontend**: `npm run dev` (http://localhost:5173).

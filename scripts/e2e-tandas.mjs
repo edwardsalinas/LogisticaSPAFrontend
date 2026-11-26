@@ -30,6 +30,32 @@ const all = readdirSync('e2e').filter((f) => f.endsWith('.spec.js')).map((f) => 
 const files = wanted.length ? all.filter((f) => wanted.includes(f)) : all;
 if (!files.length) { console.error('No hay archivos que coincidan.'); process.exit(2); }
 
+// ¿El backend tiene los límites de PRUEBAS? Con los normales (600 solicitudes por IP cada 15 minutos) una corrida completa los agota y fallan
+// archivos enteros con un 429 que NO es un error del producto (pasó el 26/11/2026: otra copia del backend, con los límites normales, ya ocupaba el
+// puerto y «npm run start:e2e» no pudo arrancar). Por eso aquí NO solo se avisa: se detiene, salvo que se pida expresamente seguir.
+const API = process.env.E2E_API_URL || 'http://localhost:3000/api';
+const MIN_API_LIMIT = 5000;
+try {
+  const res = await fetch(`${API}/logistics/packages`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+  const limit = Number((res.headers.get('ratelimit-policy') ?? '').split(';')[0]);
+  if (Number.isFinite(limit) && limit < MIN_API_LIMIT && !process.env.E2E_ALLOW_LOW_LIMITS) {
+    console.error(
+      [
+        '',
+        `El backend en ${API} limita a ${limit} solicitudes cada 15 minutos: una corrida completa lo supera y fallarán archivos sin un error real.`,
+        '  Detén ese backend (puede ser otra copia que ya ocupe el puerto 3000) y arráncalo con los límites de pruebas:',
+        '    cd ../LogisticaSPABackend && npm run start:e2e',
+        '  Para correr igual con los límites normales (por ejemplo un solo archivo corto): E2E_ALLOW_LOW_LIMITS=1',
+        '',
+      ].join('\n'),
+    );
+    process.exit(2);
+  }
+} catch {
+  console.error(`No se pudo conectar con el backend (${API}). Arráncalo con: cd ../LogisticaSPABackend && npm run start:e2e`);
+  process.exit(2);
+}
+
 /** Borra lo que dejó el archivo (si el backend está al lado y hay listas created*.json). */
 const cleanup = () => {
   if (!existsSync(BACKEND) || !existsSync('e2e-results')) return;
