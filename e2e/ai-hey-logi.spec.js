@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { login } from './helpers.js';
+import { login, closeLeakedContexts } from './helpers.js';
+
+// cierra los contextos de navegador de cada prueba (si no, se acumulan páginas vivas y el archivo se vuelve lento)
+test.afterEach(closeLeakedContexts);
 
 /**
  * «Hey Logi» con la aplicación, el backend y la IA reales (micrófono y altavoces simulados). No crea datos: siempre se cancela
@@ -42,7 +45,7 @@ test('viene apagado: sin aviso de micrófono y sin abrir ninguna escucha', async
   await ctx.addInitScript(installFakeVoice);
   const page = await ctx.newPage();
   await login(page, 'admin');
-  await page.goto('/dashboard');
+  await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(2500);
   await expect(page.getByTestId('wake-indicator')).toHaveCount(0);
   expect(await page.evaluate(() => window.__sr.count)).toBe(0);
@@ -55,7 +58,7 @@ test('activado: aviso visible, ignora lo que no es «hey Logi», y «hey Logi» 
   await ctx.addInitScript(enableWake);
   const page = await ctx.newPage();
   await login(page, 'admin');
-  await page.goto('/dashboard');
+  await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
 
   const indicator = page.getByTestId('wake-indicator');
   await expect(indicator).toContainText(/hey logi/i);
@@ -81,7 +84,7 @@ test('«hey Logi, ayúdame a crear un paquete» en una sola frase arranca la ayu
   await ctx.addInitScript(enableWake);
   const page = await ctx.newPage();
   await login(page, 'admin');
-  await page.goto('/dashboard');
+  await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
   await expect(page.getByTestId('wake-indicator')).toBeVisible();
 
   await hear(page, 'Hey Logi, ayúdame a crear un paquete');
@@ -98,7 +101,7 @@ test('«Apagar» cierra la escucha y el aviso desaparece', async ({ browser }) =
   await ctx.addInitScript(enableWake);
   const page = await ctx.newPage();
   await login(page, 'admin');
-  await page.goto('/dashboard');
+  await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
   const indicator = page.getByTestId('wake-indicator');
   await expect(indicator).toBeVisible();
   await indicator.getByRole('button', { name: 'Apagar' }).click();

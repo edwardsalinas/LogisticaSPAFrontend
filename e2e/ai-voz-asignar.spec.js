@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { login } from './helpers.js';
+import { login, closeLeakedContexts } from './helpers.js';
+
+// cierra los contextos de navegador de cada prueba (si no, se acumulan páginas vivas y el archivo se vuelve lento)
+test.afterEach(closeLeakedContexts);
 
 /**
  * Ayuda por voz para ASIGNAR: «ayúdame a asignar un paquete». Con el backend, Supabase y la aplicación reales (micrófono y
@@ -34,7 +37,7 @@ test('«ayúdame a asignar un paquete»: pregunta, propone los viajes sin identi
   test.skip(!demo, 'faltan los datos de demostración (node --env-file=.env scripts/seed-demo.mjs)');
 
   try {
-    await page.goto('/dashboard');
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await page.getByRole('button', { name: /abrir asistente/i }).click();
     await page.getByRole('button', { name: /abrir el chat de voz/i }).click();
     await hear(page, 'ayúdame a asignar un paquete a un viaje');

@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { login } from './helpers.js';
+import { login, closeLeakedContexts } from './helpers.js';
+
+// cierra los contextos de navegador de cada prueba (si no, se acumulan páginas vivas y el archivo se vuelve lento)
+test.afterEach(closeLeakedContexts);
 
 /**
  * Ayuda por voz para registrar un EVENTO de seguimiento, con el backend, Supabase y la aplicación reales (micrófono y altavoces
@@ -49,7 +52,7 @@ test('«ayúdame a registrar un evento»: pregunta paquete, estado y nota, lee l
   const demo = (await packages()).find((p) => p.status === 'pendiente' && /^DEMO-LOGI/.test(p.description || '') && p.recipient_name === 'Rosa Quispe');
   test.skip(!demo, 'faltan los datos de demostración');
 
-  await page.goto('/dashboard');
+  await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
   await page.getByRole('button', { name: /abrir asistente/i }).click();
   await page.getByRole('button', { name: /abrir el chat de voz/i }).click();
   await hear(page, 'ayúdame a registrar un evento de seguimiento');

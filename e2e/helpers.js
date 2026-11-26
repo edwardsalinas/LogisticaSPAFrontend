@@ -69,3 +69,23 @@ export async function openScreen(page, path, ready, { timeout = 90_000 } = {}) {
     await expect(ready(page)).toBeVisible({ timeout: 15_000 });
   }).toPass({ timeout });
 }
+
+/**
+ * Para `test.afterEach(closeLeakedContexts)`: cierra los contextos de navegador que la prueba creó con `browser.newContext()`.
+ * Playwright NO los cierra solo (solo cierra el de la fixture `page`): cada prueba dejaba una página viva con sus consultas periódicas,
+ * mapas y conexiones abiertas, y dentro de un mismo archivo el navegador se iba saturando (la cuarta prueba se quedaba en blanco o
+ * colgada). Si la prueba falló, antes guarda una captura de cada página para poder ver qué pasó.
+ */
+export async function closeLeakedContexts({ browser }, testInfo) {
+  const failed = testInfo.status !== testInfo.expectedStatus;
+  let n = 0;
+  for (const context of browser.contexts()) {
+    if (failed) {
+      for (const page of context.pages()) {
+        n += 1;
+        await page.screenshot({ path: testInfo.outputPath(`pagina-${n}.png`) }).catch(() => {});
+      }
+    }
+    await context.close().catch(() => {});
+  }
+}

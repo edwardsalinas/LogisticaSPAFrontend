@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { login, openScreen } from './helpers.js';
+import { login, openScreen, closeLeakedContexts } from './helpers.js';
+
+// cierra los contextos de navegador de cada prueba (si no, se acumulan páginas vivas y el archivo se vuelve lento)
+test.afterEach(closeLeakedContexts);
 
 /**
  * Conciencia de pantalla con el backend, Supabase y el modelo REALES: estando en el detalle de un paquete, «este paquete» se

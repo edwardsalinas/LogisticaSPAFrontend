@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { login } from './helpers.js';
+import { login, closeLeakedContexts } from './helpers.js';
+
+// cierra los contextos de navegador de cada prueba (si no, se acumulan páginas vivas y el archivo se vuelve lento)
+test.afterEach(closeLeakedContexts);
 
 /**
  * Avisos proactivos de Logi, modo «Enséñame» y botón de pausa, con backend y Supabase reales. No crea datos:
@@ -26,7 +29,7 @@ test('aviso proactivo: sale solo con una excepción real, se puede posponer y si
   expect(alertsRes.status()).toBe(200);
   const real = (await alertsRes.json()).data ?? [];
 
-  await page.goto('/dashboard');
+  await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
   const bubble = page.getByRole('group', { name: 'Aviso de Logi' });
   if (real.length === 0) {
     await page.waitForTimeout(7000);
@@ -52,7 +55,7 @@ test('«Enséñame»: Logi rellena el formulario a la vista y no guarda nada', a
   await login(page, 'admin');
   const before = await countPackages(ctx);
 
-  await page.goto('/dashboard');
+  await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
   await page.getByRole('button', { name: /abrir asistente/i }).click();
   await page.getByRole('button', { name: /enséñame a registrar un paquete/i }).click();
   await expect(page.getByText(/demostración terminada/i).first()).toBeVisible({ timeout: 90_000 });
@@ -65,7 +68,7 @@ test('botón de pausa de Logi: visible, accesible y recuerda la elección', asyn
   const ctx = await browser.newContext({ locale: 'es-BO', viewport: { width: 1366, height: 800 } });
   const page = await ctx.newPage();
   await login(page, 'admin');
-  await page.goto('/dashboard');
+  await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
   const pause = page.getByRole('button', { name: 'Pausar el paseo de Logi' });
   await expect(pause).toBeVisible();
   await pause.click();

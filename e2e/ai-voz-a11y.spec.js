@@ -1,7 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { login } from './helpers.js';
+import { login, closeLeakedContexts } from './helpers.js';
+
+// cierra los contextos de navegador de cada prueba (si no, se acumulan páginas vivas y el archivo se vuelve lento)
+test.afterEach(closeLeakedContexts);
 
 /**
  * Accesibilidad de la voz con axe-core en el navegador real: la barra compacta, el aviso de «Hey Logi» y la ayuda guiada.
@@ -40,7 +43,7 @@ test.describe('Accesibilidad de la voz', () => {
     await ctx.addInitScript(() => window.sessionStorage.setItem('logisticaspa:logi:hey-logi', '1'));
     const page = await ctx.newPage();
     await login(page, 'admin');
-    await page.goto('/dashboard');
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('wake-indicator')).toBeVisible();
     expect(await audit(page, ['[data-testid="wake-indicator"]'])).toEqual([]);
 
@@ -68,7 +71,7 @@ test.describe('Accesibilidad de la voz', () => {
     await ctx.addInitScript(installFakeVoice);
     const page = await ctx.newPage();
     await login(page, 'admin');
-    await page.goto('/dashboard');
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await page.getByRole('button', { name: /abrir asistente/i }).click();
     await page.getByRole('button', { name: /abrir el chat de voz/i }).click();
     const bar = page.getByTestId('voice-compact');
@@ -84,7 +87,7 @@ test.describe('Accesibilidad de la voz', () => {
     await ctx.addInitScript(installFakeVoice);
     const page = await ctx.newPage();
     await login(page, 'admin');
-    await page.goto('/dashboard');
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     await page.getByRole('button', { name: /abrir asistente/i }).click();
     await page.getByRole('button', { name: /abrir el chat de voz/i }).click();
     await hear(page, 'ayúdame a crear un paquete');

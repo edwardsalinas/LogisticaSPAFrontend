@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
-import { login } from './helpers.js';
+import { login, closeLeakedContexts } from './helpers.js';
+
+// cierra los contextos de navegador de cada prueba (si no, se acumulan páginas vivas y el archivo se vuelve lento)
+test.afterEach(closeLeakedContexts);
 
 /**
  * Ayuda por voz: «ayúdame a crear un paquete». Con el backend, Supabase y la aplicación reales (micrófono y altavoces
@@ -58,7 +61,7 @@ test('«ayúdame a crear un paquete»: barra compacta, Logi pregunta y registra 
   expect(routes.length).toBeGreaterThan(0);
   const { origin, destination } = routes[0];
 
-  await page.goto('/dashboard');
+  await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
   await page.getByRole('button', { name: /abrir asistente/i }).click();
   await page.getByRole('button', { name: /abrir el chat de voz/i }).click();
 
@@ -126,7 +129,7 @@ test('«cancela» a mitad de camino no crea nada y deja el formulario abierto', 
   const before = async () => { const b = await (await ctx.request.get(`${API}/logistics/packages`, { headers: H })).json(); return (Array.isArray(b) ? b : b.data).length; };
   const n0 = await before();
 
-  await page.goto('/dashboard');
+  await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
   await page.getByRole('button', { name: /abrir asistente/i }).click();
   await page.getByRole('button', { name: /abrir el chat de voz/i }).click();
   await userSays(page, 'quiero registrar un paquete');
