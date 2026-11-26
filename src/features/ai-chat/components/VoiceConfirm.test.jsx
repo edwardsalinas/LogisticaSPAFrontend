@@ -146,3 +146,89 @@ describe('Chat de voz: confirmar una acción diciendo «sí, hazlo»', () => {
     expect(screen.queryByRole('button', { name: /sí, hazlo/i })).not.toBeInTheDocument();
   });
 });
+
+describe('Chat de voz: acciones sin coreografía (asignar conductor y crear un viaje) se confirman directamente', () => {
+  let speech;
+  const DRIVER = { id: 'act-d', type: 'assign_driver', title: 'Asignar conductor a un viaje', lines: ['Viaje: Oruro → La Paz', 'Conductor: Juan Pérez'], expires_at: new Date(Date.now() + 10 * 60_000).toISOString() };
+  const TRIP = { id: 'act-t', type: 'create_trip', title: 'Crear un viaje', lines: ['Trayecto: Oruro → La Paz'], expires_at: DRIVER.expires_at };
+  const CANCEL = { id: 'act-c', type: 'cancel_package', title: 'Anular un paquete', lines: ['Paquete: TRK-1'], expires_at: DRIVER.expires_at };
+
+  beforeEach(() => {
+    speech = installSpeech();
+    apiService.post.mockReset();
+    mockGuided = { start: vi.fn() };
+  });
+  afterEach(() => uninstallSpeech());
+
+  it('lee el resumen y, con «sí, hazlo», confirma en el servidor y dice el resultado, sin cerrar el chat de voz', async () => {
+    apiService.post.mockResolvedValue({ success: true, result: { message: 'Conductor asignado al viaje.' } });
+    const chat = makeChat(DRIVER);
+    const onClose = vi.fn();
+    render(<VoiceMode chat={chat} onClose={onClose} />);
+    say('asigna a Juan Pérez al viaje de Oruro a La Paz');
+    await waitFor(() => expect(spoken(speech)).toMatch(/¿Lo hago\?/));
+    expect(spoken(speech)).toContain('Conductor: Juan Pérez');
+    expect(apiService.post).not.toHaveBeenCalled(); // preguntar no ejecuta nada
+    await waitFor(() => expect(FakeRecognition.instances.length).toBeGreaterThan(1));
+    say('sí, hazlo');
+
+    await waitFor(() => expect(apiService.post).toHaveBeenCalledWith('/ai-agent/actions/act-d/confirm'));
+    await waitFor(() => expect(spoken(speech)).toMatch(/Conductor asignado al viaje/));
+    await waitFor(() => expect(chat.settleAction).toHaveBeenCalledWith('act-d', expect.objectContaining({ status: 'done' })));
+    expect(mockGuided.start).not.toHaveBeenCalled(); // no hay coreografía
+    expect(onClose).not.toHaveBeenCalled(); // la pantalla no hace falta: el chat de voz sigue para la siguiente orden
+  });
+
+  it('crear un viaje también se confirma por voz', async () => {
+    apiService.post.mockResolvedValue({ success: true, result: { message: 'Viaje creado.' } });
+    render(<VoiceMode chat={makeChat(TRIP)} onClose={() => {}} />);
+    say('crea un viaje de Oruro a La Paz para mañana a las 8');
+    await waitFor(() => expect(spoken(speech)).toMatch(/¿Lo hago\?/));
+    await waitFor(() => expect(FakeRecognition.instances.length).toBeGreaterThan(1));
+    say('sí');
+    await waitFor(() => expect(apiService.post).toHaveBeenCalledWith('/ai-agent/actions/act-t/confirm'));
+  });
+
+  it('con «cancela» no confirma: cancela la propuesta', async () => {
+    apiService.post.mockResolvedValue({ result: { message: 'Acción cancelada.' } });
+    render(<VoiceMode chat={makeChat(DRIVER)} onClose={() => {}} />);
+    say('asigna a Juan Pérez al viaje de Oruro a La Paz');
+    await waitFor(() => expect(spoken(speech)).toMatch(/¿Lo hago\?/));
+    await waitFor(() => expect(FakeRecognition.instances.length).toBeGreaterThan(1));
+    say('cancela');
+    await waitFor(() => expect(apiService.post).toHaveBeenCalledWith('/ai-agent/actions/act-d/cancel'));
+    expect(apiService.post).not.toHaveBeenCalledWith('/ai-agent/actions/act-d/confirm');
+  });
+
+  it('una duda («sí, pero cambia el conductor») NO ejecuta nada', async () => {
+    render(<VoiceMode chat={makeChat(DRIVER)} onClose={() => {}} />);
+    say('asigna a Juan Pérez al viaje de Oruro a La Paz');
+    await waitFor(() => expect(spoken(speech)).toMatch(/¿Lo hago\?/));
+    await waitFor(() => expect(FakeRecognition.instances.length).toBeGreaterThan(1));
+    say('sí pero cambia el conductor por otro');
+    await waitFor(() => expect(spoken(speech)).toMatch(/No te entendí/));
+    expect(apiService.post).not.toHaveBeenCalled();
+  });
+
+  it('si el servidor rechaza (por ejemplo, el conductor ya va en tránsito), Logi lo dice y no marca la acción como hecha', async () => {
+    apiService.post.mockRejectedValue(Object.assign(new Error('El viaje ya no está planeado'), { status: 409 }));
+    const chat = makeChat(DRIVER);
+    render(<VoiceMode chat={chat} onClose={() => {}} />);
+    say('asigna a Juan Pérez al viaje de Oruro a La Paz');
+    await waitFor(() => expect(spoken(speech)).toMatch(/¿Lo hago\?/));
+    await waitFor(() => expect(FakeRecognition.instances.length).toBeGreaterThan(1));
+    say('sí, hazlo');
+    await waitFor(() => expect(spoken(speech)).toMatch(/No pude hacerlo/));
+    expect(spoken(speech)).toMatch(/ya no está planeado/);
+    expect(chat.settleAction).not.toHaveBeenCalled();
+  });
+
+  it('anular un paquete NO se confirma por voz (no se puede deshacer): queda el clic en la tarjeta', async () => {
+    render(<VoiceMode chat={makeChat(CANCEL, { shown: true })} onClose={() => {}} />);
+    say('anula el paquete TRK-1');
+    await screen.findByText(/hay una acción esperando tu confirmación/i);
+    expect(screen.queryByRole('button', { name: /sí, hazlo/i })).not.toBeInTheDocument();
+    expect(spoken(speech)).not.toMatch(/¿Lo hago\?/);
+    expect(apiService.post).not.toHaveBeenCalled();
+  });
+});

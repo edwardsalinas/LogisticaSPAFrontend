@@ -31,6 +31,11 @@ export const serverConfig = async () => {
   }
 };
 
+// Una vez por carga de página: si el navegador tiene la suscripción pero el servidor la perdió (se borró la fila, se restauró una copia…),
+// la pantalla diría «sí» y la persona no recibiría nada. Registrarla de nuevo es inofensivo (el servidor la actualiza por su dirección).
+let resynced = false;
+export const _resetResync = () => { resynced = false; };
+
 export const pushStatus = async () => {
   if (!pushSupported()) return 'unsupported';
   const cfg = await serverConfig();
@@ -38,7 +43,14 @@ export const pushStatus = async () => {
   if (Notification.permission === 'denied') return 'denied';
   const reg = await registration();
   const sub = reg ? await reg.pushManager.getSubscription() : null;
-  return sub && Notification.permission === 'granted' ? 'on' : 'off';
+  if (sub && Notification.permission === 'granted') {
+    if (!resynced) {
+      resynced = true;
+      apiService.subscribePush(sub.toJSON()).catch(() => {}); // sin respuesta no cambia nada: solo se intenta reparar
+    }
+    return 'on';
+  }
+  return 'off';
 };
 
 /** Activa los avisos en este navegador. Devuelve el estado final; nunca lanza (la pantalla solo muestra el estado). */

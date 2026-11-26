@@ -31,6 +31,9 @@ describe('isVoiceConfirmable: qué acciones se confirman por voz', () => {
     expect(isVoiceConfirmable({ type: 'assign_package' })).toBe(true);
     expect(isVoiceConfirmable({ type: 'register_tracking_event' })).toBe(true);
     expect(isVoiceConfirmable({ type: 'deliver_package' })).toBe(false);
+    expect(isVoiceConfirmable({ type: 'assign_driver' })).toBe(true); // se corrigen después
+    expect(isVoiceConfirmable({ type: 'create_trip' })).toBe(true);
+    expect(isVoiceConfirmable({ type: 'cancel_package' })).toBe(false); // anular no se puede deshacer
     expect(isVoiceConfirmable(null)).toBe(false);
   });
 });

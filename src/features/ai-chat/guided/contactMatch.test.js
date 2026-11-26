@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { distance, phoneTail, soundKey, suggestContact } from './contactMatch';
+import { distance, phoneTail, soundKey, soundMatches, suggestContact } from './contactMatch';
 
 const C = (name, phone = null) => ({ name, phone, uses: 1 });
 const LIST = [C('Rosa Quispe', '71234567'), C('María Choque'), C('Hernán Vargas'), C('Luis Llanos'), C('Ana Pérez')];
@@ -74,5 +74,19 @@ describe('phoneTail', () => {
     expect(phoneTail('+591 71234567')).toBe('4 5 6 7');
     expect(phoneTail('12')).toBe('');
     expect(phoneTail(null)).toBe('');
+  });
+});
+
+describe('soundMatches', () => {
+  it('todas las palabras oídas deben sonar como alguna del nombre', () => {
+    expect(soundMatches(['rosa', 'kispe'], 'Rosa Quispe')).toBe(true);
+    expect(soundMatches(['kispe'], 'Rosa Quispe')).toBe(true);
+    expect(soundMatches(['rosa', 'kispe'], 'Rosa Flores')).toBe(false);
+  });
+  it('prudente: palabras de menos de 4 letras no cuentan y sin palabras no hay coincidencia', () => {
+    expect(soundMatches(['ana'], 'Ana Pérez')).toBe(false);
+    expect(soundMatches([], 'Ana Pérez')).toBe(false);
+    expect(soundMatches(undefined, 'Ana Pérez')).toBe(false);
+    expect(soundMatches(['kispe'], '')).toBe(false);
   });
 });

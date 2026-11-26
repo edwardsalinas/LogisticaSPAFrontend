@@ -39,7 +39,7 @@ export const distance = (a, b) => {
   return prev[b.length];
 };
 
-const allowed = (len) => (len <= 5 ? 0 : len <= 9 ? 1 : 2); // los nombres cortos casi no admiten error: «Ana» no es «Ada»
+export const allowed = (len) => (len <= 5 ? 0 : len <= 9 ? 1 : 2); // los nombres cortos casi no admiten error: «Ana» no es «Ada»
 
 /**
  * Lo que se oyó + la lista de contactos → { contact, exact } o null.
@@ -74,6 +74,18 @@ export const suggestContact = (heard, contacts) => {
   if (!scored.length) return null;
   if (scored[1] && scored[1].score === scored[0].score) return null; // dos igual de parecidos: no se adivina
   return { contact: scored[0].contact, exact: false };
+};
+
+/**
+ * ¿Todas las palabras que se oyeron SUENAN como alguna palabra de este nombre? Sirve para encontrar un paquete cuando el micrófono entendió
+ * mal el nombre («kispe» por «Quispe»). Prudente: palabras de menos de 4 letras no se comparan por sonido (casi cualquiera coincidiría) y
+ * cada palabra solo admite el error que permite su longitud.
+ */
+export const soundMatches = (heardTokens, name) => {
+  const mine = soundKey(name).split(' ').filter(Boolean);
+  const heard = (heardTokens ?? []).map((t) => soundKey(t)).filter((t) => t.length >= 4);
+  if (!heard.length || !mine.length) return false;
+  return heard.every((h) => mine.some((m) => Math.abs(h.length - m.length) <= 2 && distance(h, m) <= allowed(Math.max(h.length, m.length))));
 };
 
 /** «71234567» → «terminado en 4567» (se dice en voz alta sin leer todo el número). */

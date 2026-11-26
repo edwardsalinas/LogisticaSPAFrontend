@@ -1,6 +1,7 @@
 import { parseVoiceConfirmation } from '../voiceConfirm';
 import { isCancel, normalize, parseSpokenNumber } from '../speechParse';
 import { localHour, tripText } from '../tripText';
+import { soundMatches } from '../contactMatch';
 
 const MAX_TRIES = 3;
 const ORDINALS = [['primero', 'primer', 'uno', '1'], ['segundo', 'dos', '2'], ['tercero', 'tercer', 'tres', '3'], ['cuarto', 'cuatro', '4']];
@@ -15,10 +16,13 @@ export const findPackages = (heard, packages) => {
   }
   const tokens = text.split(' ').filter((t) => t.length >= 3 && !['paquete', 'para', 'del', 'los', 'las', 'que', 'con', 'nombre', 'recibe', 'envia', 'senor', 'senora'].includes(t));
   if (!tokens.length) return [];
-  return packages.filter((p) => {
+  const exact = packages.filter((p) => {
     const hay = normalize(`${p.recipient_name ?? ''} ${p.sender_name ?? ''}`);
     return tokens.every((t) => hay.includes(t));
   });
+  if (exact.length) return exact;
+  // el micrófono suele entender mal los nombres propios («kispe» por «Quispe»): segunda pasada comparando cómo SUENAN
+  return packages.filter((p) => soundMatches(tokens, `${p.recipient_name ?? ''} ${p.sender_name ?? ''}`));
 };
 
 /** «el primero», «el segundo», «el de las ocho»: el índice elegido entre n opciones, o -1. */

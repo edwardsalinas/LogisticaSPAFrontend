@@ -41,10 +41,13 @@ export const spokenProposal = (action) => {
 };
 
 /**
- * Qué acciones se pueden confirmar por voz. La entrega NO: es la más difícil de deshacer, así que, aunque Logi sepa
- * mostrarla («Que Logi lo haga»), se confirma siempre con un clic.
+ * Qué acciones se pueden confirmar por voz. La entrega y la anulación de un paquete NO: son las más difíciles de deshacer, así que se
+ * confirman siempre con un clic. Asignar un conductor o crear un viaje sí: se corrigen después (se asigna otro, se borra el viaje).
  */
-export const VOICE_CONFIRMABLE = new Set(['create_package', 'assign_package', 'register_tracking_event']);
+export const VOICE_CONFIRMABLE = new Set(['create_package', 'assign_package', 'register_tracking_event', 'assign_driver', 'create_trip']);
+/** Las que NO tienen coreografía (Logi no las hace a la vista): el «sí» las confirma directamente en el servidor. */
+export const VOICE_DIRECT = new Set(['assign_driver', 'create_trip']);
+export const isVoiceDirect = (action) => VOICE_DIRECT.has(action?.type);
 export const isVoiceConfirmable = (action) => VOICE_CONFIRMABLE.has(action?.type);
 
 export const CONFIRM_PROMPT = '¿Lo hago? Di «sí, hazlo» o «cancela».';

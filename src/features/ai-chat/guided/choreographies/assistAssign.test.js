@@ -28,6 +28,24 @@ const setup = ({ answers, routes = ROUTES, packages = PKGS, prepared = { data: {
   return { ctx, io, said };
 };
 
+describe('findPackages: cuando el micrófono entiende mal el nombre, se busca por cómo suena', () => {
+  it('«kispe» encuentra a «Rosa Quispe» (y «para rosa kispe» solo a ella, no a Rosa Flores)', () => {
+    expect(findPackages('kispe', PKGS).map((p) => p.id)).toEqual(['p1']);
+    expect(findPackages('para rosa kispe', PKGS).map((p) => p.id)).toEqual(['p1']);
+    expect(findPackages('elena soque', PKGS)).toEqual([]); // «Choque» y «Soque» NO suenan igual: no adivina
+    expect(findPackages('karlos mamani', PKGS).map((p) => p.id)).toEqual(['p3']);
+  });
+
+  it('lo escrito igual sigue ganando: la segunda pasada solo corre si la primera no encontró nada', () => {
+    expect(findPackages('para rosa', PKGS).map((p) => p.id)).toEqual(['p1', 'p2']);
+  });
+
+  it('palabras cortas o muy distintas no se emparejan por sonido', () => {
+    expect(findPackages('ana', PKGS)).toEqual([]);
+    expect(findPackages('xyzw qwer', PKGS)).toEqual([]);
+  });
+});
+
 describe('findPackages / pickIndex', () => {
   it('por los últimos números del código o por el nombre (todas las palabras)', () => {
     expect(findPackages('4531', PKGS).map((p) => p.id)).toEqual(['p1']);

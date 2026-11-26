@@ -7,7 +7,7 @@ import apiService from '../../../services/apiService';
 import { canGuide, useGuidedRun } from '../guided/GuidedRunProvider';
 import { applyGuidedOutcome } from '../guided/outcome';
 import { detectFormAssist } from '../guided/speechParse';
-import { CONFIRM_PROMPT, isVoiceConfirmable, parseVoiceConfirmation, REPEAT_PROMPT, spokenProposal } from '../guided/voiceConfirm';
+import { CONFIRM_PROMPT, isVoiceConfirmable, isVoiceDirect, parseVoiceConfirmation, REPEAT_PROMPT, spokenProposal } from '../guided/voiceConfirm';
 
 const MAX_SILENCES = 2; // tras dos silencios seguidos el modo manos libres se detiene
 
@@ -72,6 +72,17 @@ export default function VoiceMode({ chat, onClose, compact = false, onExpand, on
         return;
       }
       setPendingAction(null);
+      if (isVoiceDirect(action)) {
+        // sin coreografía (Logi no la hace a la vista): el «sí» confirma directamente y Logi dice el resultado en voz alta
+        try {
+          const res = await apiService.post(`/ai-agent/actions/${action.id}/confirm`);
+          applyGuidedOutcome({ out: { result: res }, action, chat: c });
+          synth.speak(stripForSpeech(res?.result?.message ?? 'Listo, lo hice.'), { onEnd: listenAgain });
+        } catch (err) {
+          synth.speak(`No pude hacerlo. ${stripForSpeech(err?.message ?? '')}`, { onEnd: listenAgain });
+        }
+        return;
+      }
       recognitionRef.current?.abort();
       synth.cancel();
       close(); // se cierra el chat de voz: la pantalla queda libre para que Logi trabaje (y hable en voz alta)
@@ -136,7 +147,7 @@ export default function VoiceMode({ chat, onClose, compact = false, onExpand, on
     const proposal = latest.current.guided && handsFreeRef.current
       ? result.attachments?.find((a) => a.kind === 'action_proposal')?.action
       : null;
-    if (proposal && canGuide(proposal) && isVoiceConfirmable(proposal)) {
+    if (proposal && (canGuide(proposal) || isVoiceDirect(proposal)) && isVoiceConfirmable(proposal)) {
       setPendingAction(proposal);
       confirmTries.current = 0;
       // solo el resumen del servidor: el texto del modelo suele decir «pulsa Confirmar», que aquí se contradiría con «¿lo hago?»
