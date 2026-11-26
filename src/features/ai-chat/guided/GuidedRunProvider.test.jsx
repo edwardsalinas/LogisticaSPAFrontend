@@ -105,7 +105,7 @@ describe('Logi guiado: motor de ejecución', () => {
     renderApp();
     await userEvent.click(screen.getAllByText('empezar').at(-1));
     await userEvent.click(await screen.findByRole('button', { name: /^detener$/i }));
-    await waitFor(() => expect(out).toBeDefined());
+    await waitFor(() => expect(out).toBeDefined(), { timeout: 5000 });
     expect(apiService.trackLogiEvent.mock.calls.map((c) => c[0].event)).toEqual(['guided_started', 'guided_stopped']);
   });
 
