@@ -4,6 +4,15 @@ Flujos reales en el navegador con el backend, la base de datos (Supabase) y el m
 
 ## Antes de correrlas
 
+0. **Contraseñas de los usuarios de prueba**: ya NO están en el código (el repositorio es público). Las pruebas las leen del archivo
+   `.env.e2e.local` (que git ignora) o de las variables `E2E_ADMIN_PASSWORD`, `E2E_OPERATOR_PASSWORD`, `E2E_DRIVER_PASSWORD` y
+   `E2E_CLIENT_PASSWORD`. Para crearlas (o cambiarlas) desde `LogisticaSPABackend`:
+   ```
+   node --env-file=.env scripts/rotar-claves-prueba.mjs            # simulación: no cambia nada
+   node --env-file=.env scripts/rotar-claves-prueba.mjs --aplicar  # cambia las 4 contraseñas y crea .env.e2e.local
+   ```
+   También las deja en `credenciales.local.txt` para que las leas. En GitHub Actions vienen de los secretos del repositorio.
+
 1. **Backend con límites de pruebas** (importante):
    ```
    cd ../LogisticaSPABackend
