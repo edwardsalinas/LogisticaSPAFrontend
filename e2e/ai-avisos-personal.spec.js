@@ -61,6 +61,7 @@ for (const c of CASES) {
     await expect(bubble).toContainText(c.alert.title);
     await expect(bubble).toContainText(c.alert.text.slice(0, 30));
     if (c.alert.severity === 'high') await expect(page.locator('.logi--worried').first()).toBeVisible(); // lo urgente preocupa a Logi
+    await page.screenshot({ path: `e2e-results/aviso-personal-${c.alert.type}.png` });
     await bubble.getByRole('button', { name: c.button }).click();
     await expect(page).toHaveURL(c.url, { timeout: 30_000 });
   });
