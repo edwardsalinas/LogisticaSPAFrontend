@@ -21,6 +21,8 @@ const apiService = {
   proposeFromDocument: (body) => api.post('/ai-agent/documents/propose', body),
   // Avisos proactivos de Logi (solo personal) y eventos de uso para las métricas (fire-and-forget, ver logiEvents.js)
   getLogiAlerts: () => api.get('/ai-agent/alerts'),
+  // Remitentes y destinatarios frecuentes (memoria de uso) para que la voz reconozca nombres conocidos
+  getLogiContacts: () => api.get('/ai-agent/contacts'),
   trackLogiEvent: (body) => api.post('/ai-agent/logi-events', body),
   getAiUsage: (days = 7) => api.get('/ai-agent/usage', { params: { days } }),
   getRoutes: () => api.get('/logistics/routes'),

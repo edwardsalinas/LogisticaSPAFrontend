@@ -1,6 +1,7 @@
 import { parseVoiceConfirmation } from '../voiceConfirm';
 import { StopError } from '../guidedForms';
 import { cleanName, cleanText, isCancel, isSkip, matchOption, parseSpokenNumber, parseSpokenPhone } from '../speechParse';
+import { phoneTail, suggestContact } from '../contactMatch';
 
 const LIST_PATH = '/logistics/packages';
 const MAX_TRIES = 3;
@@ -28,7 +29,7 @@ export const STEPS = [
   },
   {
     // el formulario exige remitente: Logi lo toma como remitente sin cuenta (solo su nombre), igual que «Que Logi lo haga»
-    field: 'sender_name', kind: 'text', required: true,
+    field: 'sender_name', kind: 'text', required: true, contactList: 'senders',
     prepare: (form) => form.setValue('is_guest', true),
     ask: () => '¿Quién lo envía? Dime el nombre del remitente.',
     retry: () => 'No te entendí el nombre del remitente. Dímelo otra vez, por favor.',
@@ -43,7 +44,7 @@ export const STEPS = [
     echo: (v) => `${v} kilos.`,
   },
   {
-    field: 'recipient_name', kind: 'text', required: true,
+    field: 'recipient_name', kind: 'text', required: true, contactList: 'recipients',
     ask: () => '¿A nombre de quién va? Dime el nombre de quien recibe.',
     retry: () => 'No te entendí el nombre. Dímelo otra vez, por favor.',
     parse: (heard) => cleanName(heard),
@@ -73,6 +74,17 @@ export const summarize = (v) => {
   return `${parts.join(', ')}.`;
 };
 
+/** Los remitentes y destinatarios frecuentes de esta persona (memoria de uso). Si no se pueden cargar, la ayuda sigue sin ellos. */
+const loadContacts = async (io) => {
+  try {
+    const res = await io.api?.getLogiContacts?.();
+    const data = res?.data?.data ?? res?.data ?? null;
+    return { senders: Array.isArray(data?.senders) ? data.senders : [], recipients: Array.isArray(data?.recipients) ? data.recipients : [] };
+  } catch {
+    return { senders: [], recipients: [] };
+  }
+};
+
 /**
  * Ayuda guiada por voz para registrar un paquete. A diferencia de «Que Logi lo haga» (que ya trae todos los datos), aquí
  * Logi va a Paquetes, abre el formulario y PREGUNTA campo por campo, escribiendo cada respuesta a la vista de todos.
@@ -95,10 +107,20 @@ export default async function assistPackage(ctx, io) {
     }
     const form = await ctx.waitFor(() => ctx.getForm('package'), 8000);
 
+    const contacts = await loadContacts(io);
+    const knownPhone = {}; // teléfono guardado del destinatario reconocido
     const values = {};
     for (const step of STEPS) {
       if (step.prepare) { step.prepare(form); await ctx.sleep(400); } // el formulario dibuja los campos nuevos
       const el = await ctx.waitFor(() => form.getElement(step.field), 4000);
+      // El destinatario ya era conocido y tenía teléfono: no se vuelve a preguntar; se escribe a la vista y queda en el resumen que se confirma
+      if (step.field === 'recipient_phone' && knownPhone.value) {
+        values.recipient_phone = knownPhone.value;
+        await ctx.pointAt(el);
+        await ctx.typeInto(form, 'recipient_phone', knownPhone.value);
+        await say(`Ya tengo su teléfono guardado, el que termina en ${phoneTail(knownPhone.value)}. Si no es ese, corrígelo en pantalla.`, { wait: false });
+        continue;
+      }
       let outcome = 'retry';
       for (let attempt = 0; attempt < MAX_TRIES && outcome === 'retry'; attempt += 1) {
         await ctx.pointAt(el);
@@ -107,8 +129,23 @@ export default async function assistPackage(ctx, io) {
         if (heard == null) continue; // silencio: se vuelve a preguntar
         if (isCancel(heard)) { await say('Está bien, lo dejo aquí. El formulario queda abierto por si quieres seguir tú.'); return { assisted: true, done: false }; }
         if (!step.required && isSkip(heard)) { outcome = 'skip'; break; }
-        const value = step.parse(heard, form);
+        let value = step.parse(heard, form);
         if (value == null) continue;
+        if (step.contactList) {
+          const found = suggestContact(value, contacts[step.contactList]);
+          if (found) {
+            let use = found.exact;
+            if (!use) {
+              await say(`¿Te refieres a ${found.contact.name}?`);
+              const reply = await io.listen(ctx.signal);
+              use = reply != null && parseVoiceConfirmation(reply) === 'yes'; // sin un «sí» claro se queda con lo que se oyó
+            }
+            if (use) {
+              value = found.contact.name;
+              if (step.field === 'recipient_name' && found.contact.phone) knownPhone.value = found.contact.phone;
+            }
+          }
+        }
         values[step.field] = value;
         if (step.kind === 'select') { form.setValue(step.field, value); await ctx.sleep(600); } else await ctx.typeInto(form, step.field, value);
         await say(step.echo(value), { wait: false });
