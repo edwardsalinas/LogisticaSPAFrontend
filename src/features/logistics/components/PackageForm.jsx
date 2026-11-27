@@ -189,7 +189,7 @@ function PackageForm({ onSuccess, onCancel, initialRouteId = '', initialOrigin =
   };
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit(onSubmit, focusFirstError)} noValidate className="space-y-6 max-h-[75vh] overflow-y-auto px-1 custom-scrollbar">
+    <form ref={formRef} onSubmit={handleSubmit(onSubmit, focusFirstError)} noValidate className="space-y-6">
       {/* SECCION 1: ORIGEN Y DESTINO */}
       <div className="rounded-[1.4rem] border border-surface-100 bg-surface-50/80 p-5 space-y-4">
         <SectionTitle step={1} icon={MapPinned} title="Trayecto" hint="De dónde sale y a dónde llega el paquete." />
@@ -303,7 +303,7 @@ function PackageForm({ onSuccess, onCancel, initialRouteId = '', initialOrigin =
 
       {error && <p className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600 font-bold">{error}</p>}
 
-      <div className="sticky bottom-0 -mx-1 flex justify-end gap-3 border-t border-surface-100 bg-white/95 px-1 py-4 backdrop-blur">
+      <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex justify-end gap-3 border-t border-surface-100 bg-white/95 px-6 py-4 backdrop-blur sm:-mx-7 sm:px-7">
         <Button variant="secondary" onClick={onCancel} type="button">Cancelar</Button>
         <Button type="submit" disabled={loading}>{loading ? 'Registrando...' : 'Registrar paquete'}</Button>
       </div>
