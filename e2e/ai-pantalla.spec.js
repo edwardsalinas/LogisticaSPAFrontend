@@ -54,3 +54,16 @@ test('si el servidor pide una pantalla que el rol no ve, el navegador no navega'
   await expect(page.getByText('Listo.').first()).toBeVisible({ timeout: 20_000 });
   expect(new URL(page.url()).pathname).toBe('/logistics/packages');
 });
+
+test('«reportes de noviembre» abre Reportes con ese rango: la página pide esas fechas', async ({ browser }) => {
+  test.setTimeout(120_000);
+  const ctx = await browser.newContext({ locale: 'es-BO', viewport: { width: 1366, height: 800 } });
+  const page = await ctx.newPage();
+  await login(page, 'admin');
+  await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+  await mockChat(page, [{ kind: 'ui_command', page: 'analytics', fields: { range: { from: '2026-11-01', to: '2026-11-26' } } }], 'Listo.');
+  const asked = page.waitForRequest((r) => /\/analytics/.test(r.url()) && /from=2026-11-01/.test(r.url()) && /to=2026-11-26/.test(r.url()), { timeout: 60_000 });
+  await ask(page, 'reportes de noviembre');
+  await asked;
+  expect(new URL(page.url()).pathname).toBe('/analytics');
+});

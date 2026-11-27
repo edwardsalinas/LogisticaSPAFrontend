@@ -7,7 +7,7 @@ import Button from '../../../components/atoms/Button';
 import Modal from '../../../components/molecules/Modal';
 import DataTable from '../../../components/organisms/DataTable';
 import usePersistentState from '@/hooks/usePersistentState';
-import { noteCreatedPackage, useRegisterPageEntity, useRegisterPageView, useSearchRequests, useTabRequests } from '../../ai-chat/pageContext';
+import { noteCreatedPackage, takeRequestedField, useFieldRequests, useRegisterPageEntity, useRegisterPageView, useSearchRequests, useTabRequests } from '../../ai-chat/pageContext';
 import Skeleton from '../../../components/atoms/Skeleton';
 import PackageDetail from '../components/PackageDetail';
 import PackageForm from '../components/PackageForm';
@@ -40,10 +40,15 @@ function PackagesPage() {
   // el asistente sabe qué pestaña ves y, si abriste la ficha de un paquete, cuál es («este paquete»)
   useRegisterPageView(activeTab);
   useTabRequests('packages', setActiveTab, ['all', 'delivered']); // «muéstrame los paquetes entregados»
+  useFieldRequests('packages', { date: (v) => { const [y, m, d] = String(v).split('-').map(Number); if (y && m && d) setSelectedDate(new Date(y, m - 1, d)); } });
   useSearchRequests('packages', setSearchTerm); // «muéstrame el paquete que acabas de crear»: la tabla se filtra por su código
   useRegisterPageEntity(selectedPackage?.tracking_code ? { type: 'package', ref: selectedPackage.tracking_code } : null);
   const [expandedShipments, setExpandedShipments] = useState(new Set());
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const ask = takeRequestedField('packages', 'date'); // «muéstrame los despachos del lunes» (Logi)
+    const [y, m, d] = String(ask ?? '').split('-').map(Number);
+    return y && m && d ? new Date(y, m - 1, d) : new Date();
+  });
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const resetToToday = () => setSelectedDate(new Date());

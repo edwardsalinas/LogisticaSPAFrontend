@@ -103,6 +103,43 @@ export function useSearchRequests(page, setSearch) {
   }, [page]);
 }
 
+// ---- filtros finos de una pantalla: la fecha de Paquetes, el rango de Reportes, origen/destino/tipo de Viajes
+const FIELD_EVENT = 'logi:campo';
+const FIELD_STORAGE = {
+  'packages.date': 'logisticaspa:filtros:paquetes:fecha',
+  'analytics.range': 'logisticaspa:filtros:reportes:rango',
+  'routes.origin': 'logisticaspa:filtros:viajes:origen',
+  'routes.destination': 'logisticaspa:filtros:viajes:destino',
+  'routes.type': 'logisticaspa:filtros:viajes:tipo',
+};
+
+/** Pide a una pantalla que ponga un filtro (campo) en un valor. Si aún no está abierta, lo recuerda y empieza ya filtrada. */
+export const requestField = (page, field, value) => {
+  const key = FIELD_STORAGE[`${page}.${field}`];
+  if (!key) return false;
+  try { window.sessionStorage.setItem(key, JSON.stringify(value)); } catch { /* sin almacenamiento */ }
+  if (page === 'packages' && field === 'date') requestTab('packages', 'all'); // la fecha solo se ve en el tablero de operaciones
+  if (page === 'routes' && value) requestTab('routes', 'list');
+  window.dispatchEvent(new CustomEvent(FIELD_EVENT, { detail: { page, field, value } }));
+  return true;
+};
+
+/** Lo que una pantalla tenía pedido antes de abrirse (o null): para arrancar ya filtrada. */
+export const takeRequestedField = (page, field) => {
+  const key = FIELD_STORAGE[`${page}.${field}`];
+  try { const raw = key && window.sessionStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch { return null; }
+};
+
+/** Para las pantallas con filtros finos: handlers = { campo: (valor) => … }. */
+export function useFieldRequests(page, handlers) {
+  useEffect(() => {
+    const onRequest = (e) => { if (e.detail?.page === page) handlers[e.detail.field]?.(e.detail.value); };
+    window.addEventListener(FIELD_EVENT, onRequest);
+    return () => window.removeEventListener(FIELD_EVENT, onRequest);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- los setters son estables
+  }, [page]);
+}
+
 // el último paquete que el formulario registró: la ayuda por voz lo usa para enseñarlo en la tabla
 let lastCreated = null;
 export const noteCreatedPackage = (pkg) => { lastCreated = pkg?.tracking_code ? String(pkg.tracking_code) : null; };

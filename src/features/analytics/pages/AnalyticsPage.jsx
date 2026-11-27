@@ -1,4 +1,5 @@
 import { Suspense, lazy, useState } from 'react';
+import { takeRequestedField, useFieldRequests } from '../../ai-chat/pageContext';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import DateRangePicker from '../../../components/molecules/DateRangePicker';
 import SectionLoader from '../../../components/molecules/SectionLoader';
@@ -17,11 +18,16 @@ export const toYmd = (date) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
+// «YYYY-MM-DD» → fecha local (sin el corrimiento de zona horaria de new Date('2026-11-01'))
+const fromYmd = (ymd) => { const [y, m, d] = String(ymd).split('-').map(Number); return new Date(y, m - 1, d); };
+const rangeFromAsk = (ask) => (ask?.from && ask?.to ? { from: fromYmd(ask.from), to: fromYmd(ask.to) } : null);
+
 function AnalyticsPage() {
-  const [dateRange, setDateRange] = useState({
+  const [dateRange, setDateRange] = useState(() => rangeFromAsk(takeRequestedField('analytics', 'range')) ?? {
     from: new Date(Date.now() - 29 * 24 * 60 * 60 * 1000),
     to: new Date(),
   });
+  useFieldRequests('analytics', { range: (v) => { const r = rangeFromAsk(v); if (r) setDateRange(r); } }); // «muéstrame el último mes» (Logi)
 
   const from = dateRange?.from ? toYmd(dateRange.from) : undefined;
   const to = dateRange?.to ? toYmd(dateRange.to) : undefined;

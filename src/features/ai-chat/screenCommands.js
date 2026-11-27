@@ -1,4 +1,4 @@
-import { requestSearch, requestTab } from './pageContext';
+import { requestField, requestSearch, requestTab } from './pageContext';
 
 /**
  * Órdenes de pantalla: lo que Logi hace para ENSEÑAR algo (ir a una pantalla, abrir una pestaña, filtrar una tabla). Las pide el
@@ -11,12 +11,22 @@ import { requestSearch, requestTab } from './pageContext';
 const STAFF = ['admin', 'logistics_operator'];
 export const SCREENS = {
   dashboard: { to: '/dashboard', roles: STAFF },
-  packages: { to: '/logistics/packages', roles: [...STAFF, 'client'], tabs: ['all', 'delivered'], search: true },
-  routes: { to: '/logistics/routes', roles: STAFF, tabs: ['calendar', 'list'], search: true },
+  packages: { to: '/logistics/packages', roles: [...STAFF, 'client'], tabs: ['all', 'delivered'], search: true, fields: ['date'] },
+  routes: { to: '/logistics/routes', roles: STAFF, tabs: ['calendar', 'list'], search: true, fields: ['origin', 'destination', 'type'] },
   tracking: { to: '/tracking', roles: [...STAFF, 'client'], search: true },
   fleet: { to: '/fleet', roles: ['admin'], tabs: ['vehicles', 'drivers'], search: true },
-  analytics: { to: '/analytics', roles: ['admin'] },
+  analytics: { to: '/analytics', roles: ['admin'], fields: ['range'] },
   driver: { to: '/driver', roles: ['driver'] },
+};
+
+const YMD = /^\d{4}-\d{2}-\d{2}$/;
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** Los valores que acepta cada campo; cualquier otra cosa se ignora. */
+const validField = (field, v) => {
+  if (field === 'date') return YMD.test(v);
+  if (field === 'range') return Boolean(v) && YMD.test(v.from) && YMD.test(v.to) && v.from <= v.to && (Date.parse(v.to) - Date.parse(v.from)) / DAY_MS <= 92;
+  if (field === 'type') return v === '' || v === 'single' || v === 'schedule';
+  return typeof v === 'string' && v.length <= 60; // origin, destination
 };
 
 let navigator = null;
@@ -34,6 +44,10 @@ export const runScreenCommand = (cmd) => {
   navigator(screen.to);
   if (cmd.tab && screen.tabs?.includes(cmd.tab)) requestTab(cmd.page, cmd.tab);
   if (screen.search && typeof cmd.search === 'string') requestSearch(cmd.page, cmd.search.slice(0, 60));
+  // filtros finos: solo los campos que esa pantalla admite, con valores de forma válida
+  for (const [field, value] of Object.entries(cmd.fields ?? {})) {
+    if (screen.fields?.includes(field) && validField(field, value)) requestField(cmd.page, field, value);
+  }
   return true;
 };
 

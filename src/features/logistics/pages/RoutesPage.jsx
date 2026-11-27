@@ -12,7 +12,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
 import usePersistentState from '@/hooks/usePersistentState';
-import { useSearchRequests, useTabRequests } from '../../ai-chat/pageContext';
+import { useFieldRequests, useSearchRequests, useTabRequests } from '../../ai-chat/pageContext';
 import SearchInput from '../../../components/atoms/SearchInput';
 import BaseMap from '../../../components/molecules/BaseMap';
 import CheckpointMarker from '../../../components/molecules/CheckpointMarker';
@@ -148,6 +148,7 @@ function RoutesPage() {
   const [selectedOrigin, setSelectedOrigin] = usePersistentState('viajes:origen', '');
   const [selectedDestination, setSelectedDestination] = usePersistentState('viajes:destino', '');
   const [selectedTripType, setSelectedTripType] = usePersistentState('viajes:tipo', '');
+  useFieldRequests('routes', { origin: setSelectedOrigin, destination: setSelectedDestination, type: setSelectedTripType }); // filtros finos pedidos por Logi
   const [clickTimeout, setClickTimeout] = useState(null);
   const prevPackagesState = useRef({});
 
