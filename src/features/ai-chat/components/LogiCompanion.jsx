@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Pause, Play, Volume2, VolumeX } from 'lucide-react';
 import AssistantAvatar from './AssistantAvatar';
+import VoiceStrip from './VoiceStrip';
+import { useVoicePresenter, useVoiceUi } from '../voiceDock';
 import { prefersReducedMotion, stripForSpeech } from '../voice';
 import { useSpeechSynthesis } from '../useVoice';
 import { useSpeakPref } from '../speakPref';
@@ -65,6 +67,9 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
   speakingRef.current = synth.speaking;
   const spokenKey = useRef('');
   const [look, setLook] = useState(null);
+  const { live } = useVoiceUi(); // la voz no tiene ventana: Logi la muestra en su globo
+  const voiceOn = Boolean(live) && !open && !working;
+  useVoicePresenter(!open && !working);
 
   // posición inicial: el rincón derecho, donde estaba el botón
   useLayoutEffect(() => {
@@ -86,7 +91,7 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
   }, []);
 
   // mientras habla se detiene: así el globo queda pegado a donde está de verdad (no a donde iba)
-  const roaming = wander && !calm && !open && !working && !alert && status === 'idle' && !hovered && !speech;
+  const roaming = wander && !calm && !open && !working && !alert && !voiceOn && status === 'idle' && !hovered && !speech;
 
   // Paseo: camina a un punto al azar, descansa unos segundos (a veces saluda) y repite
   useEffect(() => {
@@ -155,7 +160,7 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
 
   // Con «leer respuestas» activado, lo que Logi tiene que decir también se escucha (una vez por aviso)
   useEffect(() => {
-    if (open || !speakOn || !synth.supported || !['unread', 'confirm'].includes(status)) return;
+    if (open || voiceOn || !speakOn || !synth.supported || !['unread', 'confirm'].includes(status)) return;
     const key = `${status}:${status === 'unread' ? reply : ''}`;
     if (spokenKey.current === key || window.speechSynthesis?.speaking) return; // ya se leyó o hay algo sonando
     const said = textToRead();
@@ -167,7 +172,7 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
 
   // un aviso proactivo también se lee si la lectura en voz alta está activada (una sola vez por aviso)
   useEffect(() => {
-    if (!alert || open || !speakOn || !synth.supported) return;
+    if (!alert || open || voiceOn || !speakOn || !synth.supported) return;
     const key = `alert:${alert.id}`;
     if (spokenKey.current === key || window.speechSynthesis?.speaking) return;
     spokenKey.current = key;
@@ -204,7 +209,8 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
   const toggle = useCallback(() => { setSpeech(''); synth.cancel(); onToggle(); }, [onToggle, synth]);
   if (open || working) return null; // abierto, Logi está en el encabezado del chat
 
-  const mood = synth.speaking ? 'talking' : alert ? (alert.severity === 'high' ? 'worried' : 'unread') : ['confirm', 'thinking', 'unread'].includes(status) ? status : 'idle';
+  const voiceMood = voiceOn ? { speaking: 'talking', listening: 'unread', thinking: 'thinking' }[live.phase] : null;
+  const mood = voiceMood ?? (synth.speaking ? 'talking' : alert ? (alert.severity === 'high' ? 'worried' : 'unread') : ['confirm', 'thinking', 'unread'].includes(status) ? status : 'idle');
   const nearRight = (pos.x ?? 0) > window.innerWidth / 2;
   const talkingNow = Boolean(speech) && !alert && mood === 'idle';
   const canSpeak = synth.supported && Boolean(speech) && !alert && status !== 'thinking';
@@ -249,7 +255,12 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
             </button>
           </div>
         )}
-        {speech && !alert && (
+        {voiceOn && (
+          <div className={`logi-bubble absolute bottom-full mb-1 ${nearRight ? 'right-0' : 'left-0'}`}>
+            <VoiceStrip live={live} variant="bubble" />
+          </div>
+        )}
+        {speech && !alert && !voiceOn && (
           <div
             className={`logi-bubble pointer-events-none absolute bottom-full mb-1 w-max max-w-[15rem] rounded-2xl border border-surface-200 bg-white px-3.5 py-2.5 text-sm font-medium leading-snug text-surface-800 shadow-lg ${nearRight ? 'right-0 rounded-br-md' : 'left-0 rounded-bl-md'}`}
           >
@@ -285,7 +296,7 @@ function LogiCompanion({ open, status, text, reply, wander = true, onToggle, pan
           title="Abrir el asistente"
         >
           <span className="block" style={{ transform: `scaleX(${pos.dir === 1 ? -1 : 1})` }}>
-            <AssistantAvatar body size={WIDTH} mood={mood} walking={pos.walking} waving={waving || talkingNow} look={look} mouth={synth.speaking ? synth.mouth : null} />
+            <AssistantAvatar body size={WIDTH} mood={mood} walking={pos.walking} waving={waving || talkingNow} look={look} mouth={voiceOn ? (live.phase === 'speaking' ? live.mouth : null) : synth.speaking ? synth.mouth : null} />
           </span>
           {badge}
         </button>

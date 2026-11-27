@@ -5,7 +5,7 @@ import useAssistantChat from '../useAssistantChat';
 import { useAiMode } from '../../../app/AiModeContext';
 import useRole from '../../../app/useRole';
 import { parseVoiceCommand } from '../guided/voiceCommands';
-import { requestTab } from '../pageContext';
+import { requestSearch, requestTab } from '../pageContext';
 import { savePrefs, getPrefs } from '../alerts/alertPrefs';
 import { setEnabled } from '../alerts/alertPolicy';
 import { useVoiceDock, voiceDock } from '../voiceDock';
@@ -40,6 +40,11 @@ export default function VoiceHost({ onLogiWalk }) {
         if (cmd.tab) requestTab(cmd.tab.page, cmd.tab.value);
         navigate(cmd.to);
         if (wantFull && cmd.to !== '/assistant') setWantFull(false); // se quiere ver la pantalla: de completa a barra compacta
+        return { say: cmd.say };
+      case 'filter':
+        navigate(cmd.to);
+        requestSearch(cmd.page, cmd.text); // la tabla queda filtrada (o limpia, si fue «quita el filtro»)
+        if (wantFull) setWantFull(false);
         return { say: cmd.say };
       case 'denied': return { say: `No tienes ${cmd.label} disponible con tu rol.` };
       case 'close': return { say: cmd.say, close: true };

@@ -176,11 +176,11 @@ function PackageForm({ onSuccess, onCancel, initialRouteId = '', initialOrigin =
         payload.sender_phone = '';
       }
 
-      await apiService.post('/logistics/packages', {
+      const created = await apiService.post('/logistics/packages', {
         ...payload,
         route_id: values.route_id || null
       });
-      onSuccess();
+      onSuccess(created?.data ?? created);
     } catch (err) {
       setError(err.message || 'Error al registrar paquete');
     } finally {

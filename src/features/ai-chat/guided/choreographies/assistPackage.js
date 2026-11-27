@@ -2,6 +2,7 @@ import { parseVoiceConfirmation } from '../voiceConfirm';
 import { StopError } from '../guidedForms';
 import { cleanName, cleanText, isCancel, isSkip, matchOption, parseSpokenNumber, parseSpokenPhone } from '../speechParse';
 import { phoneTail, suggestContact } from '../contactMatch';
+import { requestSearch, takeCreatedPackage } from '../../pageContext';
 
 const LIST_PATH = '/logistics/packages';
 const MAX_TRIES = 3;
@@ -178,8 +179,13 @@ export default async function assistPackage(ctx, io) {
       await say('Falta algo para poder registrarlo. Revisa lo que quedó marcado en la pantalla.', { mood: 'worried' });
       return { assisted: true, done: false };
     }
-    await say('¡Listo! Registré el paquete.', { mood: 'happy' });
-    return { assisted: true, done: true, values };
+    // lo registrado se ve en la tabla: se filtra por su código y Logi dice cuál es
+    const code = takeCreatedPackage();
+    if (code) {
+      requestSearch('packages', code);
+      await say(`¡Listo! Registré el paquete ${code.replace(/-/g, ' ').toLowerCase()}. Te lo dejo filtrado en la tabla.`, { mood: 'happy' });
+    } else await say('¡Listo! Registré el paquete.', { mood: 'happy' });
+    return { assisted: true, done: true, values, code };
   } catch (e) {
     if (e instanceof StopError) throw e;
     await ctx.say('Algo falló en la pantalla. Puedes seguir tú con el formulario.', { mood: 'worried' }).catch(() => {});

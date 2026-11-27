@@ -162,3 +162,67 @@ describe('Logi, el compañero', () => {
     });
   });
 });
+
+describe('Logi, el compañero: los ojos miran el campo del formulario', () => {
+  const FIELD = { left: 500, top: 300, width: 100, height: 30 }; // centro (550, 315)
+  const BOT = { left: 0, top: 0, width: 100, height: 100 }; // centro (50, 50)
+  let rectSpy;
+
+  beforeEach(() => {
+    vi.useFakeTimers(); reduced = false; window.sessionStorage.clear(); window.sessionStorage.setItem('logi:saludo', '1');
+    setSpeakPref(false);
+    // jsdom no calcula posiciones: el campo está lejos, a la derecha y abajo de Logi
+    rectSpy = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function rect() {
+      return /^(INPUT|SELECT|TEXTAREA)$/.test(this.tagName) ? { ...FIELD, right: 600, bottom: 330 } : { ...BOT, right: 100, bottom: 100 };
+    });
+  });
+  afterEach(() => { rectSpy.mockRestore(); vi.useRealTimers(); document.body.innerHTML = ''; });
+
+  const eyes = (container) => container.querySelector('svg.logi [style*="translate("]');
+  const addField = (tag = 'input') => { const el = document.createElement(tag); document.body.appendChild(el); return el; };
+
+  it('al enfocar un campo, los ojos se desplazan hacia él (derecha y abajo, al tope)', () => {
+    const { container } = setup();
+    expect(eyes(container)).toBeNull(); // sin nada enfocado miran al frente
+    const input = addField('input');
+    fireEvent.focusIn(input);
+    expect(eyes(container)?.getAttribute('style')).toContain('translate(2.4px, 1.6px)');
+  });
+
+  it('también con una lista desplegable y un área de texto', () => {
+    for (const tag of ['select', 'textarea']) {
+      const { container, unmount } = setup();
+      fireEvent.focusIn(addField(tag));
+      expect(eyes(container), tag).not.toBeNull();
+      unmount();
+    }
+  });
+
+  it('un botón, un enlace o texto NO mueven los ojos: solo los campos de formulario', () => {
+    const { container } = setup();
+    for (const tag of ['button', 'a', 'div']) fireEvent.focusIn(addField(tag));
+    expect(eyes(container)).toBeNull();
+  });
+
+  it('un campo dentro del propio Logi se ignora (no se mira a sí mismo)', () => {
+    const { container } = setup();
+    const inside = document.createElement('input');
+    container.querySelector('button[aria-label^="Abrir asistente"]').parentElement.appendChild(inside); // dentro del bloque de Logi
+    fireEvent.focusIn(inside);
+    expect(eyes(container)).toBeNull();
+  });
+
+  it('con «reducir movimiento» los ojos no siguen nada', () => {
+    reduced = true;
+    const { container } = setup();
+    fireEvent.focusIn(addField('input'));
+    expect(eyes(container)).toBeNull();
+  });
+
+  it('con el chat abierto Logi no se dibuja y por tanto no mira', () => {
+    const { container } = setup({ open: true });
+    fireEvent.focusIn(addField('input'));
+    expect(eyes(container)).toBeNull();
+  });
+});
+

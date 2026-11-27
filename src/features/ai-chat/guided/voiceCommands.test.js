@@ -92,3 +92,30 @@ describe('parseVoiceCommand: otras órdenes', () => {
     expect(parseVoiceCommand('llévame a Viajes', 'admin')).toMatchObject({ kind: 'navigate', to: '/logistics/routes', say: 'Voy a Viajes.' });
   });
 });
+
+describe('parseFilter: filtrar la tabla de Paquetes por voz', () => {
+  const f = (t, role = 'admin') => parseVoiceCommand(t, role);
+  it.each([
+    ['filtra por Oruro', 'oruro'],
+    ['busca el paquete de María', 'maria'],
+    ['busca TRK-123', 'trk-123'],
+    ['muéstrame los paquetes pendientes', 'pendiente'],
+    ['muéstrame los paquetes de Oruro por favor', 'oruro'],
+    ['filtra los paquetes en tránsito', 'en transito'],
+  ])('«%s» filtra por «%s»', (frase, texto) => {
+    expect(f(frase)).toMatchObject({ kind: 'filter', page: 'packages', to: '/logistics/packages', text: texto });
+  });
+  it('«quita el filtro» y «muéstrame todos los paquetes» lo limpian', () => {
+    expect(f('quita el filtro')).toMatchObject({ kind: 'filter', text: '' });
+    expect(f('muéstrame todos los paquetes')).toMatchObject({ kind: 'filter', text: '' });
+  });
+  it('las preguntas NO son filtros: van al asistente', () => {
+    for (const q of ['¿cuántos paquetes hay en Oruro?', 'busca qué paquetes llegaron hoy', 'muéstrame los paquetes que están atrasados hoy', 'dónde está el paquete de María', 'muéstrame algo', 'muéstrame los paquetes pendientes de María']) {
+      expect(f(q), q).toBeNull();
+    }
+  });
+  it('un conductor no tiene Paquetes: se le dice que no está disponible', () => {
+    expect(f('filtra por Oruro', 'driver')).toMatchObject({ kind: 'denied' });
+    expect(f('quita el filtro', 'driver')).toBeNull();
+  });
+});

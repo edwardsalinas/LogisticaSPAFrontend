@@ -74,6 +74,32 @@ export function useTabRequests(page, setTab, allowed) {
   }, [page]);
 }
 
+// ---- «muéstrame lo que acabas de hacer»: la pantalla se filtra con lo que se pide (un código de rastreo)
+const SEARCH_EVENT = 'logi:busqueda';
+const SEARCH_STORAGE = { packages: 'logisticaspa:filtros:paquetes:busqueda' };
+
+/** Pide a una pantalla con buscador que se filtre por este texto (y siempre en su pestaña principal). Si aún no está abierta, empieza ya filtrada. */
+export const requestSearch = (page, text) => {
+  try { if (SEARCH_STORAGE[page]) window.sessionStorage.setItem(SEARCH_STORAGE[page], JSON.stringify(String(text ?? ''))); } catch { /* sin almacenamiento */ }
+  if (page === 'packages') requestTab('packages', 'all');
+  window.dispatchEvent(new CustomEvent(SEARCH_EVENT, { detail: { page, text: String(text ?? '') } }));
+};
+
+/** Para las pantallas con buscador: atiende los pedidos de filtro. */
+export function useSearchRequests(page, setSearch) {
+  useEffect(() => {
+    const onRequest = (e) => { if (e.detail?.page === page) setSearch(e.detail.text); };
+    window.addEventListener(SEARCH_EVENT, onRequest);
+    return () => window.removeEventListener(SEARCH_EVENT, onRequest);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setSearch es estable
+  }, [page]);
+}
+
+// el último paquete que el formulario registró: la ayuda por voz lo usa para enseñarlo en la tabla
+let lastCreated = null;
+export const noteCreatedPackage = (pkg) => { lastCreated = pkg?.tracking_code ? String(pkg.tracking_code) : null; };
+export const takeCreatedPackage = () => { const c = lastCreated; lastCreated = null; return c; };
+
 /** El contexto que viaja con cada consulta al asistente. */
 export const buildChatContext = () => {
   const path = typeof window === 'undefined' ? '' : window.location.pathname;

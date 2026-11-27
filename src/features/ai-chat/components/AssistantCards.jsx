@@ -1,6 +1,7 @@
 import { useContext, useState } from 'react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
+import { requestSearch } from '../pageContext';
 import { Check, CheckCircle2, FileText, ListChecks, Clock, MapPin, Package, ShieldAlert, Truck, User, X, XCircle } from 'lucide-react';
 import apiService from '../../../services/apiService';
 import useRole from '../../../app/useRole';
@@ -353,6 +354,16 @@ export function ActionProposalCard({ data }) {
               </li>
             ))}
           </ul>
+          {canOpenPackage && (
+            // «¿dónde quedó?»: lleva a la tabla de Paquetes ya filtrada por lo que se acaba de hacer (si fue un solo paquete)
+            <Link
+              to="/logistics/packages"
+              onClick={() => requestSearch('packages', state.records.length === 1 ? state.records[0].tracking_code : '')}
+              className="mt-1 inline-flex min-h-11 items-center rounded-lg bg-primary-50 px-3 text-sm font-semibold text-primary-700 hover:bg-primary-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-500"
+            >
+              {state.records.length === 1 ? 'Ver en la tabla de Paquetes' : 'Ver en Paquetes'}
+            </Link>
+          )}
         </div>
       )}
       {state.status === 'cancelled' && <p role="status" className="border-t border-surface-100 bg-surface-50 px-4 py-3 text-sm text-surface-600">{state.message ?? 'Acción cancelada. No se hizo ningún cambio.'}</p>}

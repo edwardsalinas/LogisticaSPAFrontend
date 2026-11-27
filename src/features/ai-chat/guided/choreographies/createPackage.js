@@ -1,4 +1,5 @@
 import { emitGuided, GUIDED_EVENTS, StopError } from '../guidedForms';
+import { requestSearch } from '../../pageContext';
 
 const LIST_PATH = '/logistics/packages';
 
@@ -76,6 +77,9 @@ export default async function createPackage(ctx, action) {
 
   const res = await ctx.confirm(action);
   emitGuided(GUIDED_EVENTS.changed);
-  await ctx.say(`¡Listo! ${res?.result?.message ?? 'Paquete registrado.'}`, { wait: true, mood: 'happy' });
+  const records = res?.result?.data?.records;
+  const code = records?.length === 1 ? records[0].tracking_code : null;
+  if (code) requestSearch('packages', code); // la tabla queda filtrada por lo que se acaba de registrar
+  await ctx.say(`¡Listo! ${res?.result?.message ?? 'Paquete registrado.'}${code ? ' Te lo dejo filtrado en la tabla.' : ''}`, { wait: true, mood: 'happy' });
   return res;
 }

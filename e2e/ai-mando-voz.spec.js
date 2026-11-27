@@ -64,6 +64,9 @@ test('«quédate quieto» pausa el paseo de Logi y «camina» lo reanuda; «grac
   await login(page, 'admin');
   await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
   await openVoice(page);
+  // la voz no tiene ventana propia: con el chat abierto está dentro de él; al cerrarlo, sigue en el globo de Logi
+  await page.getByRole('button', { name: 'Cerrar asistente' }).click();
+  await expect(page.getByTestId('voice-compact')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Pausar el paseo de Logi' })).toBeVisible();
 
   await hear(page, 'quédate quieto');
@@ -93,4 +96,27 @@ test('cada rol solo navega a lo suyo: el cliente no puede ir a la flota y Logi s
 
   await hear(page, 'llévame a tracking');
   await expect(page).toHaveURL(/\/tracking$/, { timeout: 30_000 });
+});
+
+test('«filtra por Oruro» lleva a Paquetes y deja la tabla filtrada; «quita el filtro» la limpia', async ({ browser }) => {
+  test.setTimeout(180_000);
+  const ctx = await browser.newContext({ locale: 'es-BO', viewport: { width: 1366, height: 800 } });
+  await ctx.addInitScript(installFakeVoice);
+  const page = await ctx.newPage();
+  const chats = [];
+  page.on('request', (r) => { if (r.method() === 'POST' && /\/ai-agent\/chat/.test(r.url())) chats.push(r.url()); });
+  await login(page, 'admin');
+  await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+  await openVoice(page);
+  // con el chat abierto la voz se muestra dentro de él, no en una ventana aparte
+  await expect(page.getByRole('dialog', { name: 'Chat de voz' })).toHaveCount(0);
+
+  await hear(page, 'filtra por Oruro');
+  await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe('/logistics/packages');
+  await expect(page.getByRole('textbox', { name: 'Buscar viaje o ruta' })).toHaveValue('oruro');
+  await expect.poll(() => lastSpoken(page), { timeout: 15_000 }).toContain('filtré Paquetes');
+
+  await hear(page, 'quita el filtro');
+  await expect(page.getByRole('textbox', { name: 'Buscar viaje o ruta' })).toHaveValue('');
+  expect(chats).toEqual([]); // se atendió en el navegador, sin consultar al asistente
 });

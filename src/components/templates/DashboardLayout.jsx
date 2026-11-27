@@ -4,7 +4,6 @@ import AiAssistantPanel from '../../features/ai-chat/components/AiAssistantPanel
 import LogiHost from '../../features/ai-chat/components/LogiHost';
 import VoiceHost from '../../features/ai-chat/components/VoiceHost';
 import WakeWordHost from '../../features/ai-chat/components/WakeWordHost';
-import { useVoiceDock } from '../../features/ai-chat/voiceDock';
 import { GuidedRunProvider } from '../../features/ai-chat/guided/GuidedRunProvider';
 import CommandPalette from '../organisms/CommandPalette';
 import Navbar from '../organisms/Navbar';
@@ -59,9 +58,7 @@ function DashboardLayout() {
   const aiPanelId = 'ai-assistant-panel';
   // Cuando Logi va a hacer una acción a la vista de todos, el panel se cierra para dejar el escenario libre
   const closePanelForLogi = useCallback(() => setIsAiOpen(false), [setIsAiOpen]);
-  // Al hablar con Logi el panel de texto se cierra: queda la barra de voz y la página libre
-  const voiceDock = useVoiceDock();
-  useEffect(() => { if (voiceDock.open && !onAssistantPage) setIsAiOpen(false); }, [voiceDock.open, onAssistantPage, setIsAiOpen]);
+  // Hablar con Logi NO cierra el chat: la voz se muestra dentro de él (o en el globo de Logi si está cerrado)
 
   // En el celular el panel ocupa casi toda la pantalla: al navegar se cierra para dejar ver la pantalla de destino
   // (la conversación se conserva y vuelve al abrirlo)

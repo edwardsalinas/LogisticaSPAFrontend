@@ -5,6 +5,8 @@ import Skeleton from '../../../components/atoms/Skeleton';
 import AiSuggestionButtons from './AiSuggestionButtons';
 import Announcer from './Announcer';
 import AssistantAvatar from './AssistantAvatar';
+import VoiceStrip from './VoiceStrip';
+import { useVoicePresenter, useVoiceUi } from '../voiceDock';
 import AssistantComposer, { useAssistantComposer } from './AssistantComposer';
 import ChatBubble from './ChatBubble';
 import ConversationHistory, { refreshConversationList } from './ConversationHistory';
@@ -59,7 +61,10 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = nu
   const onlyWelcome = chat.messages.length === 0;
   // el robot refleja lo que hace: escribiendo la respuesta, pensando o en reposo
   const streaming = chat.messages.length > 0 && chat.messages[chat.messages.length - 1].streaming;
-  const mood = streaming ? 'talking' : loading ? 'thinking' : 'idle';
+  const { live } = useVoiceUi();
+  useVoicePresenter(isPanel); // en el chat flotante la voz se muestra aquí, con Logi del encabezado como protagonista
+  const voiceMood = live ? { speaking: 'talking', listening: 'unread', thinking: 'thinking' }[live.phase] : null;
+  const mood = voiceMood ?? (streaming ? 'talking' : loading ? 'thinking' : 'idle');
   const pageEntity = usePageEntity();
   const pageView = usePageView();
   // lo que se está viendo va primero («¿Dónde está este paquete?»), luego lo general del rol
@@ -103,7 +108,10 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = nu
       <div className="border-b border-surface-100 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.96))] px-5 py-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex min-w-0 items-start gap-3">
-            <AssistantAvatar mood={mood} size={52} />
+            <span className="relative shrink-0">
+              {live?.phase === 'listening' && <span aria-hidden="true" className="absolute -inset-1 rounded-2xl bg-sky-400/30 animate-ping motion-reduce:animate-none" />}
+              <AssistantAvatar mood={mood} size={52} mouth={live?.phase === 'speaking' ? live.mouth : null} />
+            </span>
             <div className="min-w-0">
               <h2 className="text-lg font-bold tracking-tight text-primary-700">Logi, tu copiloto</h2>
               <p className="mt-1 text-xs text-surface-600 line-clamp-2">{introForRole(role)}</p>
@@ -216,6 +224,8 @@ function AiAssistantPanel({ mode = 'panel', onClose = null, role, logiWalks = nu
           )}
         </div>
       </div>
+
+      {isPanel && live && <VoiceStrip live={live} variant="panel" />}
 
       <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-5">
         <Announcer messages={chat.messages} loading={loading} />

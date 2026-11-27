@@ -67,6 +67,32 @@ export const parseNavigation = (text, role) => {
   return { kind: 'navigate', to: hit.p.to, ...(hit.p.key === 'packages' ? { tab: { page: 'packages', value: 'all' } } : {}), say: `Voy a ${hit.p.label}.` };
 };
 
+// ---- filtrar la tabla de Paquetes: «filtra por Oruro», «busca el paquete de María», «muéstrame los paquetes pendientes», «quita el filtro»
+const STATUS_WORDS = { pendientes: 'pendiente', pendiente: 'pendiente', asignados: 'asignado', asignado: 'asignado', 'en transito': 'en transito' };
+const NOT_A_FILTER = /\b(cuantos|cuantas|cual|cuales|que|quien|quienes|donde|como|cuando|por que|hay|tengo|tenemos|esta|estan|llego|salio|falta|faltan)\b/;
+const CLEAR_FILTER = /^(?:(?:por favor|ok|logi|ya|ahora)\s+)*(?:quita|quitar|borra|borrar|limpia|limpiar|elimina|saca|sacar)\s+(?:el |los |la )?(?:filtros?|busqueda)(?:\s+(?:por favor|logi))?$|^(?:(?:por favor|ok|logi|ahora)\s+)*(?:muestrame|mostrar|ver|quiero ver)\s+todos?\s+(?:los\s+)?paquetes$/;
+const FILTER = /^(?:(?:por favor|oye|ok|logi|bueno|y|ahora|entonces)\s+)*(filtra|filtrar|filtrame|busca|buscar|buscame|encuentra|encuentrame|muestrame|mostrar|mostrarme|ensename|quiero ver|necesito ver|ver)\s+(?:(?:el|la|los|las|un|una)\s+)?(paquetes?|envios?|despachos?)?\s*(?:(?:filtrados?|filtrado)\s+)?(?:por|de|del|para|a|hacia|desde|con destino a|con origen en|que dicen|que sean|que digan)?\s*(.+)$/;
+
+/** «Filtra Paquetes por esto»: devuelve { kind: 'filter', page, to, text, say } o { kind: 'clearFilter', ... } o null. */
+export const parseFilter = (text, role) => {
+  const t = normalize(text).replace(/[.,;]/g, ' ').replace(/\s+/g, ' ').trim();
+  const packages = PAGES.find((p) => p.key === 'packages');
+  if (CLEAR_FILTER.test(t)) {
+    return packages.roles.includes(role) ? { kind: 'filter', page: 'packages', to: packages.to, text: '', say: 'Quité el filtro: ves todos los paquetes.' } : null;
+  }
+  const m = FILTER.exec(t);
+  if (!m) return null;
+  const [, verb, noun] = m;
+  let term = m[3].replace(/\s+(?:por favor|logi|gracias)$/, '').trim();
+  const needsNoun = /^(muestrame|mostrar|mostrarme|ensename|quiero ver|necesito ver|ver)$/.test(verb); // «muéstrame…» solo es filtro si habla de paquetes
+  if ((needsNoun && !noun) || !term || term.split(' ').length > 4 || NOT_A_FILTER.test(t)) return null;
+  if (/ (?:de|del|y|con|en|para|que|por) /.test(` ${term} `.replace(/^ en transito /, ' ')) && term !== 'en transito') return null; // dos criterios («pendientes de María»): eso lo resuelve el asistente, no un filtro
+  term = STATUS_WORDS[term] ?? term;
+  if (/^trk /.test(term)) term = term.replace(/ /g, '-'); // un código de rastreo lleva guiones (normalize los volvió espacios)
+  if (!packages.roles.includes(role)) return { kind: 'denied', label: packages.label };
+  return { kind: 'filter', page: 'packages', to: packages.to, text: term, say: `Listo, filtré Paquetes por «${term}».` };
+};
+
 const SHORT = (t, max) => t.split(' ').length <= max;
 const CLOSE_WORDS = new Set(['ok', 'logi', 'bueno', 'muy', 'bien', 'ya', 'cierra', 'cerrar', 'salir', 'sal', 'terminar', 'termina', 'adios', 'chao', 'hasta', 'luego', 'listo', 'gracias', 'eso', 'es', 'todo', 'nada', 'mas', 'el', 'chat', 'de', 'voz', 'la', 'por', 'favor', 'ahora']);
 
@@ -77,6 +103,8 @@ const CLOSE_WORDS = new Set(['ok', 'logi', 'bueno', 'muy', 'bien', 'ya', 'cierra
 export const parseVoiceCommand = (text, role) => {
   const nav = parseNavigation(text, role);
   if (nav) return nav;
+  const filter = parseFilter(text, role);
+  if (filter) return filter;
   const t = normalize(text).replace(/[.,]/g, ' ').replace(/\s+/g, ' ').trim();
   if (!t) return null;
 

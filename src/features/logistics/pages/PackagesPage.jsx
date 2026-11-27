@@ -7,7 +7,7 @@ import Button from '../../../components/atoms/Button';
 import Modal from '../../../components/molecules/Modal';
 import DataTable from '../../../components/organisms/DataTable';
 import usePersistentState from '@/hooks/usePersistentState';
-import { useRegisterPageEntity, useRegisterPageView, useTabRequests } from '../../ai-chat/pageContext';
+import { noteCreatedPackage, useRegisterPageEntity, useRegisterPageView, useSearchRequests, useTabRequests } from '../../ai-chat/pageContext';
 import Skeleton from '../../../components/atoms/Skeleton';
 import PackageDetail from '../components/PackageDetail';
 import PackageForm from '../components/PackageForm';
@@ -40,6 +40,7 @@ function PackagesPage() {
   // el asistente sabe qué pestaña ves y, si abriste la ficha de un paquete, cuál es («este paquete»)
   useRegisterPageView(activeTab);
   useTabRequests('packages', setActiveTab, ['all', 'delivered']); // «muéstrame los paquetes entregados»
+  useSearchRequests('packages', setSearchTerm); // «muéstrame el paquete que acabas de crear»: la tabla se filtra por su código
   useRegisterPageEntity(selectedPackage?.tracking_code ? { type: 'package', ref: selectedPackage.tracking_code } : null);
   const [expandedShipments, setExpandedShipments] = useState(new Set());
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -92,7 +93,8 @@ function PackagesPage() {
     }
   }, [selectedDate]);
 
-  const handleCreateSuccess = () => {
+  const handleCreateSuccess = (created) => {
+    noteCreatedPackage(created);
     setShowForm(false);
     setContextualRoute(null);
     fetchData();
@@ -158,9 +160,10 @@ function PackagesPage() {
     let result = packages;
 
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+      const plain = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      const term = plain(searchTerm.trim());
       result = result.filter((pkg) =>
-        [pkg.tracking_code, pkg.origen, pkg.destino].some((value) => String(value || '').toLowerCase().includes(term))
+        [pkg.tracking_code, pkg.origen, pkg.destino, pkg.recipient_name, pkg.sender_name, String(pkg.status || '').replace(/_/g, ' ')].some((value) => plain(value).includes(term))
       );
     }
 
@@ -180,11 +183,13 @@ function PackagesPage() {
     // 3. Carga suelta (Solo pendiente de entrega)
     const loose = result.filter(p => !p.route_id && p.status !== 'entregado');
 
+    const searching = Boolean(searchTerm.trim()); // con un filtro puesto solo se ven los despachos donde hay coincidencias
+
     if (activeTab === 'delivered') {
       // Historial: Rutas finalizadas o con paquetes entregados
       const historicalShipments = Object.values(shipmentsMap)
         .filter(ship => {
-          if (isClient && ship.packages.length === 0) return false;
+          if ((isClient || searching) && ship.packages.length === 0) return false;
           const isFinished = ['completada', 'finalizada', 'completed', 'entregado'].includes(ship.route.status?.toLowerCase());
           const hasDelivered = ship.packages.some(p => p.status === 'entregado');
           return isFinished || hasDelivered;
@@ -201,7 +206,7 @@ function PackagesPage() {
     dayEnd.setHours(23, 59, 59, 999);
 
     const activeShipments = Object.values(shipmentsMap).filter(ship => {
-      if (isClient && ship.packages.length === 0) return false;
+      if ((isClient || searching) && ship.packages.length === 0) return false;
       if (!ship.route.departure_time) return true;
       const d = new Date(ship.route.departure_time);
       return d >= dayStart && d <= dayEnd;
@@ -323,7 +328,7 @@ function PackagesPage() {
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 group-focus-within:text-primary-500 transition-colors" />
                 <input 
                   type="text" 
-                  placeholder="Buscar viaje o ruta..." 
+                  placeholder="Buscar paquete, viaje o ruta..." 
                   aria-label="Buscar viaje o ruta"
                   className="pl-9 pr-4 py-2 max-sm:min-h-11 bg-white border border-surface-200 rounded-xl text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all outline-none w-full sm:w-44 lg:w-48"
                   value={searchTerm}

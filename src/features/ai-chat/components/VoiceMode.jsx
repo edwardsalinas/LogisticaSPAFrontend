@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Maximize2, Mic, Minimize2, Square, Volume2, X } from 'lucide-react';
 import { useSpeechRecognition, useSpeechSynthesis } from '../useVoice';
+import { voiceDock, useVoiceUi } from '../voiceDock';
 import { plainText, stripForSpeech } from '../voice';
 import apiService from '../../../services/apiService';
 import { canGuide, useGuidedRun } from '../guided/GuidedRunProvider';
@@ -242,7 +243,34 @@ export default function VoiceMode({ chat, onClose, compact = false, onExpand, on
   const caption = recognition.listening && recognition.interim ? recognition.interim : null;
   const error = recognition.error;
 
+  // La barra compacta no es una ventana: publica su estado y lo muestra quien esté a la vista (el chat o el globo de Logi)
+  const { presenters } = useVoiceUi();
+  const presented = compact && presenters > 0;
+  const api = useRef(null);
+  api.current = { onOrb, answer: answerConfirmation, setHandsFree, onClose, onExpand };
+  const controls = useMemo(() => ({
+    orb: () => api.current.onOrb(),
+    answer: (t) => api.current.answer(t),
+    handsFree: (v) => api.current.setHandsFree(v),
+    close: () => api.current.onClose(),
+    expand: onExpand ? () => api.current.onExpand?.() : null,
+  }), [Boolean(onExpand)]); // eslint-disable-line react-hooks/exhaustive-deps -- las acciones se leen de api.current
+  const replyText = !lastAssistant || lastAssistant.isError ? '' : plainText(lastAssistant.content);
+  const pendingId = pending?.id ?? null;
+  useEffect(() => {
+    if (!compact) { voiceDock.publish(null); return; }
+    voiceDock.publish({
+      phase, caption, notice, error, assisting, handsFree, supported: recognition.supported, controls,
+      pending: pending ? { id: pendingId, title: pending.title, lines: pending.lines } : null,
+      reply: !pending && !assisting ? replyText : '',
+      mouth: phase === 'speaking' ? synth.mouth : null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- se republica solo cuando cambia algo visible
+  }, [compact, phase, caption, notice, error, assisting, handsFree, recognition.supported, controls, pendingId, replyText, synth.mouth]);
+  useEffect(() => () => voiceDock.publish(null), []);
+
   // Barra compacta: no tapa la página. Muestra el micrófono, lo que oye y lo último que dijo el asistente
+  if (presented) return null;
   if (compact) {
     const orbColor = phase === 'listening' ? 'bg-sky-500' : phase === 'speaking' ? 'bg-emerald-500' : phase === 'thinking' ? 'bg-violet-500' : 'bg-slate-600';
     return createPortal(
