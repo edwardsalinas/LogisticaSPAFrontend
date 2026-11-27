@@ -6,6 +6,7 @@ import { useAiMode } from '../../../app/AiModeContext';
 import useRole from '../../../app/useRole';
 import { parseVoiceCommand } from '../guided/voiceCommands';
 import { requestSearch, requestTab } from '../pageContext';
+import { registerScreenRuntime } from '../screenCommands';
 import { savePrefs, getPrefs } from '../alerts/alertPrefs';
 import { setEnabled } from '../alerts/alertPolicy';
 import { useVoiceDock, voiceDock } from '../voiceDock';
@@ -25,6 +26,7 @@ export default function VoiceHost({ onLogiWalk }) {
   const navigate = useNavigate();
   const [wantFull, setWantFull] = usePersistentState('asistente:voz-completa', false);
   useEffect(() => voiceDock.registerHost(), []);
+  useEffect(() => registerScreenRuntime(navigate, role), [navigate, role]); // las órdenes de pantalla del asistente («muéstrame los viajes de Oruro»)
   if (!dock.open) return null;
   // en la pantalla del asistente (y en el Modo IA, que convierte la página principal en el asistente) ya todo es del asistente: voz completa
   const full = wantFull || pathname === '/assistant' || (pathname === '/' && aiMode);
@@ -43,6 +45,7 @@ export default function VoiceHost({ onLogiWalk }) {
         return { say: cmd.say };
       case 'filter':
         navigate(cmd.to);
+        if (cmd.tab) requestTab(cmd.page, cmd.tab);
         requestSearch(cmd.page, cmd.text); // la tabla queda filtrada (o limpia, si fue «quita el filtro»)
         if (wantFull) setWantFull(false);
         return { say: cmd.say };

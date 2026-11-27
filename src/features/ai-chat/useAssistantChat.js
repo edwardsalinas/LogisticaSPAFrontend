@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useRef, useState } from 'react'
 import apiService from '../../services/apiService';
 import { fileToJpegBase64 } from '../../utils/imageForUpload';
 import { buildChatContext } from './pageContext';
+import { runScreenCommands } from './screenCommands';
 
 const HISTORY_LIMIT = 16; // el backend acepta como máximo 16 mensajes previos
 export const MAX_MESSAGE_LENGTH = 1000;
@@ -97,6 +98,7 @@ export function useChatState(initialMessages = []) {
       } else {
         setMessages((prev) => [...prev, { id: nextId(), ...reply }]);
       }
+      runScreenCommands(attachments); // «muéstrame los viajes de Oruro»: Logi deja la pantalla como se pidió
       return { ok: true, text: res.response, attachments, isError: false };
     };
 

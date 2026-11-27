@@ -71,26 +71,35 @@ export const parseNavigation = (text, role) => {
 const STATUS_WORDS = { pendientes: 'pendiente', pendiente: 'pendiente', asignados: 'asignado', asignado: 'asignado', 'en transito': 'en transito' };
 const NOT_A_FILTER = /\b(cuantos|cuantas|cual|cuales|que|quien|quienes|donde|como|cuando|por que|hay|tengo|tenemos|esta|estan|llego|salio|falta|faltan)\b/;
 const CLEAR_FILTER = /^(?:(?:por favor|ok|logi|ya|ahora)\s+)*(?:quita|quitar|borra|borrar|limpia|limpiar|elimina|saca|sacar)\s+(?:el |los |la )?(?:filtros?|busqueda)(?:\s+(?:por favor|logi))?$|^(?:(?:por favor|ok|logi|ahora)\s+)*(?:muestrame|mostrar|ver|quiero ver)\s+todos?\s+(?:los\s+)?paquetes$/;
-const FILTER = /^(?:(?:por favor|oye|ok|logi|bueno|y|ahora|entonces)\s+)*(filtra|filtrar|filtrame|busca|buscar|buscame|encuentra|encuentrame|muestrame|mostrar|mostrarme|ensename|quiero ver|necesito ver|ver)\s+(?:(?:el|la|los|las|un|una)\s+)?(paquetes?|envios?|despachos?)?\s*(?:(?:filtrados?|filtrado)\s+)?(?:por|de|del|para|a|hacia|desde|con destino a|con origen en|que dicen|que sean|que digan)?\s*(.+)$/;
+// qué pantalla nombra la frase («los viajes», «los conductores»): cada una con su búsqueda y, si tiene, su pestaña
+const NOUN_PAGE = { paquete: 'packages', paquetes: 'packages', envio: 'packages', envios: 'packages', despacho: 'packages', despachos: 'packages', viaje: 'routes', viajes: 'routes', ruta: 'routes', rutas: 'routes', vehiculo: 'fleet', vehiculos: 'fleet', camion: 'fleet', camiones: 'fleet', unidades: 'fleet', conductor: 'fleet', conductores: 'fleet', flota: 'fleet', seguimiento: 'tracking', rastreo: 'tracking', tracking: 'tracking' };
+const NOUN_TAB = { vehiculo: 'vehicles', vehiculos: 'vehicles', camion: 'vehicles', camiones: 'vehicles', unidades: 'vehicles', conductor: 'drivers', conductores: 'drivers' };
+const PATH_PAGE = { '/logistics/packages': 'packages', '/logistics/routes': 'routes', '/fleet': 'fleet', '/tracking': 'tracking' };
+const FILTER = /^(?:(?:por favor|oye|ok|logi|bueno|y|ahora|entonces)\s+)*(filtra|filtrar|filtrame|busca|buscar|buscame|encuentra|encuentrame|muestrame|mostrar|mostrarme|ensename|quiero ver|necesito ver|ver)\s+(?:(?:el|la|los|las|un|una)\s+)?(paquetes?|envios?|despachos?|viajes?|rutas?|vehiculos?|camion(?:es)?|unidades|conductor(?:es)?|flota|seguimiento|rastreo|tracking)?\s*(?:(?:filtrados?|filtrado)\s+)?(?:por|de|del|para|a|hacia|desde|con destino a|con origen en|que dicen|que sean|que digan)?\s*(.+)$/;
 
 /** «Filtra Paquetes por esto»: devuelve { kind: 'filter', page, to, text, say } o { kind: 'clearFilter', ... } o null. */
 export const parseFilter = (text, role) => {
   const t = normalize(text).replace(/[.,;]/g, ' ').replace(/\s+/g, ' ').trim();
-  const packages = PAGES.find((p) => p.key === 'packages');
+  const here = PATH_PAGE[typeof window === 'undefined' ? '' : window.location.pathname]; // sin decir qué, se filtra la pantalla en la que se está
+  const screen = (key) => PAGES.find((p) => p.key === key);
   if (CLEAR_FILTER.test(t)) {
-    return packages.roles.includes(role) ? { kind: 'filter', page: 'packages', to: packages.to, text: '', say: 'Quité el filtro: ves todos los paquetes.' } : null;
+    const key = here ?? 'packages';
+    return screen(key).roles.includes(role) ? { kind: 'filter', page: key, to: screen(key).to, text: '', say: `Quité el filtro de ${screen(key).label}.` } : null;
   }
   const m = FILTER.exec(t);
   if (!m) return null;
   const [, verb, noun] = m;
   let term = m[3].replace(/\s+(?:por favor|logi|gracias)$/, '').trim();
-  const needsNoun = /^(muestrame|mostrar|mostrarme|ensename|quiero ver|necesito ver|ver)$/.test(verb); // «muéstrame…» solo es filtro si habla de paquetes
+  const needsNoun = /^(muestrame|mostrar|mostrarme|ensename|quiero ver|necesito ver|ver)$/.test(verb); // «muéstrame…» solo es filtro si dice qué pantalla
   if ((needsNoun && !noun) || !term || term.split(' ').length > 4 || NOT_A_FILTER.test(t)) return null;
   if (/ (?:de|del|y|con|en|para|que|por) /.test(` ${term} `.replace(/^ en transito /, ' ')) && term !== 'en transito') return null; // dos criterios («pendientes de María»): eso lo resuelve el asistente, no un filtro
-  term = STATUS_WORDS[term] ?? term;
+  const key = (noun && NOUN_PAGE[noun]) || here || 'packages';
+  const page = screen(key);
+  if (key === 'packages') term = STATUS_WORDS[term] ?? term;
   if (/^trk /.test(term)) term = term.replace(/ /g, '-'); // un código de rastreo lleva guiones (normalize los volvió espacios)
-  if (!packages.roles.includes(role)) return { kind: 'denied', label: packages.label };
-  return { kind: 'filter', page: 'packages', to: packages.to, text: term, say: `Listo, filtré Paquetes por «${term}».` };
+  if (!page.roles.includes(role)) return { kind: 'denied', label: page.label };
+  const tab = noun && NOUN_TAB[noun];
+  return { kind: 'filter', page: key, to: page.to, text: term, ...(tab ? { tab } : {}), say: `Listo, filtré ${page.label} por «${term}».` };
 };
 
 const SHORT = (t, max) => t.split(' ').length <= max;

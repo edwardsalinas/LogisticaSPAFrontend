@@ -57,7 +57,7 @@ export function useRegisterPageView(tab) {
 const TAB_EVENT = 'logi:pestana';
 // dónde recuerda cada pantalla su pestaña (usePersistentState, por pestaña del navegador): así, si la pantalla aún no está abierta,
 // al abrirse ya empieza en la pedida
-const TAB_STORAGE = { packages: 'logisticaspa:filtros:paquetes:pestana', fleet: 'logisticaspa:filtros:flota:pestana' };
+const TAB_STORAGE = { packages: 'logisticaspa:filtros:paquetes:pestana', fleet: 'logisticaspa:filtros:flota:pestana', routes: 'logisticaspa:filtros:viajes:vista' };
 
 export const requestTab = (page, value) => {
   try { if (TAB_STORAGE[page]) window.sessionStorage.setItem(TAB_STORAGE[page], JSON.stringify(value)); } catch { /* sin almacenamiento */ }
@@ -76,12 +76,20 @@ export function useTabRequests(page, setTab, allowed) {
 
 // ---- «muéstrame lo que acabas de hacer»: la pantalla se filtra con lo que se pide (un código de rastreo)
 const SEARCH_EVENT = 'logi:busqueda';
-const SEARCH_STORAGE = { packages: 'logisticaspa:filtros:paquetes:busqueda' };
+// dónde guarda cada pantalla su búsqueda (usePersistentState): si aún no está abierta, al abrirse ya empieza filtrada
+const SEARCH_STORAGE = {
+  packages: 'logisticaspa:filtros:paquetes:busqueda',
+  routes: 'logisticaspa:filtros:viajes:busqueda',
+  fleet: 'logisticaspa:filtros:flota:busqueda',
+  tracking: 'logisticaspa:filtros:rastreo:busqueda',
+};
 
 /** Pide a una pantalla con buscador que se filtre por este texto (y siempre en su pestaña principal). Si aún no está abierta, empieza ya filtrada. */
 export const requestSearch = (page, text) => {
   try { if (SEARCH_STORAGE[page]) window.sessionStorage.setItem(SEARCH_STORAGE[page], JSON.stringify(String(text ?? ''))); } catch { /* sin almacenamiento */ }
   if (page === 'packages') requestTab('packages', 'all');
+  // la búsqueda de Viajes solo se aplica a la lista, no al calendario
+  if (page === 'routes' && text) requestTab('routes', 'list');
   window.dispatchEvent(new CustomEvent(SEARCH_EVENT, { detail: { page, text: String(text ?? '') } }));
 };
 

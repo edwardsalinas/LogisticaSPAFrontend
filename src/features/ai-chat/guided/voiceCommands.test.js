@@ -119,3 +119,22 @@ describe('parseFilter: filtrar la tabla de Paquetes por voz', () => {
     expect(f('quita el filtro', 'driver')).toBeNull();
   });
 });
+
+describe('parseFilter en todas las pantallas', () => {
+  const f = (t, role = 'admin') => parseVoiceCommand(t, role);
+  it('«filtra los viajes por Oruro» filtra Viajes, y los conductores abren esa pestaña de Flota', () => {
+    expect(f('filtra los viajes por Oruro')).toMatchObject({ kind: 'filter', page: 'routes', to: '/logistics/routes', text: 'oruro' });
+    expect(f('busca los conductores Pérez')).toMatchObject({ kind: 'filter', page: 'fleet', tab: 'drivers', text: 'perez' });
+    expect(f('busca los vehículos 123')).toMatchObject({ kind: 'filter', page: 'fleet', tab: 'vehicles' });
+  });
+  it('sin decir qué, se filtra la pantalla en la que se está', () => {
+    window.history.pushState({}, '', '/logistics/routes');
+    expect(f('filtra por Sucre')).toMatchObject({ page: 'routes', text: 'sucre' });
+    expect(f('quita el filtro')).toMatchObject({ page: 'routes', text: '' });
+    window.history.pushState({}, '', '/');
+  });
+  it('cada rol solo filtra lo que ve: el operador no tiene Flota; el cliente no tiene Viajes', () => {
+    expect(f('filtra los conductores Pérez', 'logistics_operator')).toMatchObject({ kind: 'denied' });
+    expect(f('filtra los viajes por Oruro', 'client')).toMatchObject({ kind: 'denied' });
+  });
+});

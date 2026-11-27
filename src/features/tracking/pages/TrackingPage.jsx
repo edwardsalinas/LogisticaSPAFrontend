@@ -8,7 +8,8 @@ import EmptyState from '../../../components/molecules/EmptyState';
 import Modal from '../../../components/molecules/Modal';
 import Skeleton from '../../../components/atoms/Skeleton';
 import apiService from '../../../services/apiService';
-import { useRegisterPageEntity } from '../../ai-chat/pageContext';
+import usePersistentState from '@/hooks/usePersistentState';
+import { useRegisterPageEntity, useSearchRequests } from '../../ai-chat/pageContext';
 import TrackingForm from '../components/TrackingForm';
 import { GUIDED_EVENTS } from '../../ai-chat/guided/guidedForms';
 import TrackingHistory from '../components/TrackingHistory';
@@ -32,7 +33,8 @@ function TrackingPage() {
   const [selectedPackageId, setSelectedPackageId] = useState(null);
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [completedCheckpointIds, setCompletedCheckpointIds] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = usePersistentState('rastreo:busqueda', '');
+  useSearchRequests('tracking', setSearchTerm);
   const [showSidebar, setShowSidebar] = useState(true);
   
   const fetchPackages = async () => {

@@ -12,6 +12,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
 import usePersistentState from '@/hooks/usePersistentState';
+import { useSearchRequests, useTabRequests } from '../../ai-chat/pageContext';
 import SearchInput from '../../../components/atoms/SearchInput';
 import BaseMap from '../../../components/molecules/BaseMap';
 import CheckpointMarker from '../../../components/molecules/CheckpointMarker';
@@ -141,6 +142,8 @@ function RoutesPage() {
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [searchTerm, setSearchTerm] = usePersistentState('viajes:busqueda', '');
   const [viewMode, setViewMode] = usePersistentState('viajes:vista', 'calendar');
+  useSearchRequests('routes', setSearchTerm); // «filtra los viajes por Oruro» (Logi)
+  useTabRequests('routes', setViewMode, ['calendar', 'list']); // la búsqueda solo se ve en la lista
   const [selectedDriverId, setSelectedDriverId] = usePersistentState('viajes:conductor', '');
   const [selectedOrigin, setSelectedOrigin] = usePersistentState('viajes:origen', '');
   const [selectedDestination, setSelectedDestination] = usePersistentState('viajes:destino', '');
