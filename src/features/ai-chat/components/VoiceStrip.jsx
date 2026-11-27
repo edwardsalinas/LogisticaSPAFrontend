@@ -71,8 +71,8 @@ export default function VoiceStrip({ live, variant = 'panel' }) {
           </div>
         </div>
       )}
-      <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs text-surface-700">
-        <input type="checkbox" checked={handsFree} onChange={(e) => controls.handsFree(e.target.checked)} className="h-4 w-4 rounded" />
+      <label className="mt-1 flex min-h-11 cursor-pointer items-center gap-2 text-xs text-surface-700">
+        <input type="checkbox" checked={handsFree} onChange={(e) => controls.handsFree(e.target.checked)} className="h-5 w-5 rounded" />
         Manos libres
       </label>
       {!bubble && <p className="mt-1 text-[11px] leading-snug text-surface-600 max-sm:hidden">Prueba: «ayúdame a crear un paquete» o «llévame a Viajes». Chrome procesa el audio en servidores de Google; el asistente solo recibe el texto.</p>}

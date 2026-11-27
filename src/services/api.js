@@ -43,15 +43,20 @@ api.interceptors.response.use(
   (response) => response.data,
   async (error) => {
     const original = error.config;
-    const status = error.response?.status;
+    let status = error.response?.status;
+    let serviceDown = false; // la renovación no pudo ni intentarse por un corte del servicio: la sesión NO terminó
 
     if (status === 401 && original && !original._retry && !isAuthPath(original.url)) {
       original._retry = true;
       try {
         await refreshSession();
         return api(original); // reintenta la petición original con la sesión renovada
-      } catch {
-        // la renovación falló: la sesión terminó
+      } catch (refreshError) {
+        // Solo un rechazo real de la renovación (401/403…) termina la sesión. Un corte de red o un 5xx/429 del servicio de autenticación
+        // NO: el refresh token sigue siendo bueno, y cerrar la sesión aquí sacaría a la persona por un fallo momentáneo.
+        const rs = refreshError?.status;
+        serviceDown = Boolean(refreshError?.isNetworkError) || rs === 429 || (typeof rs === 'number' && rs >= 500);
+        if (serviceDown) status = 503;
       }
     }
 
@@ -65,7 +70,7 @@ api.interceptors.response.use(
     }
 
     // Mantener la forma de Error para try-catch anteriores
-    const message = error.response?.data?.message || error.message || 'Error en la petición';
+    const message = serviceDown ? 'El servicio no está disponible por un momento. Intenta de nuevo.' : (error.response?.data?.message || error.message || 'Error en la petición');
     const wrapped = new Error(message);
     wrapped.status = status;
     wrapped.isNetworkError = !error.response; // sin respuesta del servidor: offline, timeout o DNS

@@ -56,6 +56,29 @@ describe('cliente HTTP con sesión por cookie', () => {
     expect(localStorage.getItem(SESSION_HINT_KEY)).toBeNull();
   });
 
+  it('si la renovación falla por un corte del servicio (503, 429 o sin red), la sesión NO se cierra', async () => {
+    for (const refresh of [(c) => respond(c, 503), (c) => respond(c, 429), (c) => Promise.reject(new AxiosError('Network Error', 'ERR_NETWORK', c, null, undefined))]) {
+      localStorage.setItem(SESSION_HINT_KEY, '1');
+      api.defaults.adapter = async (config) => (config.url === '/iam/refresh' ? refresh(config) : respond(config, 401));
+      await expect(api.get('/datos')).rejects.toMatchObject({ status: 503, message: expect.stringMatching(/no está disponible/) });
+      expect(localStorage.getItem(SESSION_HINT_KEY)).toBe('1'); // sigue con sesión: puede reintentar
+    }
+  });
+
+  it('si la renovación la rechaza el servidor (401), sí cierra la sesión', async () => {
+    api.defaults.adapter = async (config) => respond(config, 401);
+    await expect(api.get('/datos')).rejects.toMatchObject({ status: 401 });
+    expect(localStorage.getItem(SESSION_HINT_KEY)).toBeNull();
+  });
+
+  it('un 503 directo de una petición no dispara la renovación ni cierra la sesión', async () => {
+    const calls = [];
+    api.defaults.adapter = async (config) => { calls.push(config.url); return respond(config, 503, { message: 'Authentication service temporarily unavailable' }); };
+    await expect(api.get('/datos')).rejects.toMatchObject({ status: 503 });
+    expect(calls).toEqual(['/datos']);
+    expect(localStorage.getItem(SESSION_HINT_KEY)).toBe('1');
+  });
+
   it('marca los errores de red para poder encolar puntos GPS offline', async () => {
     api.defaults.adapter = async (config) => Promise.reject(new AxiosError('Network Error', 'ERR_NETWORK', config, null, undefined));
     await expect(api.post('/tracking/trip/1/event', {})).rejects.toMatchObject({ isNetworkError: true });
