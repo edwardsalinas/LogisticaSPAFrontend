@@ -145,8 +145,30 @@ let lastCreated = null;
 export const noteCreatedPackage = (pkg) => { lastCreated = pkg?.tracking_code ? String(pkg.tracking_code) : null; };
 export const takeCreatedPackage = () => { const c = lastCreated; lastCreated = null; return c; };
 
+// ---- lo que la pantalla tiene puesto y a la vista: filtros y filas (para «bórrame el filtro», «¿cuántos hay?»)
+let screenState = null; // { filters: { search, date, … }, visible: { count, codes } }
+const sameState = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+/** Para las pantallas con tabla: informa sus filtros y lo que muestra. Se retira al salir. */
+export function useRegisterScreenState(state) {
+  const key = JSON.stringify(state ?? null);
+  useEffect(() => {
+    const next = JSON.parse(key);
+    if (!sameState(screenState, next)) screenState = next;
+    return () => { screenState = null; };
+  }, [key]);
+}
+export const getScreenState = () => screenState;
+
 /** El contexto que viaja con cada consulta al asistente. */
 export const buildChatContext = () => {
   const path = typeof window === 'undefined' ? '' : window.location.pathname;
-  return { path, ...(entity ? { entity } : {}), ...(view ? { view } : {}) };
+  const filters = Object.fromEntries(Object.entries(screenState?.filters ?? {}).filter(([, v]) => (typeof v === 'string' ? v.trim() : v)));
+  return {
+    path,
+    ...(entity ? { entity } : {}),
+    ...(view ? { view } : {}),
+    ...(Object.keys(filters).length ? { filters } : {}),
+    ...(screenState?.visible ? { visible: screenState.visible } : {}),
+  };
 };

@@ -24,6 +24,18 @@ export default function LogiActivity({ chat }) {
     .filter((o) => o.status === 'done' && o.at)
     .sort((a, b) => b.at - a.at);
 
+  // «Deshacer» del servidor (reprogramar, cambiar un vehículo): solo se manda el identificador que él entregó
+  const undoOnServer = async (outcome) => {
+    setUndone((u) => ({ ...u, [outcome.at]: { status: 'working' } }));
+    try {
+      const res = await apiService.post(`/ai-agent/undo/${outcome.undo.id}`);
+      setUndone((u) => ({ ...u, [outcome.at]: { status: 'done' } }));
+      toast.success('Deshecho', { description: res?.result?.message });
+    } catch (err) {
+      setUndone((u) => ({ ...u, [outcome.at]: { status: 'error', message: err?.message || 'No se pudo deshacer.' } }));
+    }
+  };
+
   const undo = async (outcome) => {
     setUndone((u) => ({ ...u, [outcome.at]: { status: 'working' } }));
     const failed = [];
@@ -85,6 +97,17 @@ export default function LogiActivity({ chat }) {
                 <Undo2 size={14} aria-hidden="true" /> {u?.status === 'working' ? 'Deshaciendo…' : UNDO[o.type].label}
               </button>
             )}
+            {o.undo?.id && !canUndo(o) && u?.status !== 'done' && (
+              <button
+                type="button"
+                onClick={() => undoOnServer(o)}
+                disabled={u?.status === 'working'}
+                className="mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-xs font-semibold text-surface-700 hover:bg-surface-50 disabled:opacity-60"
+              >
+                <Undo2 size={14} aria-hidden="true" /> {u?.status === 'working' ? 'Deshaciendo…' : o.undo.label}
+              </button>
+            )}
+            {u?.status === 'done' && o.undo?.id && <p role="status" className="mt-2 text-xs font-semibold text-emerald-700">Deshecho.</p>}
             {u?.status === 'error' && <p role="alert" className="mt-2 text-xs font-semibold text-red-700">{u.message}</p>}
           </li>
         );

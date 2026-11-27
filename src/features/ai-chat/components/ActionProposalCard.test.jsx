@@ -8,6 +8,8 @@ import ChatBubble from './ChatBubble';
 import apiService from '../../../services/apiService';
 
 vi.mock('../../../services/apiService', () => ({ default: { post: vi.fn() } }));
+const mockRun = vi.fn();
+vi.mock('../screenCommands', () => ({ runScreenCommands: (...a) => mockRun(...a) }));
 let mockRole = 'admin';
 vi.mock('../../../app/useRole', () => ({ default: () => ({ role: mockRole }) }));
 // «Que Logi lo haga»: el motor se simula (null = fuera del layout)
@@ -24,7 +26,7 @@ const RECORD = { id: 'pk-1', tracking_code: 'TRK-1', status: 'entregado', origen
 const renderCard = () => render(<MemoryRouter><ActionProposalCard data={ACTION} /></MemoryRouter>);
 
 describe('Acciones del asistente: tarjeta de confirmación', () => {
-  beforeEach(() => { apiService.post.mockReset(); mockRole = 'admin'; });
+  beforeEach(() => { apiService.post.mockReset(); mockRun.mockReset(); mockRole = 'admin'; });
 
   it('muestra el resumen y deja claro que todavía no se hizo nada', () => {
     renderCard();
@@ -201,4 +203,22 @@ describe('Acciones del asistente: «Que Logi lo haga»', () => {
     expect(screen.getByText(/TRK-6/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^confirmar$/i })).not.toBeInTheDocument();
   });
+
+  it('si el servidor pide enseñar el resultado (reveal), Logi deja la pantalla a la vista al confirmar', async () => {
+    const reveal = { kind: 'ui_command', page: 'fleet', tab: 'vehicles', search: 'ABC-1234' };
+    apiService.post.mockResolvedValue({ success: true, result: { message: 'Vehículo ABC-1234 registrado.', data: { reveal } } });
+    renderCard();
+    await userEvent.click(screen.getByRole('button', { name: /^confirmar$/i }));
+    await screen.findByText(/Vehículo ABC-1234 registrado\./);
+    expect(mockRun).toHaveBeenCalledWith([reveal]);
+  });
+
+  it('sin reveal no mueve la pantalla, y cancelar tampoco', async () => {
+    apiService.post.mockResolvedValue({ success: true, result: { message: 'Listo.' } });
+    renderCard();
+    await userEvent.click(screen.getByRole('button', { name: /^confirmar$/i }));
+    await screen.findByText(/Listo\./);
+    expect(mockRun).not.toHaveBeenCalled();
+  });
 });
+

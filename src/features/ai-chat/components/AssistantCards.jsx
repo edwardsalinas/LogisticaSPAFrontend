@@ -2,6 +2,7 @@ import { useContext, useState } from 'react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { requestSearch } from '../pageContext';
+import { runScreenCommands } from '../screenCommands';
 import { Check, CheckCircle2, FileText, ListChecks, Clock, MapPin, Package, ShieldAlert, Truck, User, X, XCircle } from 'lucide-react';
 import apiService from '../../../services/apiService';
 import useRole from '../../../app/useRole';
@@ -278,6 +279,7 @@ export function ActionProposalCard({ data }) {
       const outcome = verb === 'confirm' ? makeOutcome(action, res) : { status: 'cancelled', type: action.type, title: action.title, at: Date.now(), message: res?.result?.message };
       chat?.settleAction?.(action.id, outcome);
       setState(outcome);
+      if (verb === 'confirm' && res?.result?.data?.reveal) runScreenCommands([res.result.data.reveal]); // deja a la vista lo que se acaba de hacer
       // el detalle ya se ve en la tarjeta: el aviso solo nombra la acción
       if (verb === 'confirm') toast.success('Acción ejecutada', { description: action.title });
       else toast('Acción cancelada', { description: action.title });

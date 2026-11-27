@@ -33,7 +33,7 @@ describe('órdenes de pantalla del asistente', () => {
   });
   it('de una respuesta toma solo los adjuntos ui_command', () => {
     const navigate = as('admin');
-    expect(runScreenCommands([{ kind: 'package_list' }, { kind: 'ui_command', page: 'packages', search: 'TRK-1' }, { kind: 'ui_command', page: 'nada' }])).toBe(1);
+    expect(runScreenCommands([{ kind: 'package_list' }, { kind: 'ui_command', page: 'packages', search: 'TRK-1' }, { kind: 'ui_command', page: 'nada' }]).done).toBe(1);
     expect(navigate).toHaveBeenCalledTimes(1);
   });
 });
@@ -61,3 +61,46 @@ describe('filtros finos de una pantalla', () => {
   });
 });
 
+describe('decir la verdad: lo que no se pudo hacer se informa', () => {
+  it('cuenta lo hecho y lo que no, con el motivo', () => {
+    as('client');
+    const out = runScreenCommands([
+      { kind: 'ui_command', page: 'packages', search: 'TRK-1' },
+      { kind: 'ui_command', page: 'fleet', label: 'la Flota' },
+      { kind: 'ui_command', page: 'nada' },
+      { kind: 'ui_command', page: 'tracking', tab: 'inventada' },
+    ]);
+    expect(out.done).toBe(1);
+    expect(out.problems).toEqual([
+      'tu rol no tiene la Flota',
+      'no conozco la pantalla «nada»',
+      'esa pantalla no tiene la pestaña «inventada»',
+    ]);
+  });
+  it('un filtro que la pantalla no admite o con valor inválido se informa; un buscador vacío en una pantalla sin buscador, no', () => {
+    as('admin');
+    const report = [];
+    expect(runScreenCommand({ page: 'analytics', search: '', fields: { range: { from: '2026-11-26', to: '2026-11-01' }, origin: 'x' } }, report)).toBe(false);
+    expect(report).toEqual(['no pude aplicar el filtro «range»', 'no pude aplicar el filtro «origin»']);
+    const ok = [];
+    expect(runScreenCommand({ page: 'analytics', search: '' }, ok)).toBe(true);
+    expect(ok).toEqual([]);
+  });
+  it('sin pantalla registrada lo dice', () => {
+    unregister?.(); unregister = null;
+    expect(runScreenCommands([{ kind: 'ui_command', page: 'packages' }])).toEqual({ done: 0, problems: ['la pantalla no estaba lista'] });
+  });
+});
+
+
+describe('seguridad: nombres heredados', () => {
+  it('«constructor», «__proto__» o «toString» como pantalla no hacen nada ni rompen', () => {
+    const navigate = as('admin');
+    for (const page of ['constructor', '__proto__', 'toString', 'hasOwnProperty']) {
+      const report = [];
+      expect(runScreenCommand({ page }, report)).toBe(false);
+      expect(report[0]).toMatch(/no conozco la pantalla/);
+    }
+    expect(navigate).not.toHaveBeenCalled();
+  });
+});

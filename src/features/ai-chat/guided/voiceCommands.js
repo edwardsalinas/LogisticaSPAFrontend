@@ -93,9 +93,9 @@ export const parseFilter = (text, role) => {
   const needsNoun = /^(muestrame|mostrar|mostrarme|ensename|quiero ver|necesito ver|ver)$/.test(verb); // «muéstrame…» solo es filtro si dice qué pantalla
   if ((needsNoun && !noun) || !term || term.split(' ').length > 4 || NOT_A_FILTER.test(t)) return null;
   if (/ (?:de|del|y|con|en|para|que|por) /.test(` ${term} `.replace(/^ en transito /, ' ')) && term !== 'en transito') return null; // dos criterios («pendientes de María»): eso lo resuelve el asistente, no un filtro
-  const key = (noun && NOUN_PAGE[noun]) || here || 'packages';
+  const key = (noun && Object.hasOwn(NOUN_PAGE, noun) && NOUN_PAGE[noun]) || here || 'packages';
   const page = screen(key);
-  if (key === 'packages') term = STATUS_WORDS[term] ?? term;
+  if (key === 'packages' && Object.hasOwn(STATUS_WORDS, term)) term = STATUS_WORDS[term];
   if (/^trk /.test(term)) term = term.replace(/ /g, '-'); // un código de rastreo lleva guiones (normalize los volvió espacios)
   if (!page.roles.includes(role)) return { kind: 'denied', label: page.label };
   const tab = noun && NOUN_TAB[noun];

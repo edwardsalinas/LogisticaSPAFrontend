@@ -37,23 +37,32 @@ export const registerScreenRuntime = (navigate, role) => {
   return () => { if (navigator === navigate) { navigator = null; currentRole = null; } };
 };
 
-/** Ejecuta una orden de pantalla. Devuelve true si la hizo. */
-export const runScreenCommand = (cmd) => {
-  const screen = SCREENS[cmd?.page];
-  if (!screen || !navigator || !screen.roles.includes(currentRole)) return false;
+/** Ejecuta una orden de pantalla. Devuelve true si la hizo del todo; `report` (opcional) recibe lo que no pudo. */
+export const runScreenCommand = (cmd, report = null) => {
+  const screen = Object.hasOwn(SCREENS, String(cmd?.page)) ? SCREENS[cmd.page] : null; // nunca nombres heredados («constructor»)
+  if (!screen) { report?.push(`no conozco la pantalla «${String(cmd?.page ?? '').slice(0, 30)}»`); return false; }
+  if (!navigator) { report?.push('la pantalla no estaba lista'); return false; }
+  if (!screen.roles.includes(currentRole)) { report?.push(`tu rol no tiene ${cmd.label ?? cmd.page}`); return false; }
   navigator(screen.to);
-  if (cmd.tab && screen.tabs?.includes(cmd.tab)) requestTab(cmd.page, cmd.tab);
-  if (screen.search && typeof cmd.search === 'string') requestSearch(cmd.page, cmd.search.slice(0, 60));
+  if (cmd.tab) { if (screen.tabs?.includes(cmd.tab)) requestTab(cmd.page, cmd.tab); else report?.push(`esa pantalla no tiene la pestaña «${String(cmd.tab).slice(0, 20)}»`); }
+  if (typeof cmd.search === 'string') { if (screen.search) requestSearch(cmd.page, cmd.search.slice(0, 60)); else if (cmd.search) report?.push('esa pantalla no tiene buscador'); }
   // filtros finos: solo los campos que esa pantalla admite, con valores de forma válida
   for (const [field, value] of Object.entries(cmd.fields ?? {})) {
     if (screen.fields?.includes(field) && validField(field, value)) requestField(cmd.page, field, value);
+    else report?.push(`no pude aplicar el filtro «${field}»`);
   }
-  return true;
+  return !report || report.length === 0;
 };
 
 /** Las órdenes de pantalla que trae la respuesta del asistente (adjuntos ui_command). */
 export const runScreenCommands = (attachments = []) => {
   let done = 0;
-  for (const a of attachments) if (a?.kind === 'ui_command' && runScreenCommand(a)) done += 1;
-  return done;
+  const problems = [];
+  for (const a of attachments) {
+    if (a?.kind !== 'ui_command') continue;
+    const report = [];
+    if (runScreenCommand(a, report)) done += 1;
+    problems.push(...report);
+  }
+  return { done, problems };
 };

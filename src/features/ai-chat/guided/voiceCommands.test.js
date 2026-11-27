@@ -138,3 +138,12 @@ describe('parseFilter en todas las pantallas', () => {
     expect(f('filtra los viajes por Oruro', 'client')).toMatchObject({ kind: 'denied' });
   });
 });
+
+describe('seguridad: el filtro por voz ignora nombres heredados', () => {
+  it('«busca constructor» filtra por ese texto (no por una función del lenguaje)', () => {
+    const r = parseVoiceCommand('busca constructor', 'admin');
+    expect(r).toMatchObject({ kind: 'filter', page: 'packages', text: 'constructor' });
+    expect(typeof r.text).toBe('string');
+    expect(parseVoiceCommand('filtra por tostring', 'admin').text).toBe('tostring');
+  });
+});

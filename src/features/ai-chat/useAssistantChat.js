@@ -98,7 +98,9 @@ export function useChatState(initialMessages = []) {
       } else {
         setMessages((prev) => [...prev, { id: nextId(), ...reply }]);
       }
-      runScreenCommands(attachments); // «muéstrame los viajes de Oruro»: Logi deja la pantalla como se pidió
+      // «muéstrame los viajes de Oruro»: Logi deja la pantalla como se pidió, y si no pudo, lo dice (el modelo no lo sabe)
+      const { problems } = runScreenCommands(attachments);
+      if (problems.length) setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', local: true, content: `No pude dejar la pantalla como pediste: ${[...new Set(problems)].join('; ')}.` }]);
       return { ok: true, text: res.response, attachments, isError: false };
     };
 

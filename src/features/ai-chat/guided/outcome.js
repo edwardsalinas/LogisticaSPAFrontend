@@ -16,6 +16,7 @@ export const makeOutcome = (action, res) => ({
   message: res?.result?.message,
   results: res?.result?.data?.results,
   records: res?.result?.data?.records,
+  undo: res?.result?.data?.undo, // { id, label } si el servidor puede devolver lo hecho (reprogramar, cambiar un vehículo)
 });
 
 export function applyGuidedOutcome({ out, action, chat }) {

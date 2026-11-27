@@ -7,7 +7,7 @@ import Button from '../../../components/atoms/Button';
 import Modal from '../../../components/molecules/Modal';
 import DataTable from '../../../components/organisms/DataTable';
 import usePersistentState from '@/hooks/usePersistentState';
-import { noteCreatedPackage, takeRequestedField, useFieldRequests, useRegisterPageEntity, useRegisterPageView, useSearchRequests, useTabRequests } from '../../ai-chat/pageContext';
+import { noteCreatedPackage, takeRequestedField, useFieldRequests, useRegisterPageEntity, useRegisterPageView, useRegisterScreenState, useSearchRequests, useTabRequests } from '../../ai-chat/pageContext';
 import Skeleton from '../../../components/atoms/Skeleton';
 import PackageDetail from '../components/PackageDetail';
 import PackageForm from '../components/PackageForm';
@@ -222,6 +222,14 @@ function PackagesPage() {
       shipments: activeShipments
     };
   }, [packages, routes, searchTerm, activeTab, selectedDate]);
+
+  // Logi sabe qué filtros hay puestos y cuántos paquetes se ven (y algunos códigos), para «bórrame el filtro» o «¿cuántos hay?»
+  const shownPackages = [...groupedData.shipments.flatMap((sh) => sh.packages), ...groupedData.loose];
+  const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  useRegisterScreenState(loading ? null : {
+    filters: { search: searchTerm.trim(), ...(activeTab === 'all' ? { date: ymd(selectedDate) } : {}) },
+    visible: { count: shownPackages.length, codes: shownPackages.slice(0, 5).map((p) => p.tracking_code).filter(Boolean) },
+  });
 
   const baseColumns = [
     {

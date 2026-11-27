@@ -22,7 +22,7 @@ import Skeleton from '../../../components/atoms/Skeleton';
 
 import DataTable from '../../../components/organisms/DataTable';
 import usePersistentState from '@/hooks/usePersistentState';
-import { useRegisterPageView, useSearchRequests, useTabRequests } from '../../ai-chat/pageContext';
+import { useRegisterPageView, useRegisterScreenState, useSearchRequests, useTabRequests } from '../../ai-chat/pageContext';
 import apiService from '../../../services/apiService';
 import FleetHero from '../components/FleetHero';
 import VehicleForm from '../components/VehicleForm';
@@ -77,6 +77,10 @@ function FleetPage() {
 
   const filteredVehicles = filterData(vehicles);
   const filteredDrivers = filterData(drivers);
+  useRegisterScreenState(loading ? null : {
+    filters: { search: searchTerm.trim() },
+    visible: { count: activeTab === 'drivers' ? filteredDrivers.length : filteredVehicles.length, codes: [] },
+  });
   const totalPagesVehicles = Math.ceil(filteredVehicles.length / itemsPerPage) || 1;
   const totalPagesDrivers = Math.ceil(filteredDrivers.length / itemsPerPage) || 1;
   const paginatedVehicles = filteredVehicles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);

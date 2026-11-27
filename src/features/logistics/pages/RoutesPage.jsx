@@ -12,7 +12,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
 import usePersistentState from '@/hooks/usePersistentState';
-import { useFieldRequests, useSearchRequests, useTabRequests } from '../../ai-chat/pageContext';
+import { useFieldRequests, useRegisterScreenState, useSearchRequests, useTabRequests } from '../../ai-chat/pageContext';
 import SearchInput from '../../../components/atoms/SearchInput';
 import BaseMap from '../../../components/molecules/BaseMap';
 import CheckpointMarker from '../../../components/molecules/CheckpointMarker';
@@ -306,6 +306,12 @@ function RoutesPage() {
     const dest = (route.destination || "").toLowerCase();
     return code.includes(s) || driver.includes(s) || origin.includes(s) || dest.includes(s);
   }), [listRoutes, searchTerm]);
+
+  // Logi sabe qué filtros hay puestos y cuántos viajes se ven en la lista
+  useRegisterScreenState(loading ? null : {
+    filters: { search: searchTerm.trim(), origin: selectedOrigin, destination: selectedDestination, type: selectedTripType },
+    visible: { count: filteredListRoutes.length, codes: filteredListRoutes.slice(0, 5).map((r) => r.route_code).filter((c) => /^[A-Za-z0-9-]{3,64}$/.test(String(c ?? ''))) },
+  });
 
   const calendarEvents = useMemo(() => typeFilteredRoutes.filter(r => r.type === 'route' && r.departure_time).map(r => {
     const start = new Date(r.departure_time);
