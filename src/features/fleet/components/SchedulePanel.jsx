@@ -1,3 +1,4 @@
+import { vehicleName } from '../../../utils/vehicleName';
 import { useState, useEffect } from 'react';
 import { CalendarRange, Clock, Trash2, Zap, Loader2 } from 'lucide-react';
 import Button from '../../../components/atoms/Button';
@@ -113,7 +114,7 @@ export default function SchedulePanel() {
                 </div>
 
                 <div className="mt-3 pt-3 border-t border-surface-100 text-xs text-surface-500 space-y-1">
-                  {sch.vehicles && <p>🚛 {sch.vehicles.plate} - {sch.vehicles.brand} {sch.vehicles.model}</p>}
+                  {sch.vehicles && <p>🚛 {sch.vehicles.plate} - {vehicleName(sch.vehicles)}</p>}
                   {sch.drivers && <p>👤 {sch.drivers.full_name || sch.drivers.email}</p>}
                 </div>
               </div>

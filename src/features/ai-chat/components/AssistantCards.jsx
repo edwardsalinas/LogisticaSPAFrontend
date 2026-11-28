@@ -2,6 +2,7 @@ import { useContext, useState } from 'react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { requestSearch } from '../pageContext';
+import { vehicleName } from '../../../utils/vehicleName';
 import { packageStatusLabel, packageStatusVariant } from '../../../constants/status';
 import { runScreenCommands } from '../screenCommands';
 import { Check, CheckCircle2, FileText, ListChecks, Clock, MapPin, Package, ShieldAlert, Truck, User, X, XCircle } from 'lucide-react';
@@ -244,7 +245,7 @@ export function FleetCard({ data }) {
       <ul className="divide-y divide-surface-100">
         {vehicles.map((v) => (
           <li key={v.plate} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
-            <span className="min-w-0 truncate"><span className="font-mono text-xs font-bold text-surface-700">{v.plate}</span> · {[v.brand, v.model].filter(Boolean).join(' ')}{v.capacity_kg ? ` · ${Number(v.capacity_kg).toLocaleString('es-BO')} kg` : ''}</span>
+            <span className="min-w-0 truncate"><span className="font-mono text-xs font-bold text-surface-700">{v.plate}</span> · {vehicleName(v)}{v.capacity_kg ? ` · ${Number(v.capacity_kg).toLocaleString('es-BO')} kg` : ''}</span>
             <span className="shrink-0 text-xs font-semibold uppercase tracking-wider text-surface-500">{v.status ?? '—'}</span>
           </li>
         ))}

@@ -10,6 +10,7 @@ import apiService from '../../../services/apiService';
 import { Trash2, ArrowUp, ArrowDown, MapPin, Rocket, CalendarRange, Clock, CheckCircle } from 'lucide-react';
 import MapCheckpointsPicker from '../../../components/molecules/MapCheckpointsPicker';
 import clsx from 'clsx';
+import { vehicleName } from '../../../utils/vehicleName';
 
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const DAY_FULL  = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -280,7 +281,7 @@ function RouteForm({ onSuccess, onCancel, initialData = null }) {
         <Select label="Conductor" value={form.driver_id} onChange={handleDriverChange} placeholder="Seleccionar conductor..." required error={errors.driver_id?.message}
           options={drivers.map((d) => ({ value: d.id, label: d.full_name || d.email }))} />
         <Select label="Vehículo" value={form.vehicle_id} onChange={handleVehicleChange} placeholder="Seleccionar vehículo..." required error={errors.vehicle_id?.message}
-          options={vehicles.map((v) => ({ value: v.id, label: `${v.plate} - ${v.brand || ''} ${v.model}` }))} />
+          options={vehicles.map((v) => ({ value: v.id, label: `${v.plate} - ${vehicleName(v)}` }))} />
       </div>
       {form.driver_id && form.vehicle_id && (() => {
         const driver = drivers.find(d => d.id === form.driver_id);
