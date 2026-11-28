@@ -336,7 +336,7 @@ function RoutesPage() {
 
     return {
       id: String(r.id),
-      title: `${r.route_code} | ${r.origin} - ${r.destination}`,
+      title: `${r.route_code || 'Viaje'} | ${r.origin} - ${r.destination}`,
       start: r.departure_time,
       end: end.toISOString(),
       backgroundColor: bgColor,

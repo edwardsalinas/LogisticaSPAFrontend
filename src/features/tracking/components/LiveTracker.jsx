@@ -1,16 +1,13 @@
 import { Activity, Clock3, MapPinned, TriangleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useMap } from 'react-leaflet';
-import CheckpointAlert from '../../../components/molecules/CheckpointAlert';
 import VehicleMarker from '../../../components/molecules/VehicleMarker';
 import apiService from '../../../services/apiService';
 
-function LiveTracker({ packageId, routeId }) {
+function LiveTracker({ packageId }) {
   const map = useMap();
   const [position, setPosition] = useState(null);
   const [history, setHistory] = useState([]);
-  const [checkpointAlert, setCheckpointAlert] = useState(null);
-  const [lastCheckpointId, setLastCheckpointId] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -40,25 +37,7 @@ function LiveTracker({ packageId, routeId }) {
           }, 5000);
         }
 
-        if (routeId) {
-          const geofenceRes = await apiService.checkGeofence({
-            lat: latestLog.lat,
-            lng: latestLog.lng,
-            package_id: packageId,
-          });
-
-          if (
-            isMounted &&
-            geofenceRes.data.within_checkpoint &&
-            geofenceRes.data.checkpoint.id !== lastCheckpointId
-          ) {
-            setCheckpointAlert({
-              ...geofenceRes.data.checkpoint,
-              distance_meters: geofenceRes.data.distance_meters,
-            });
-            setLastCheckpointId(geofenceRes.data.checkpoint.id);
-          }
-        }
+        // La geocerca de los puntos de control la evalúa el servidor al recibir cada posición del conductor: aquí solo se muestra.
 
         map.flyTo([newPosition.lat, newPosition.lng], 13, { duration: 1.4 });
         setError(null);
@@ -75,12 +54,10 @@ function LiveTracker({ packageId, routeId }) {
       isMounted = false;
       clearInterval(intervalId);
     };
-  }, [map, packageId, routeId, lastCheckpointId]);
+  }, [map, packageId]);
 
   return (
     <>
-      {checkpointAlert && <CheckpointAlert checkpoint={checkpointAlert} onDismiss={() => setCheckpointAlert(null)} />}
-
       <div className="pointer-events-none absolute left-4 top-4 z-[1000] w-[min(92vw,320px)]">
         <div className="pointer-events-auto rounded-[1.5rem] border border-white/70 bg-white/92 p-4 shadow-[0_24px_60px_-38px_rgba(15,23,42,0.3)] backdrop-blur-xl">
           <div className="flex items-start gap-3">

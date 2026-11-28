@@ -225,7 +225,7 @@ function TrackingPage() {
                  </div>
                  <div className="h-8 w-px bg-primary-100" />
                  <div className="text-center">
-                    <p className="text-xs font-bold uppercase text-surface-500 tracking-tighter">Total Hoy</p>
+                    <p className="text-xs font-bold uppercase text-surface-500 tracking-tighter">Total</p>
                     <p className="text-lg font-bold text-primary-700">{packages.length}</p>
                  </div>
               </div>

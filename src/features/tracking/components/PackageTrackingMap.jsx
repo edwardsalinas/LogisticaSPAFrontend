@@ -21,7 +21,7 @@ const lastKnownIcon = L.divIcon({
 function PackageTrackingMap({ center, packageId, routeId, checkpoints = [], latestPosition }) {
   return (
     <BaseMap center={center} zoom={9} className="h-full w-full">
-      <LiveTracker packageId={packageId} routeId={routeId} />
+      <LiveTracker packageId={packageId} />
       {checkpoints.length > 0 && (
         <>
           <RoutePath checkpoints={checkpoints} />

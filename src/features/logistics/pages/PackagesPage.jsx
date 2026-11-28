@@ -436,7 +436,7 @@ function PackagesPage() {
                               const isDelayed = route.status === 'planeada' && route.departure_time && new Date(route.departure_time) < new Date();
                               return (
                                 <Badge variant={['completada', 'finalizada', 'completed', 'entregado'].includes(route.status?.toLowerCase()) ? 'success' : (route.status === 'en_transito' ? 'info' : (isDelayed ? 'danger' : 'neutral'))}>
-                                   {['completada', 'finalizada', 'completed', 'entregado'].includes(route.status?.toLowerCase()) ? 'Finalizado' : (route.status === 'en_transito' ? 'En Ruta' : (isDelayed ? 'Atrasado' : 'Standby'))}
+                                   {['completada', 'finalizada', 'completed', 'entregado'].includes(route.status?.toLowerCase()) ? 'Finalizado' : (route.status === 'en_transito' ? 'En Ruta' : (isDelayed ? 'Atrasado' : 'Programado'))}
                                 </Badge>
                               );
                             })()}
