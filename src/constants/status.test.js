@@ -8,6 +8,11 @@ import {
   isRouteFinished,
   isRouteActive,
   isPackageIncident,
+  PACKAGE_LABEL,
+  PACKAGE_VARIANT,
+  packageProgress,
+  packageStatusLabel,
+  packageStatusVariant,
 } from './status';
 
 describe('estados de paquetes', () => {
@@ -58,5 +63,35 @@ describe('RF02: estados En agencia y Siniestro', () => {
     expect(normalizePackageStatus('incident')).toBe('siniestro');
     expect(isPackageIncident(' Siniestro ')).toBe(true);
     expect(isPackageIncident('entregado')).toBe(false);
+  });
+});
+
+describe('cómo se ve un estado de paquete (igual en todas las pantallas)', () => {
+  it('tiene etiqueta en español para TODOS los estados del backend', () => {
+    for (const st of Object.values(PACKAGE_STATUS)) {
+      expect(PACKAGE_LABEL[st], st).toBeTruthy();
+      expect(PACKAGE_VARIANT[st], st).toBeTruthy();
+    }
+  });
+  it('acepta los alias antiguos y estados con otra capitalización', () => {
+    expect(packageStatusLabel('in_transit')).toBe('En tránsito');
+    expect(packageStatusLabel('Pendiente')).toBe('Pendiente');
+    expect(packageStatusLabel('en_agencia')).toBe('En agencia');
+    expect(packageStatusLabel('siniestro')).toBe('Siniestro');
+    expect(packageStatusVariant('siniestro')).toBe('danger');
+  });
+  it('un estado desconocido se muestra tal cual y sin color; vacío es una raya', () => {
+    expect(packageStatusLabel('raro')).toBe('raro');
+    expect(packageStatusVariant('raro')).toBe('neutral');
+    expect(packageStatusLabel(undefined)).toBe('—');
+  });
+  it('el avance solo existe para el recorrido normal: un siniestro o una devolución NO inventan un porcentaje', () => {
+    expect(packageProgress('pendiente')).toBe(10);
+    expect(packageProgress('en_transito')).toBe(50);
+    expect(packageProgress('entregado')).toBe(100);
+    expect(packageProgress('siniestro')).toBeNull();
+    expect(packageProgress('devuelto')).toBeNull();
+    expect(packageProgress('cancelado')).toBeNull();
+    expect(packageProgress(undefined)).toBeNull();
   });
 });

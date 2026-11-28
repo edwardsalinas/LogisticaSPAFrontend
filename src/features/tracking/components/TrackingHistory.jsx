@@ -1,3 +1,4 @@
+import { PACKAGE_LABEL, normalizePackageStatus } from '../../../constants/status';
 import { Clock3, MapPinned, PackageSearch } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import EmptyState from '../../../components/molecules/EmptyState';
@@ -26,22 +27,12 @@ function TrackingHistory({ packageId, className }) {
     fetchLogs();
   }, [packageId]);
 
-  const statusMap = {
-    'in_transit': 'En tránsito (Ubicación)',
-    'en_transito': 'En tránsito',
-    'delivered': 'Entregado',
-    'entregado': 'Entregado',
-    'pending': 'Pendiente',
-    'pendiente': 'Pendiente',
-    'asignado': 'Asignado a ruta',
-  };
-
   const getStatusLabel = (status) => {
     if (!status) return 'Estado desconocido';
     const clean = status.trim().toLowerCase();
     // Si ya es un mensaje largo (enviado desde backend con detalles), lo dejamos tal cual
     if (clean.includes(':') || clean.includes('llegó') || clean.length > 25) return status;
-    return statusMap[clean] || status;
+    return PACKAGE_LABEL[normalizePackageStatus(clean)] || status; // el estado conocido se ve igual en toda la aplicación
   };
 
   if (loading) {

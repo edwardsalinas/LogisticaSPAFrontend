@@ -7,7 +7,11 @@ import Button from '../../../components/atoms/Button';
 import Modal from '../../../components/molecules/Modal';
 import DataTable from '../../../components/organisms/DataTable';
 import usePersistentState from '@/hooks/usePersistentState';
-import { noteCreatedPackage, takeRequestedField, useFieldRequests, useRegisterPageEntity, useRegisterPageView, useRegisterScreenState, useSearchRequests, useTabRequests } from '../../ai-chat/pageContext';
+import { noteCreatedPackage, readRequestedSearch, takeRequestedField, useFieldRequests, useRegisterPageEntity, useRegisterPageView, useRegisterScreenState, useSearchRequests, useTabRequests } from '../../ai-chat/pageContext';
+import ActiveFilterNotice from '../../../components/molecules/ActiveFilterNotice';
+import AllPackagesList from '../components/AllPackagesList';
+import { matchesPackage } from '../packageSearch';
+import { packageStatusLabel, packageStatusVariant } from '../../../constants/status';
 import Skeleton from '../../../components/atoms/Skeleton';
 import PackageDetail from '../components/PackageDetail';
 import PackageForm from '../components/PackageForm';
@@ -16,14 +20,7 @@ import ShipmentAssignmentForm from '../components/ShipmentAssignmentForm';
 import useRole from '../../../app/useRole';
 import PackagesHero from '../components/PackagesHero';
 
-const statusMap = {
-  pendiente: { label: 'Pendiente', variant: 'warning' },
-  asignado: { label: 'Asignado', variant: 'info' },
-  en_transito: { label: 'En tránsito', variant: 'info' },
-  entregado: { label: 'Entregado', variant: 'success' },
-  completada: { label: 'Completada', variant: 'success' },
-  finalizada: { label: 'Finalizada', variant: 'success' },
-};
+const PAGE_LIMIT = 200; // cuántos paquetes pide la pantalla (el servidor da 50 por defecto)
 
 function PackagesPage() {
   const { hasRole, isClient } = useRole();
@@ -34,12 +31,14 @@ function PackagesPage() {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assignPackage, setAssignPackage] = useState(null);
   const [selectedPackage, setSelectedPackage] = useState(null);
-  const [searchTerm, setSearchTerm] = usePersistentState('paquetes:busqueda', '');
-  const [activeTab, setActiveTab] = usePersistentState('paquetes:pestana', 'all'); // 'all' o 'delivered' (histórico)
+  // La búsqueda NO se guarda entre visitas: una búsqueda olvidada escondía los paquetes nuevos sin avisar. Solo se arrastra lo que Logi pidió.
+  const [searchTerm, setSearchTerm] = useState(() => readRequestedSearch('packages'));
+  const [activeTab, setActiveTab] = usePersistentState('paquetes:pestana', 'all'); // 'all' (operativos), 'list' (todos) o 'delivered' (histórico)
+  const [truncated, setTruncated] = useState(false); // la lista llegó al tope que pide la pantalla: puede haber más antiguos
   const [contextualRoute, setContextualRoute] = useState(null);
   // el asistente sabe qué pestaña ves y, si abriste la ficha de un paquete, cuál es («este paquete»)
   useRegisterPageView(activeTab);
-  useTabRequests('packages', setActiveTab, ['all', 'delivered']); // «muéstrame los paquetes entregados»
+  useTabRequests('packages', setActiveTab, ['all', 'list', 'delivered']); // «muéstrame los paquetes entregados»
   useFieldRequests('packages', { date: (v) => { const [y, m, d] = String(v).split('-').map(Number); if (y && m && d) setSelectedDate(new Date(y, m - 1, d)); } });
   useSearchRequests('packages', setSearchTerm); // «muéstrame el paquete que acabas de crear»: la tabla se filtra por su código
   useRegisterPageEntity(selectedPackage?.tracking_code ? { type: 'package', ref: selectedPackage.tracking_code } : null);
@@ -67,10 +66,11 @@ function PackagesPage() {
 
     try {
       const [pkgRes, routeRes] = await Promise.all([
-        api.get('/logistics/packages'),
+        api.get('/logistics/packages', { params: { limit: PAGE_LIMIT } }),
         api.get('/logistics/routes')
       ]);
       setPackages(pkgRes.data || []);
+      setTruncated((pkgRes.data || []).length >= PAGE_LIMIT);
       setRoutes(routeRes.data || []);
     } catch (err) {
       console.error('Error cargando datos:', err);
@@ -164,13 +164,7 @@ function PackagesPage() {
   const groupedData = useMemo(() => {
     let result = packages;
 
-    if (searchTerm) {
-      const plain = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-      const term = plain(searchTerm.trim());
-      result = result.filter((pkg) =>
-        [pkg.tracking_code, pkg.origen, pkg.destino, pkg.recipient_name, pkg.sender_name, String(pkg.status || '').replace(/_/g, ' ')].some((value) => plain(value).includes(term))
-      );
-    }
+    if (searchTerm.trim()) result = result.filter((pkg) => matchesPackage(pkg, searchTerm));
 
     // 1. Mapear todas las rutas
     const shipmentsMap = {};
@@ -225,10 +219,14 @@ function PackagesPage() {
 
   // Logi sabe qué filtros hay puestos y cuántos paquetes se ven (y algunos códigos), para «bórrame el filtro» o «¿cuántos hay?»
   const shownPackages = [...groupedData.shipments.flatMap((sh) => sh.packages), ...groupedData.loose];
+  const searching = Boolean(searchTerm.trim());
+  // todos los que coinciden con lo buscado, vean o no en esta vista (el tablero solo muestra los viajes del día elegido)
+  const allMatches = searching ? packages.filter((p) => matchesPackage(p, searchTerm)) : packages;
+  const hiddenMatches = activeTab === 'list' ? 0 : Math.max(0, allMatches.length - shownPackages.length);
   const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   useRegisterScreenState(loading ? null : {
     filters: { search: searchTerm.trim(), ...(activeTab === 'all' ? { date: ymd(selectedDate) } : {}) },
-    visible: { count: shownPackages.length, codes: shownPackages.slice(0, 5).map((p) => p.tracking_code).filter(Boolean) },
+    visible: { count: (activeTab === 'list' ? allMatches : shownPackages).length, codes: (activeTab === 'list' ? allMatches : shownPackages).slice(0, 5).map((p) => p.tracking_code).filter(Boolean) },
   });
 
   const baseColumns = [
@@ -254,7 +252,7 @@ function PackagesPage() {
       key: 'status',
       label: 'Estado',
       render: (val) => {
-        const s = statusMap[val] || { label: val, variant: 'neutral' };
+        const s = { label: packageStatusLabel(val), variant: packageStatusVariant(val) };
         return <Badge variant={s.variant}>{s.label}</Badge>;
       },
     },
@@ -289,7 +287,7 @@ function PackagesPage() {
               </div>
               <div>
                 <h2 className="font-display text-2xl font-bold text-surface-950 tracking-tight">
-                   {activeTab === 'delivered' ? 'Historial de Despachos' : 'Panel de Despachos'}
+                   {activeTab === 'delivered' ? 'Historial de Despachos' : activeTab === 'list' ? 'Todos los paquetes' : 'Panel de Despachos'}
                 </h2>
                
                {isRefreshing && (
@@ -303,7 +301,7 @@ function PackagesPage() {
             
             <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
                {/* SMART DATE STEPPER (Only for active tab) */}
-               {activeTab !== 'delivered' && (
+               {activeTab === 'all' && (
                  <div className="flex items-center bg-white border border-surface-200 rounded-2xl p-1 shadow-sm mr-2 ring-1 ring-surface-100">
                     <button type="button" aria-label="Día anterior" onClick={() => stepDate(-1)} className="h-11 w-11 sm:h-8 sm:w-8 flex items-center justify-center rounded-xl hover:bg-surface-50 text-surface-500 hover:text-primary-600 transition-all">
                        <ChevronRight size={18} className="rotate-180" />
@@ -348,13 +346,40 @@ function PackagesPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Button variant="secondary" size="md" onClick={() => setActiveTab(activeTab === 'delivered' ? 'all' : 'delivered')} className="h-10 px-5 rounded-xl font-bold gap-2">
-                {activeTab === 'delivered' ? <Truck size={18}/> : <PackageSearch size={18}/>}
-                {activeTab === 'delivered' ? 'Operativos' : 'Histórico'}
-              </Button>
+              <div role="group" aria-label="Vista de paquetes" className="flex rounded-xl border border-surface-200 bg-white p-1 shadow-sm">
+                {[
+                  { value: 'all', label: 'Operativos', Icon: Truck },
+                  { value: 'list', label: 'Todos', Icon: Boxes },
+                  { value: 'delivered', label: 'Histórico', Icon: PackageSearch },
+                ].map(({ value, label, Icon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setActiveTab(value)}
+                    aria-pressed={activeTab === value}
+                    className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-bold transition-colors sm:min-h-9 ${activeTab === value ? 'bg-primary-600 text-white shadow-sm' : 'text-surface-700 hover:bg-surface-50'}`}
+                  >
+                    <Icon size={16} aria-hidden="true" /> {label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
+          {searching && (
+            <ActiveFilterNotice label={searchTerm.trim()} onClear={() => setSearchTerm('')}>
+              {hiddenMatches > 0 && (
+                <span className="text-primary-900">
+                  · hay {hiddenMatches === 1 ? '1 paquete más' : `${hiddenMatches} paquetes más`} fuera de esta vista (otra fecha, ya entregado o de otro viaje)
+                  <button type="button" onClick={() => setActiveTab('list')} className="ml-1 min-h-11 font-semibold underline">Ver en «Todos»</button>
+                </span>
+              )}
+            </ActiveFilterNotice>
+          )}
+
+          {activeTab === 'list' ? (
+            <AllPackagesList packages={allMatches} searching={searching} truncatedAt={truncated && !searching ? PAGE_LIMIT : null} onClear={() => setSearchTerm('')} />
+          ) : (
           <div className="overflow-x-auto rounded-2xl border border-surface-200 bg-white shadow-sm">
              <table className="w-full border-collapse">
                <thead>
@@ -370,7 +395,7 @@ function PackagesPage() {
                </thead>
                <tbody className="divide-y divide-surface-100">
                  {groupedData.shipments?.length > 0 ? groupedData.shipments.map(ship => {
-                   const isExpanded = expandedShipments.has(ship.route.id);
+                   const isExpanded = expandedShipments.has(ship.route.id) || searching; // al buscar se ven los paquetes, no solo el viaje
                    const route = ship.route;
                    const isPast = route.departure_time && new Date(route.departure_time) < new Date().setHours(0,0,0,0);
                    
@@ -460,6 +485,7 @@ function PackagesPage() {
                </tbody>
              </table>
           </div>
+          )}
         </div>
 
         {/* RIGHT: LOOSE CARGO PANEL (30%) */}

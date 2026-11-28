@@ -12,7 +12,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Badge from '../../../components/atoms/Badge';
 import Button from '../../../components/atoms/Button';
 import usePersistentState from '@/hooks/usePersistentState';
-import { useFieldRequests, useRegisterScreenState, useSearchRequests, useTabRequests } from '../../ai-chat/pageContext';
+import { readRequestedSearch, useFieldRequests, useRegisterScreenState, useSearchRequests, useTabRequests } from '../../ai-chat/pageContext';
 import SearchInput from '../../../components/atoms/SearchInput';
 import BaseMap from '../../../components/molecules/BaseMap';
 import CheckpointMarker from '../../../components/molecules/CheckpointMarker';
@@ -33,10 +33,6 @@ import useRole from '../../../app/useRole';
 import StatCard from '../../../components/molecules/StatCard';
 import HistoryPath from '../../../components/molecules/HistoryPath';
 import { haversineDistance, calculateTripProgress } from '../../../utils/geoUtils';
-
-const MOCK_ROUTES = [
-  { id: 'route-001', route_code: 'RT-001', origin: 'La Paz', destination: 'Oruro', driver_name: 'Juan Perez', vehicle_brand: 'Volvo', plate_number: 'INT-1234', status: 'active', progress: 65, next_checkpoint: 'Centro Logistico El Alto', eta: '14:30', eta_minutes: 25, remaining_distance: 45.2, driver_phone: '+591 70012345', checkpoints: [{ id: 'cp-001', name: 'Terminal La Paz', lat: -16.5, lng: -68.1193, sequence_order: 1 }, { id: 'cp-002', name: 'Checkpoint El Alto', lat: -16.51, lng: -68.15, sequence_order: 2 }, { id: 'cp-003', name: 'Puesto Viacha', lat: -16.65, lng: -68.31, sequence_order: 3 }, { id: 'cp-004', name: 'Terminal Oruro', lat: -17.9833, lng: -67.15, sequence_order: 4 }], vehicle_position: { lat: -16.58, lng: -68.25 } },
-];
 
 const RoutesCalendar = memo(({ events, onEventClick, renderEventContent }) => (
   <FullCalendar
@@ -140,7 +136,7 @@ function RoutesPage() {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assigningRoute, setAssigningRoute] = useState(null);
   const [selectedRoute, setSelectedRoute] = useState(null);
-  const [searchTerm, setSearchTerm] = usePersistentState('viajes:busqueda', '');
+  const [searchTerm, setSearchTerm] = useState(() => readRequestedSearch('routes')); // los selectores de filtro sí se recuerdan (se ven); el texto de búsqueda no
   const [viewMode, setViewMode] = usePersistentState('viajes:vista', 'calendar');
   useSearchRequests('routes', setSearchTerm); // «filtra los viajes por Oruro» (Logi)
   useTabRequests('routes', setViewMode, ['calendar', 'list']); // la búsqueda solo se ve en la lista

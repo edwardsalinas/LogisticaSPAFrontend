@@ -2,7 +2,7 @@ import { act, render, renderHook, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { _resetVoiceDock, useVoicePresenter, useVoiceUi, voiceDock } from './voiceDock';
 import VoiceStrip from './components/VoiceStrip';
-import { noteCreatedPackage, requestSearch, takeCreatedPackage, useSearchRequests } from './pageContext';
+import { clearRequestedSearch, noteCreatedPackage, readRequestedSearch, requestSearch, takeCreatedPackage, useSearchRequests } from './pageContext';
 
 afterEach(() => { _resetVoiceDock(); window.sessionStorage.clear(); });
 
@@ -81,13 +81,33 @@ describe('VoiceStrip', () => {
 });
 
 describe('«muéstrame lo que acabas de hacer»: la tabla se filtra por lo pedido', () => {
-  it('requestSearch avisa a la pantalla abierta y la deja recordada si aún no se abrió', () => {
+  it('requestSearch con la pantalla ABIERTA la filtra en el acto y NO deja nada guardado (antes la búsqueda se quedaba y escondía paquetes nuevos)', () => {
     const setSearch = vi.fn();
     renderHook(() => useSearchRequests('packages', setSearch));
     act(() => requestSearch('packages', 'TRK-123'));
     expect(setSearch).toHaveBeenCalledWith('TRK-123');
-    expect(JSON.parse(window.sessionStorage.getItem('logisticaspa:filtros:paquetes:busqueda'))).toBe('TRK-123');
-    expect(JSON.parse(window.sessionStorage.getItem('logisticaspa:filtros:paquetes:pestana'))).toBe('all'); // y vuelve a la pestaña principal
+    expect(window.sessionStorage.getItem('logisticaspa:filtros:paquetes:busqueda')).toBeNull();
+    // Paquetes pasa a la vista «Todos»: encuentra el paquete sea cual sea su fecha o su viaje
+    expect(JSON.parse(window.sessionStorage.getItem('logisticaspa:filtros:paquetes:pestana'))).toBe('list');
+  });
+
+  it('requestSearch con la pantalla CERRADA la deja pendiente; la pantalla la lee al abrirse y la retira para que no se repita', () => {
+    requestSearch('packages', 'TRK-777');
+    expect(readRequestedSearch('packages')).toBe('TRK-777');
+    const setSearch = vi.fn();
+    const hook = renderHook(() => useSearchRequests('packages', setSearch)); // al abrirse la pantalla, retira lo pendiente
+    expect(readRequestedSearch('packages')).toBe('');
+    hook.unmount();
+    expect(readRequestedSearch('packages')).toBe('');            // la próxima visita ya no arrastra la búsqueda
+  });
+
+  it('readRequestedSearch tolera valores raros y pantallas sin buscador', () => {
+    window.sessionStorage.setItem('logisticaspa:filtros:paquetes:busqueda', '{no es json');
+    expect(readRequestedSearch('packages')).toBe('');
+    window.sessionStorage.setItem('logisticaspa:filtros:paquetes:busqueda', JSON.stringify(42));
+    expect(readRequestedSearch('packages')).toBe('');
+    expect(readRequestedSearch('dashboard')).toBe('');
+    expect(() => clearRequestedSearch('dashboard')).not.toThrow();
   });
 
   it('ignora los pedidos de otra pantalla', () => {

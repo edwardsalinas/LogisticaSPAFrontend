@@ -11,7 +11,7 @@ import { requestField, requestSearch, requestTab } from './pageContext';
 const STAFF = ['admin', 'logistics_operator'];
 export const SCREENS = {
   dashboard: { to: '/dashboard', roles: STAFF },
-  packages: { to: '/logistics/packages', roles: [...STAFF, 'client'], tabs: ['all', 'delivered'], search: true, fields: ['date'] },
+  packages: { to: '/logistics/packages', roles: [...STAFF, 'client'], tabs: ['all', 'list', 'delivered'], search: true, fields: ['date'] },
   routes: { to: '/logistics/routes', roles: STAFF, tabs: ['calendar', 'list'], search: true, fields: ['origin', 'destination', 'type'] },
   tracking: { to: '/tracking', roles: [...STAFF, 'client'], search: true },
   fleet: { to: '/fleet', roles: ['admin'], tabs: ['vehicles', 'drivers'], search: true },

@@ -2,6 +2,7 @@ import { useContext, useState } from 'react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { requestSearch } from '../pageContext';
+import { packageStatusLabel, packageStatusVariant } from '../../../constants/status';
 import { runScreenCommands } from '../screenCommands';
 import { Check, CheckCircle2, FileText, ListChecks, Clock, MapPin, Package, ShieldAlert, Truck, User, X, XCircle } from 'lucide-react';
 import apiService from '../../../services/apiService';
@@ -17,15 +18,8 @@ import { applyGuidedOutcome, makeOutcome } from '../guided/outcome';
 /** Tarjetas con los datos estructurados que devuelven las herramientas del asistente. */
 
 // Estado de paquete/viaje -> texto y variante del átomo Badge (la app ya tenía el componente; no se reimplementa)
-const STATUS = {
-  pendiente: { label: 'Pendiente', variant: 'neutral' },
-  asignado: { label: 'Asignado', variant: 'info' },
-  en_transito: { label: 'En tránsito', variant: 'warning' },
-  en_agencia: { label: 'En agencia', variant: 'info' },
-  entregado: { label: 'Entregado', variant: 'success' },
-  siniestro: { label: 'Siniestro', variant: 'danger' },
-  devuelto: { label: 'Devuelto', variant: 'warning' },
-  cancelado: { label: 'Cancelado', variant: 'neutral' },
+// estados de VIAJE (los de paquete salen del mapa compartido, para que se vean igual que en el resto de la aplicación)
+const ROUTE_STATUS_BADGE = {
   planeada: { label: 'Planeada', variant: 'info' },
   completada: { label: 'Completada', variant: 'success' },
 };
@@ -40,7 +34,7 @@ function useRoleIfSignedIn() {
 }
 
 export function StatusBadge({ status }) {
-  const s = STATUS[status] ?? { label: status ?? '—', variant: 'neutral' };
+  const s = ROUTE_STATUS_BADGE[status] ?? { label: packageStatusLabel(status), variant: packageStatusVariant(status) };
   return <Badge variant={s.variant} size="lg">{s.label}</Badge>;
 }
 

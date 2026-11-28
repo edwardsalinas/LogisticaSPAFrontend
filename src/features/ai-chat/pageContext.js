@@ -84,19 +84,49 @@ const SEARCH_STORAGE = {
   tracking: 'logisticaspa:filtros:rastreo:busqueda',
 };
 
-/** Pide a una pantalla con buscador que se filtre por este texto (y siempre en su pestaña principal). Si aún no está abierta, empieza ya filtrada. */
+/**
+ * Pide a una pantalla con buscador que se filtre por este texto. En Paquetes pasa a la vista «Todos» (encuentra el paquete sea cual sea su
+ * fecha o su viaje) y en Viajes a la lista.
+ *
+ * Si la pantalla está abierta, atiende el pedido en el acto y NO queda nada guardado (antes la búsqueda se quedaba guardada y, al volver
+ * después, escondía los paquetes nuevos). Solo si aún no está abierta se deja pendiente para cuando se abra, y la pantalla lo retira al leerlo.
+ */
 export const requestSearch = (page, text) => {
-  try { if (SEARCH_STORAGE[page]) window.sessionStorage.setItem(SEARCH_STORAGE[page], JSON.stringify(String(text ?? ''))); } catch { /* sin almacenamiento */ }
-  if (page === 'packages') requestTab('packages', 'all');
-  // la búsqueda de Viajes solo se aplica a la lista, no al calendario
-  if (page === 'routes' && text) requestTab('routes', 'list');
-  window.dispatchEvent(new CustomEvent(SEARCH_EVENT, { detail: { page, text: String(text ?? '') } }));
+  const key = SEARCH_STORAGE[page];
+  if (!key) return;
+  const value = String(text ?? '');
+  if (page === 'packages') requestTab('packages', 'list');
+  if (page === 'routes' && value) requestTab('routes', 'list');
+  const detail = { page, text: value, handled: false };
+  window.dispatchEvent(new CustomEvent(SEARCH_EVENT, { detail }));
+  try {
+    if (detail.handled) window.sessionStorage.removeItem(key);
+    else window.sessionStorage.setItem(key, JSON.stringify(value));
+  } catch { /* sin almacenamiento */ }
 };
 
-/** Para las pantallas con buscador: atiende los pedidos de filtro. */
+/** Lo que se pidió filtrar antes de abrirse la pantalla (o ''): la búsqueda ya no se guarda sola, solo se arrastra lo que Logi pidió. */
+export const readRequestedSearch = (page) => {
+  try {
+    const raw = SEARCH_STORAGE[page] && window.sessionStorage.getItem(SEARCH_STORAGE[page]);
+    const v = raw ? JSON.parse(raw) : '';
+    return typeof v === 'string' ? v : '';
+  } catch { return ''; }
+};
+/** La pantalla ya lo tomó: se retira para que no vuelva a aplicarse la próxima vez. */
+export const clearRequestedSearch = (page) => {
+  try { if (SEARCH_STORAGE[page]) window.sessionStorage.removeItem(SEARCH_STORAGE[page]); } catch { /* sin almacenamiento */ }
+};
+
+/** Para las pantallas con buscador: atiende los pedidos de filtro (y retira lo que quedó pendiente al abrirse). */
 export function useSearchRequests(page, setSearch) {
   useEffect(() => {
-    const onRequest = (e) => { if (e.detail?.page === page) setSearch(e.detail.text); };
+    clearRequestedSearch(page); // ya se leyó al crear el estado inicial
+    const onRequest = (e) => {
+      if (e.detail?.page !== page) return;
+      e.detail.handled = true;
+      setSearch(e.detail.text);
+    };
     window.addEventListener(SEARCH_EVENT, onRequest);
     return () => window.removeEventListener(SEARCH_EVENT, onRequest);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- setSearch es estable

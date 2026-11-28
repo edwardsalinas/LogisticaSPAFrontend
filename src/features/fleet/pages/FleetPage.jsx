@@ -22,7 +22,8 @@ import Skeleton from '../../../components/atoms/Skeleton';
 
 import DataTable from '../../../components/organisms/DataTable';
 import usePersistentState from '@/hooks/usePersistentState';
-import { useRegisterPageView, useRegisterScreenState, useSearchRequests, useTabRequests } from '../../ai-chat/pageContext';
+import { readRequestedSearch, useRegisterPageView, useRegisterScreenState, useSearchRequests, useTabRequests } from '../../ai-chat/pageContext';
+import ActiveFilterNotice from '../../../components/molecules/ActiveFilterNotice';
 import apiService from '../../../services/apiService';
 import FleetHero from '../components/FleetHero';
 import VehicleForm from '../components/VehicleForm';
@@ -52,7 +53,7 @@ const vehicleTypeLabel = {
 
 function FleetPage() {
   const [activeTab, setActiveTab] = usePersistentState('flota:pestana', 'vehicles');
-  const [searchTerm, setSearchTerm] = usePersistentState('flota:busqueda', '');
+  const [searchTerm, setSearchTerm] = useState(() => readRequestedSearch('fleet')); // la búsqueda no se guarda entre visitas (una olvidada escondía datos)
   useRegisterPageView(activeTab); // el asistente sabe si ves vehículos o conductores
   useSearchRequests('fleet', setSearchTerm);
   useTabRequests('fleet', setActiveTab, ['vehicles', 'drivers']); // «abre los conductores»
@@ -144,6 +145,11 @@ function FleetPage() {
 
       <section className="grid grid-cols-1 gap-6 2xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.82fr)]">
         <div className="rounded-[1.8rem] border border-white/70 bg-white/88 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.28)] backdrop-blur-xl">
+          {searchTerm.trim() && (
+            <div className="px-6 pt-6">
+              <ActiveFilterNotice label={searchTerm.trim()} onClear={() => { setSearchTerm(''); setCurrentPage(1); }} />
+            </div>
+          )}
           <div className="flex flex-col gap-4 border-b border-surface-100 p-6 2xl:flex-row 2xl:items-center 2xl:justify-between">
                         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <div className="rounded-2xl bg-surface-100 p-1 flex"><button onClick={() => { setActiveTab('vehicles'); setCurrentPage(1); }} className={`flex-1 rounded-xl px-4 py-2 max-sm:min-h-11 text-sm font-semibold transition-all sm:flex-none ${activeTab === 'vehicles' ? 'bg-white text-primary-700 shadow-sm' : 'text-surface-600'}`}>Vehículos</button><button onClick={() => { setActiveTab('drivers'); setCurrentPage(1); }} className={`flex-1 rounded-xl px-4 py-2 max-sm:min-h-11 text-sm font-semibold transition-all sm:flex-none ${activeTab === 'drivers' ? 'bg-white text-primary-700 shadow-sm' : 'text-surface-600'}`}>Conductores</button></div>

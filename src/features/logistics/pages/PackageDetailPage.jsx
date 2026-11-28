@@ -21,6 +21,8 @@ import StatusTimeline from '../../../components/molecules/StatusTimeline';
 import PageSkeleton from '../../../components/organisms/PageSkeleton';
 import apiService from '../../../services/apiService';
 import { useRegisterPageEntity } from '../../ai-chat/pageContext';
+import { packageProgress, packageStatusLabel, packageStatusVariant } from '../../../constants/status';
+import { timelineFromLogs } from '../packageTimeline';
 const PackageLocationMap = lazy(() => import('../components/PackageLocationMap'));
 
 function PackageDetailPage() {
@@ -28,78 +30,60 @@ function PackageDetailPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [pkg, setPkg] = useState(null);
-  const [isExample, setIsExample] = useState(false); // los datos de ejemplo NO se le dicen al asistente como si fueran el paquete en pantalla
-
-  const MOCK_PACKAGE = {
-    id: packageId,
-    tracking_code: 'SPA-7749202394',
-    origen: 'La Paz',
-    destino: 'Oruro',
-    status: 'en_transito',
-    peso: 45.5,
-    description: 'Equipos electrónicos',
-    priority: 'Express',
-    sender: { name: 'ElectroBolivia S.R.L.', address: 'Av. 16 de Julio 1234, La Paz', contact: '+591 2 2201234' },
-    receiver: { name: 'Comercializadora El Alto', address: 'C. Comercio 567, El Alto', contact: '+591 2 2805678' },
-    dimensions: { length: 60, width: 40, height: 40 },
-    content_type: 'Equipos electrónicos',
-    current_location: { lat: -16.58, lng: -68.25 },
-    estimated_delivery: '2026-03-20 16:00',
-    progress: 65,
-  };
+  const [logs, setLogs] = useState([]);
+  const [problem, setProblem] = useState(null); // null | 'not_found' | 'error'
 
   useEffect(() => {
-    const fetchPackageData = async () => {
+    let cancelled = false;
+    const load = async () => {
       setLoading(true);
+      setProblem(null);
       try {
-        const pkgRes = await apiService.getPackages();
-        const packages = pkgRes.data || [];
-        const foundPkg = packages.find((p) => p.id === packageId);
-        setPkg(foundPkg || MOCK_PACKAGE);
-        setIsExample(!foundPkg);
+        // el paquete por su id (antes se buscaba entre los 50 más recientes y, si no estaba, se mostraba un paquete de EJEMPLO)
+        const res = await apiService.getPackage(packageId);
+        if (cancelled) return;
+        setPkg(res?.data ?? res);
+        try {
+          const history = await apiService.get(`/tracking/logs/${packageId}`);
+          if (!cancelled) setLogs(history?.data ?? []);
+        } catch {
+          if (!cancelled) setLogs([]); // sin historial se muestra solo el registro del paquete
+        }
       } catch (err) {
-        console.error('Error cargando paquete:', err);
-        setPkg(MOCK_PACKAGE);
-        setIsExample(true);
+        if (cancelled) return;
+        setPkg(null);
+        setProblem(err?.status === 404 ? 'not_found' : 'error');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
-
-    fetchPackageData();
+    load();
+    return () => { cancelled = true; };
   }, [packageId]);
 
-  useRegisterPageEntity(pkg && !isExample && pkg.tracking_code ? { type: 'package', ref: pkg.tracking_code } : null);
+  useRegisterPageEntity(pkg?.tracking_code ? { type: 'package', ref: pkg.tracking_code } : null);
 
-  const timeline = useMemo(() => ([
-    { label: 'Recolectado', date: '19 Mar, 08:30', location: 'La Paz - Almacen central', completed: true, active: false },
-    { label: 'Procesado', date: '19 Mar, 10:15', location: 'Centro de distribución', completed: true, active: false },
-    { label: 'En transito', date: '19 Mar, 11:00', location: 'Ruta La Paz - Oruro', completed: false, active: true },
-    { label: 'Llegada a destino', date: '-', location: 'Oruro - terminal', completed: false, active: false },
-    { label: 'Entregado', date: '-', location: '-', completed: false, active: false },
-  ]), []);
+  const timeline = useMemo(() => timelineFromLogs(logs, pkg), [logs, pkg]);
 
   if (loading) return <PageSkeleton stats={4} layout="map" />;
 
   if (!pkg) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-4 text-center">
-        <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-surface-950">No encontramos el paquete</h2>
-        <p className="max-w-md text-sm text-surface-500">La ficha del envío no está disponible. Podemos volver al listado de paquetes.</p>
+        <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-surface-950">{problem === 'error' ? 'No pudimos cargar el paquete' : 'No encontramos el paquete'}</h2>
+        <p className="max-w-md text-sm text-surface-600">
+          {problem === 'error'
+            ? 'Hubo un problema al consultar el servidor. Intenta de nuevo en un momento.'
+            : 'No existe o no tienes permiso para verlo. Si acabas de crearlo, búscalo por su código en la vista «Todos» de Paquetes.'}
+        </p>
         <Button onClick={() => navigate('/logistics/packages')}>Volver a paquetes</Button>
       </div>
     );
   }
 
-  const statusConfig = {
-    pending: { label: 'Pendiente', variant: 'warning' },
-    in_transit: { label: 'En transito', variant: 'info' },
-    delivered: { label: 'Entregado', variant: 'success' },
-    delayed: { label: 'Retrasado', variant: 'danger' },
-  };
-
-  const status = statusConfig[pkg.status] || { label: pkg.status, variant: 'neutral' };
-  const priorityVariant = pkg.priority === 'Express' ? 'danger' : 'info';
+  const status = { label: packageStatusLabel(pkg.status), variant: packageStatusVariant(pkg.status) };
+  const progress = packageProgress(pkg.status);
+  const position = [...logs].reverse().find((l) => Number.isFinite(l.lat) && Number.isFinite(l.lng) && !(l.lat === 0 && l.lng === 0));
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -143,8 +127,8 @@ function PackageDetailPage() {
             </p>
           </div>
         </InfoCard>
-        <InfoCard title="Especificaciones" icon={Package}><div className="grid grid-cols-2 gap-3 text-sm"><div><p className="text-xs text-surface-500">Peso</p><p className="mt-1 font-semibold text-surface-900">{pkg.peso || 0} kg</p></div><div><p className="text-xs text-surface-500">Dimensiones</p><p className="mt-1 font-semibold text-surface-900">{pkg.dimensions?.length || 60}x{pkg.dimensions?.width || 40}x{pkg.dimensions?.height || 40} cm</p></div><div><p className="text-xs text-surface-500">Contenido</p><p className="mt-1 font-semibold text-surface-900">{pkg.content_type || pkg.description || 'General'}</p></div><div><p className="text-xs text-surface-500">Prioridad</p><div className="mt-1"><Badge variant={priorityVariant}>{pkg.priority || 'Estandar'}</Badge></div></div></div></InfoCard>
-        <InfoCard title="Entrega" icon={Clock3}><div className="space-y-3"><div><p className="text-xs text-surface-500">Fecha estimada</p><p className="mt-1 text-sm font-semibold text-surface-900">{pkg.estimated_delivery || 'No disponible'}</p></div><div><div className="mb-1 flex items-center justify-between"><p className="text-xs text-surface-500">Progreso</p><p className="text-xs font-semibold text-surface-900">{pkg.progress || 65}%</p></div><ProgressBar value={pkg.progress || 65} size="md" variant="primary" /></div><div><Badge variant={status.variant} dot>{status.label}</Badge></div></div></InfoCard>
+        <InfoCard title="Especificaciones" icon={Package}><div className="grid grid-cols-2 gap-3 text-sm"><div><p className="text-xs text-surface-500">Peso</p><p className="mt-1 font-semibold text-surface-900">{pkg.peso != null ? `${pkg.peso} kg` : '—'}</p></div><div><p className="text-xs text-surface-500">Contenido</p><p className="mt-1 font-semibold text-surface-900">{pkg.description || 'Sin descripción'}</p></div></div></InfoCard>
+        <InfoCard title="Entrega" icon={Clock3}><div className="space-y-3"><div><p className="text-xs text-surface-500">Fecha estimada</p><p className="mt-1 text-sm font-semibold text-surface-900">{pkg.estimated_delivery || 'No disponible'}</p></div>{progress != null && <div><div className="mb-1 flex items-center justify-between"><p className="text-xs text-surface-500">Avance</p><p className="text-xs font-semibold text-surface-900">{progress}%</p></div><ProgressBar value={progress} size="md" variant="primary" /></div>}<div><Badge variant={status.variant} dot>{status.label}</Badge></div></div></InfoCard>
       </section>
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
@@ -152,7 +136,7 @@ function PackageDetailPage() {
           <div className="mb-4 flex flex-col gap-3 border-b border-surface-100 pb-4 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.04em] text-surface-950 sm:text-2xl">Ubicación actual del envío</h2></div><div className="flex flex-wrap gap-2"><Badge variant="info" dot>{pkg.origen} {' -> '} {pkg.destino}</Badge><Badge variant={status.variant} dot>{status.label}</Badge></div></div>
           <div className="h-[24rem] overflow-hidden rounded-[1.4rem] border border-surface-100 sm:h-[28rem] sm:rounded-[1.5rem]">
             <Suspense fallback={<MapCanvasFallback />}>
-              <PackageLocationMap position={pkg.current_location ? [pkg.current_location.lat, pkg.current_location.lng] : null} title={pkg.tracking_code} subtitle="Ubicación actual" />
+              <PackageLocationMap position={position ? [position.lat, position.lng] : null} title={pkg.tracking_code} subtitle="Ubicación actual" />
             </Suspense>
           </div>
         </div>
@@ -164,7 +148,7 @@ function PackageDetailPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-3">
-        <InfoCard title="Ruta" icon={MapPinned}><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.origen} {' -> '} {pkg.destino}</p><p className="text-surface-500">Movimiento principal configurado para esta entrega.</p></div></InfoCard>
+        <InfoCard title="Ruta" icon={MapPinned}><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.origen} {' -> '} {pkg.destino}</p><p className="text-surface-500">{pkg.transport_routes?.departure_time ? 'Viaje asignado: sale el ' + new Date(pkg.transport_routes.departure_time).toLocaleString('es-BO', { timeZone: 'America/La_Paz', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) + '.' : 'Todavía sin viaje asignado.'}</p></div></InfoCard>
         <InfoCard title="Estado actual" icon={Radar}><div className="space-y-2 text-sm"><div><Badge variant={status.variant} dot>{status.label}</Badge></div><p className="text-surface-500">La lectura refleja el último estado operativo disponible.</p></div></InfoCard>
         <InfoCard title="Observación" icon={Package}><div className="space-y-2 text-sm"><p className="font-semibold text-surface-900">{pkg.description || 'Sin descripción adicional'}</p><p className="text-surface-500">Contenido declarado por el equipo de despacho.</p></div></InfoCard>
       </section>

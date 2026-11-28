@@ -8,22 +8,17 @@ import EmptyState from '../../../components/molecules/EmptyState';
 import Modal from '../../../components/molecules/Modal';
 import Skeleton from '../../../components/atoms/Skeleton';
 import apiService from '../../../services/apiService';
-import usePersistentState from '@/hooks/usePersistentState';
-import { useRegisterPageEntity, useSearchRequests } from '../../ai-chat/pageContext';
+import { readRequestedSearch, useRegisterPageEntity, useSearchRequests } from '../../ai-chat/pageContext';
+import ActiveFilterNotice from '../../../components/molecules/ActiveFilterNotice';
+import { matchesPackage } from '../../logistics/packageSearch';
+import { packageStatusLabel, packageStatusVariant } from '../../../constants/status';
 import TrackingForm from '../components/TrackingForm';
 import { GUIDED_EVENTS } from '../../ai-chat/guided/guidedForms';
 import TrackingHistory from '../components/TrackingHistory';
 import TrackingMap from '../components/TrackingMap';
 import useRole from '../../../app/useRole';
 
-const statusMap = {
-  pendiente: { label: 'Pendiente', variant: 'warning' },
-  asignado: { label: 'Asignado', variant: 'info' },
-  en_transito: { label: 'En tránsito', variant: 'info' },
-  entregado: { label: 'Entregado', variant: 'success' },
-  completada: { label: 'Completada', variant: 'success' },
-  finalizada: { label: 'Finalizada', variant: 'success' },
-};
+// los estados se ven igual en todas las pantallas (constants/status): antes aquí «en_agencia» o «siniestro» salían como texto crudo
 
 function TrackingPage() {
   const { role, isClient } = useRole();
@@ -33,7 +28,7 @@ function TrackingPage() {
   const [selectedPackageId, setSelectedPackageId] = useState(null);
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [completedCheckpointIds, setCompletedCheckpointIds] = useState([]);
-  const [searchTerm, setSearchTerm] = usePersistentState('rastreo:busqueda', '');
+  const [searchTerm, setSearchTerm] = useState(() => readRequestedSearch('tracking')); // no se guarda entre visitas
   useSearchRequests('tracking', setSearchTerm);
   const [showSidebar, setShowSidebar] = useState(true);
   
@@ -112,14 +107,7 @@ function TrackingPage() {
     // Si es cliente, idealmente el backend ya filtra, pero reforzamos en UI 
     // (o permitimos buscar solo por tracking code si no hay sesión iniciada)
     
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter((pkg) => 
-        [pkg.tracking_code, pkg.origen, pkg.destino].some((value) => 
-          String(value || '').toLowerCase().includes(term)
-        )
-      );
-    }
+    if (searchTerm.trim()) result = result.filter((pkg) => matchesPackage(pkg, searchTerm));
     return result;
   }, [packages, searchTerm]);
 
@@ -174,6 +162,12 @@ function TrackingPage() {
                </div>
             </div>
 
+            {searchTerm.trim() && (
+              <div className="px-4 pb-1">
+                <ActiveFilterNotice label={searchTerm.trim()} onClear={() => setSearchTerm('')} />
+              </div>
+            )}
+
             {/* Sidebar List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
                {loading ? (
@@ -181,7 +175,7 @@ function TrackingPage() {
                ) : filteredPackages.length > 0 ? (
                  filteredPackages.map((pkg) => {
                     const isSelected = selectedPackageId === pkg.id;
-                    const status = statusMap[pkg.status] || { label: pkg.status, variant: 'neutral' };
+                    const status = { label: packageStatusLabel(pkg.status), variant: packageStatusVariant(pkg.status) };
                     
                     return (
                       <button 

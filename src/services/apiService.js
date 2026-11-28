@@ -32,7 +32,10 @@ const apiService = {
   getAiUsage: (days = 7) => api.get('/ai-agent/usage', { params: { days } }),
   getRoutes: () => api.get('/logistics/routes'),
   getCheckpointsByRoute: (routeId) => api.get(`/logistics/routes/${routeId}/checkpoints`),
-  getPackages: () => api.get('/logistics/packages'),
+  // hasta 200 paquetes (el servidor entrega 50 por defecto): con 50, los más antiguos no se podían encontrar en ninguna pantalla
+  getPackages: (params = {}) => api.get('/logistics/packages', { params: { limit: 200, ...params } }),
+  // un paquete por su id: la ficha ya no depende de que esté entre los más recientes
+  getPackage: (id) => api.get(`/logistics/packages/${id}`),
   getTrackingLogs: (packageId) => api.get(`/tracking/logs/${packageId}`),
   createTrackingEvent: (data) => api.post('/tracking', data),
   getVehicles: () => api.get('/fleet/vehicles'),

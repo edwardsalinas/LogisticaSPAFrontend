@@ -3,24 +3,15 @@ import { Search, Package, MapPin, Clock, ArrowLeft, Navigation, ShieldCheck, Tru
 import { useNavigate } from 'react-router-dom';
 import apiService from '../../../services/apiService';
 import Badge from '../../../components/atoms/Badge';
+import { PACKAGE_LABEL, normalizePackageStatus } from '../../../constants/status';
 import Button from '../../../components/atoms/Button';
 import Captcha, { CAPTCHA_ENABLED } from '../../../components/molecules/Captcha';
-
-const statusMapValue = {
-  pendiente: { label: 'Pendiente', variant: 'warning' },
-  asignado: { label: 'Asignado', variant: 'info' },
-  in_transit: { label: 'En tránsito', variant: 'info' },
-  en_transito: { label: 'En tránsito', variant: 'info' },
-  entregado: { label: 'Entregado', variant: 'success' },
-  delivered: { label: 'Entregado', variant: 'success' },
-};
 
 const getHistoryLabel = (status) => {
   if (!status) return 'Estado desconocido';
   const cleanStatus = status.trim().toLowerCase();
   if (cleanStatus.includes(':') || cleanStatus.includes('Llegó') || cleanStatus.length > 20) return status;
-  const mapped = statusMapValue[cleanStatus];
-  return mapped ? mapped.label : status;
+  return PACKAGE_LABEL[normalizePackageStatus(cleanStatus)] || status; // el estado conocido se ve igual en toda la aplicación
 };
 
 function PublicTrackingPage() {
@@ -161,7 +152,7 @@ function PublicTrackingPage() {
                   <div className="space-y-1">
                      <p className="text-xs text-primary-400 font-bold">Estado del Envío</p>
                      <div className="flex items-center gap-4">
-                        <h2 className="text-3xl font-bold text-white">{statusMapValue[trackingData.package.status.trim().toLowerCase()]?.label || trackingData.package.status}</h2>
+                        <h2 className="text-3xl font-bold text-white">{PACKAGE_LABEL[normalizePackageStatus(trackingData.package.status)] || trackingData.package.status}</h2>
                         <div className="h-2 w-2 rounded-full bg-success-500 animate-pulse shadow-[0_0_12px_rgba(34,197,94,0.5)]" />
                      </div>
                   </div>
